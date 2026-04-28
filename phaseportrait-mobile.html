@@ -294,26 +294,71 @@
     body.mobile-mode .spectrogram-wrap,
     body.mobile-mode .top-spectrum-wrap,
     body.mobile-mode .phase-wrap {
-      height: 58vh;
-      min-height: 320px;
+      height: 76dvh;
+      min-height: 560px;
     }
 
     body.mobile-mode .resizable-phase-wrap {
       resize: none;
-      height: var(--mobile-history-height, 430px);
-      min-height: 260px;
-      max-height: 78vh;
+      height: var(--mobile-history-height, 760px);
+      min-height: 560px;
+      max-height: 88dvh;
     }
 
     body.mobile-mode input[type="range"] {
-      width: min(58vw, 260px);
+    body.mobile-mode .canvas-wrap {
+      width: calc(100% - 44px);
+      margin-right: 44px;
+    }
+
+    body.mobile-mode .canvas-wrap::after {
+      content: "scroll";
+      position: absolute;
+      left: 100%;
+      top: 0;
+      bottom: 0;
+      width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 19, 25, 0.92);
+      border-left: 1px solid #1e2430;
+      color: rgba(154, 164, 178, 0.82);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      writing-mode: vertical-rl;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    body.mobile-mode .stage {
+      overflow: visible;
+    }
+
+      width: min(62vw, 300px);
+    }
+
+    .mobile-controls-toggle {
+      display: none;
+      flex: 1 1 160px;
+      border-color: var(--accent);
+    }
+
+    body.mobile-mode .mobile-controls-toggle {
+      display: block;
+    }
+
+    body.mobile-mode.mobile-controls-open .mobile-controls-toggle {
+      background: #263246;
+      color: #ffffff;
     }
 
     body.mobile-mode .desktop-mobile-filtered-control {
       display: none;
     }
 
-    body.mobile-mode .desktop-mobile-filtered-control.mobile-control-visible {
+    body.mobile-mode.mobile-controls-open .desktop-mobile-filtered-control.mobile-control-visible {
       display: flex;
     }
 
@@ -321,8 +366,25 @@
       display: none;
     }
 
-    body.mobile-mode .phase-controls.has-visible-mobile-controls {
+    body.mobile-mode.mobile-controls-open .phase-controls.has-visible-mobile-controls {
       display: flex;
+    }
+
+    body.mobile-mode .card {
+      padding: 10px;
+    }
+
+    body.mobile-mode .note {
+      display: none;
+    }
+
+    body.mobile-mode .title {
+      font-size: 16px;
+    }
+
+    body.mobile-mode .panel-title {
+      height: 28px;
+      padding: 6px 8px;
     }
 
     @media (max-width: 760px) {
@@ -360,11 +422,11 @@
       }
 
       .phase-wrap {
-        min-height: 280px;
+        min-height: 560px;
       }
 
       .resizable-phase-wrap {
-        min-height: 240px;
+        min-height: 560px;
       }
 
       .phase-grid {
@@ -382,7 +444,7 @@
     <div class="stack">
       <section class="card">
         <h1 class="title">Live Microphone Spectrogram and Phase Portrait</h1>
-        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone. Use Pause to freeze the recording and keep selecting spectrogram windows for phase plots.</p>
+        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone. Use Pause to freeze the recording and keep selecting spectrogram windows for phase plots. On mobile, use the right-side scroll strip to move up and down without rotating or dragging the plots.</p>
       </section>
 
       <section class="card">
@@ -396,6 +458,14 @@
             <label for="windowSeconds">Window</label>
             <input id="windowSeconds" type="range" min="2" max="30" value="10" step="1" />
             <span id="windowValue" class="value">10 s</span>
+          </div>
+
+          <div class="ctl">
+            <label for="timeDirection">Time</label>
+            <select id="timeDirection">
+              <option value="rtl" selected>Right to left</option>
+              <option value="ltr">Left to right</option>
+            </select>
           </div>
 
           <div class="ctl">
@@ -439,15 +509,17 @@
         </div>
 
         <div class="controls mobile-tools">
-          <div class="ctl">
+          <div class="ctl mobile-mode-toggle-control">
             <label for="mobileModeToggle">Mobile mode</label>
             <input id="mobileModeToggle" type="checkbox" />
           </div>
 
+          <button id="mobileControlsToggle" class="mobile-controls-toggle" type="button" aria-expanded="false">Show controls</button>
+
           <div class="ctl">
             <label for="mobileHistoryHeight">Timeline height</label>
-            <input id="mobileHistoryHeight" type="range" min="260" max="760" value="430" step="10" />
-            <span id="mobileHistoryHeightValue" class="value">430 px</span>
+            <input id="mobileHistoryHeight" type="range" min="320" max="920" value="760" step="10" />
+            <span id="mobileHistoryHeightValue" class="value">760 px</span>
           </div>
 
           <div class="mobile-tabs" aria-label="Mobile plot selector">
@@ -601,6 +673,7 @@
     const stopBtn = document.getElementById("stopBtn");
     const clearBtn = document.getElementById("clearBtn");
     const windowSlider = document.getElementById("windowSeconds");
+    const timeDirectionSelect = document.getElementById("timeDirection");
     const maxFreqSlider = document.getElementById("maxFreq");
     const topSpectrumWidthSlider = document.getElementById("topSpectrumWidth");
     const fftSizeSelect = document.getElementById("fftSize");
@@ -640,6 +713,7 @@
     const topAnalysisGrid = document.getElementById("topAnalysisGrid");
     const phaseHistoryWrap = document.getElementById("phaseHistoryWrap");
     const mobileModeToggle = document.getElementById("mobileModeToggle");
+    const mobileControlsToggle = document.getElementById("mobileControlsToggle");
     const mobileHistoryHeightSlider = document.getElementById("mobileHistoryHeight");
     const mobileHistoryHeightValue = document.getElementById("mobileHistoryHeightValue");
     const mobileTabButtons = Array.from(document.querySelectorAll(".mobile-tab"));
@@ -737,7 +811,7 @@
     }
 
     function updateMobileHistoryHeight() {
-      const height = clamp(Number(mobileHistoryHeightSlider.value), 260, 760);
+      const height = clamp(Number(mobileHistoryHeightSlider.value), 320, 920);
       mobileHistoryHeightSlider.value = String(height);
       mobileHistoryHeightValue.textContent = `${height} px`;
       document.documentElement.style.setProperty("--mobile-history-height", `${height}px`);
@@ -765,6 +839,11 @@
     function setMobileMode(enabled) {
       document.body.classList.toggle("mobile-mode", enabled);
       mobileModeToggle.checked = enabled;
+      if (enabled) {
+        document.body.classList.remove("mobile-controls-open");
+        mobileControlsToggle.textContent = "Show controls";
+        mobileControlsToggle.setAttribute("aria-expanded", "false");
+      }
       updateMobileHistoryHeight();
       applyMobilePanelVisibility();
       applyMobileControlVisibility();
@@ -785,6 +864,7 @@
     function setupMobileControlGroups() {
       const controlGroups = [
         { element: windowSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "timeline", "all"] },
+        { element: timeDirectionSelect.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
         { element: maxFreqSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "all"] },
         { element: topSpectrumWidthSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "all"] },
         { element: fftSizeSelect.closest(".ctl"), panels: ["spectrogram", "spectrum", "all"] },
@@ -813,6 +893,15 @@
         group.element.classList.add("desktop-mobile-filtered-control");
         group.element.dataset.mobilePanels = group.panels.join(",");
       });
+    }
+
+    function setMobileControlsOpen(open) {
+      document.body.classList.toggle("mobile-controls-open", open);
+      mobileControlsToggle.textContent = open ? "Hide controls" : "Show controls";
+      mobileControlsToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      applyMobileControlVisibility();
+      resizeCanvas();
+      drawSavedPhasePortraits();
     }
 
     function applyMobileControlVisibility() {
@@ -919,7 +1008,11 @@
       }
 
       axesCtx.fillStyle = "rgba(154, 164, 178, 0.72)";
-      axesCtx.fillText("time ->", canvasCssWidth - 68, canvasCssHeight - 12);
+      if (isTimeRightToLeft()) {
+        axesCtx.fillText("<- time", 8, canvasCssHeight - 12);
+      } else {
+        axesCtx.fillText("time ->", canvasCssWidth - 68, canvasCssHeight - 12);
+      }
       axesCtx.restore();
 
       drawPhaseWindowOverlay();
@@ -1311,6 +1404,14 @@
       ctx.fillRect(canvasCssWidth - shift, 0, shift, canvasCssHeight);
     }
 
+    function shiftCanvasRight(px) {
+      if (px <= 0) return;
+      const shift = Math.min(px, canvasCssWidth);
+      ctx.drawImage(canvas, 0, 0, (canvasCssWidth - shift) * dpr, canvasCssHeight * dpr, shift, 0, canvasCssWidth - shift, canvasCssHeight);
+      ctx.fillStyle = "#05070a";
+      ctx.fillRect(0, 0, shift, canvasCssHeight);
+    }
+
     function drawFrequencyColumn(x, width) {
       if (!analyser || !frequencyData || !audioContext) return;
 
@@ -1381,6 +1482,10 @@
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
+    }
+
+    function isTimeRightToLeft() {
+      return timeDirectionSelect.value === "rtl";
     }
 
     function formatTau(value) {
@@ -1582,8 +1687,12 @@
 
       const sampleRate = currentSampleRate;
       const windowSamples = Math.round(Number(windowSlider.value) * sampleRate);
-      const oldestSelectionAge = Math.round(windowSamples * (1 - selectedFrame.start / 100));
-      const newestSelectionAge = Math.round(windowSamples * (1 - selectedFrame.end / 100));
+      const oldestSelectionAge = isTimeRightToLeft()
+        ? Math.round(windowSamples * (selectedFrame.end / 100))
+        : Math.round(windowSamples * (1 - selectedFrame.start / 100));
+      const newestSelectionAge = isTimeRightToLeft()
+        ? Math.round(windowSamples * (selectedFrame.start / 100))
+        : Math.round(windowSamples * (1 - selectedFrame.end / 100));
       const maxDrawableAge = waveformSampleCount - 1 - maxDelaySamples;
       const olderAge = Math.min(oldestSelectionAge, maxDrawableAge);
       const newerAge = Math.max(0, Math.min(newestSelectionAge, olderAge - 8));
@@ -1916,7 +2025,8 @@
 
       history.frames.forEach((frame) => {
         const timelineIndex = oldFrameCount - frame.offset + progress;
-        const z = (timelineIndex - oldFrameCount / 2) * zSpacing;
+        const timeDirectionSign = isTimeRightToLeft() ? -1 : 1;
+        const z = timeDirectionSign * (timelineIndex - oldFrameCount / 2) * zSpacing;
         const normalizedAge = clamp((frame.offset + progress) / Math.max(1, visibleFrameCount), 0, 1);
 
         const alpha = frame.isCurrent
@@ -1957,7 +2067,8 @@
       const timeAxisMax = phaseAxisMax(coordinates.maxAbs);
       const sourcePoints = view.mode === "timeZ"
         ? coordinates.points.map(([x, y], index) => {
-            const timeRatio = pointCount > 1 ? index / (pointCount - 1) : 0.5;
+            const forwardRatio = pointCount > 1 ? index / (pointCount - 1) : 0.5;
+            const timeRatio = isTimeRightToLeft() ? 1 - forwardRatio : forwardRatio;
             return [x, y, (timeRatio - 0.5) * 2 * timeAxisMax];
           })
         : coordinates.points3D || coordinates.points.map(([x, y]) => [x, y, 0]);
@@ -2371,8 +2482,14 @@
 
       if (pixels > 0) {
         scrollCarry -= pixels;
-        shiftCanvas(pixels);
-        drawFrequencyColumn(canvasCssWidth - pixels, pixels);
+
+        if (isTimeRightToLeft()) {
+          shiftCanvasRight(pixels);
+          drawFrequencyColumn(0, pixels);
+        } else {
+          shiftCanvas(pixels);
+          drawFrequencyColumn(canvasCssWidth - pixels, pixels);
+        }
       }
 
       animationId = requestAnimationFrame(drawSpectrogram);
@@ -2413,6 +2530,7 @@
       const phaseModeLabel = usePca ? `PCA D=${phaseDimensionSlider.value}, tau ${tauLabel}` : `tau ${tauLabel}`;
       const formattedPointCount = lastPhasePointCount.toLocaleString();
       const frameLabel = `${formatPercent(selectedFrame.start)}-${formatPercent(selectedFrame.end)}%`;
+      const timeDirectionLabel = isTimeRightToLeft() ? "time right-to-left" : "time left-to-right";
 
       phasePointCountValue.textContent = formattedPointCount;
 
@@ -2420,9 +2538,9 @@
         if (view.mode === "timeGlow") {
           view.title.textContent = `3D color PCA: ${phaseModeLabel}, frame ${frameLabel}`;
         } else if (view.mode === "timeZ") {
-          view.title.textContent = `PC1/PC2 + time Z: ${phaseModeLabel}, frame ${frameLabel}`;
+          view.title.textContent = `PC1/PC2 + time Z: ${phaseModeLabel}, ${timeDirectionLabel}, frame ${frameLabel}`;
         } else if (view.mode === "history") {
-          view.title.textContent = `3D PCA frame timeline: yellow scatter, speed ${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x, current + ${phaseHistoryFramesSlider.value} old frames`;
+          view.title.textContent = `3D PCA frame timeline: yellow scatter, ${timeDirectionLabel}, speed ${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x, current + ${phaseHistoryFramesSlider.value} old frames`;
         } else if (view.mode === "spectrum") {
           view.title.textContent = `Power spectrum: 3 frame thirds, frame ${frameLabel}`;
         } else {
@@ -2498,7 +2616,7 @@
       drawSavedPhasePortraits();
     });
 
-    [windowSlider, maxFreqSlider, topSpectrumWidthSlider, gainSlider, floorSlider, phaseTauSlider, phasePcaModeCheckbox, phaseDimensionSlider, phaseFrameStartSlider, phaseFrameSizeSlider, phaseHistoryFramesSlider, phaseTimelineSpeedSlider, phaseAutoAxisLimitSlider, phaseColorPointSizeSlider, phaseColorGammaSlider, phaseColorGlowSlider].forEach((input) => {
+    [windowSlider, timeDirectionSelect, maxFreqSlider, topSpectrumWidthSlider, gainSlider, floorSlider, phaseTauSlider, phasePcaModeCheckbox, phaseDimensionSlider, phaseFrameStartSlider, phaseFrameSizeSlider, phaseHistoryFramesSlider, phaseTimelineSpeedSlider, phaseAutoAxisLimitSlider, phaseColorPointSizeSlider, phaseColorGammaSlider, phaseColorGlowSlider].forEach((input) => {
       input.addEventListener("input", () => {
         if (input === phasePcaModeCheckbox && phasePcaModeCheckbox.checked) {
           phaseTauSlider.value = "0.30";
@@ -2526,10 +2644,10 @@
         if (input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseHistoryFramesSlider) {
           phaseViews.forEach(drawPhaseAxes);
         }
-        if (input === windowSlider || input === phaseTauSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseHistoryFramesSlider) {
+        if (input === windowSlider || input === timeDirectionSelect || input === phaseTauSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseHistoryFramesSlider) {
           drawAxes();
         }
-        if (input === windowSlider || input === maxFreqSlider || input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseHistoryFramesSlider || input === phaseTimelineSpeedSlider || input === phaseAutoAxisLimitSlider || input === phaseColorPointSizeSlider || input === phaseColorGammaSlider || input === phaseColorGlowSlider) {
+        if (input === windowSlider || input === timeDirectionSelect || input === maxFreqSlider || input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseHistoryFramesSlider || input === phaseTimelineSpeedSlider || input === phaseAutoAxisLimitSlider || input === phaseColorPointSizeSlider || input === phaseColorGammaSlider || input === phaseColorGlowSlider) {
           drawSavedPhasePortraits();
         }
       });
@@ -2537,6 +2655,10 @@
 
     mobileModeToggle.addEventListener("input", () => {
       setMobileMode(mobileModeToggle.checked);
+    });
+
+    mobileControlsToggle.addEventListener("click", () => {
+      setMobileControlsOpen(!document.body.classList.contains("mobile-controls-open"));
     });
 
     mobileHistoryHeightSlider.addEventListener("input", () => {
@@ -2548,6 +2670,9 @@
     mobileTabButtons.forEach((button) => {
       button.addEventListener("click", () => {
         activeMobilePanel = button.dataset.mobilePanel;
+        if (isMobileModeActive()) {
+          setMobileControlsOpen(false);
+        }
         applyMobilePanelVisibility();
         resizeCanvas();
         drawSavedPhasePortraits();
