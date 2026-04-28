@@ -454,7 +454,7 @@
     <div class="stack">
       <section class="card">
         <h1 class="title">Live Microphone Spectrogram and Phase Portrait</h1>
-        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone. Use Pause to freeze the recording and keep selecting spectrogram windows for phase plots. On mobile, use Show shared controls in the Spectrogram tab to set the common frame window, tau, and PCA dimension used by all plots. Use one finger on a 3D plot to rotate, two fingers to pinch-zoom and drag/pan, and the right-side scroll strip to move up/down the page.</p>
+        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone. Use Pause to freeze the recording and keep selecting spectrogram windows for phase plots. On mobile, use Show shared controls in the Spectrogram tab to set the common frame window, tau, and PCA dimension used by all plots; the timeline splits that same selected PCA trajectory into crops. Use one finger on a 3D plot to rotate, two fingers to pinch-zoom and drag/pan, and the right-side scroll strip to move up/down the page.</p>
       </section>
 
       <section class="card">
@@ -564,7 +564,7 @@
         <div class="controls phase-controls">
           <div class="ctl">
             <label for="phaseTau">Tau</label>
-            <input id="phaseTau" type="range" min="0.01" max="20" value="0.10" step="0.01" />
+            <input id="phaseTau" type="range" min="0.01" max="80" value="0.30" step="0.01" />
             <span id="phaseTauValue" class="value">0.30 ms</span>
           </div>
 
@@ -592,9 +592,9 @@
           </div>
 
           <div class="ctl">
-            <label for="phaseHistoryFrames">History</label>
-            <input id="phaseHistoryFrames" type="range" min="0" max="12" value="5" step="1" />
-            <span id="phaseHistoryFramesValue" class="value">5 old</span>
+            <label for="phaseHistoryFrames">Crops</label>
+            <input id="phaseHistoryFrames" type="range" min="1" max="12" value="5" step="1" />
+            <span id="phaseHistoryFramesValue" class="value">5 crops</span>
           </div>
 
           <div class="ctl">
@@ -2042,38 +2042,42 @@
       return `${Math.round(value)} Hz`;
     }
 
-    function getPhaseHistoryCoordinates() {
+    function getPhaseTimelineCrops(coordinates) {
+      if (!coordinates || !coordinates.points || coordinates.points.length < 2) return null;
+
       const selectedFrame = syncFrameControls();
-      const oldFrameCount = Number(phaseHistoryFramesSlider.value);
-      const frames = [];
-      let maxAbs = 0.001;
+      const requestedCropCount = Math.max(1, Number(phaseHistoryFramesSlider.value));
+      const pointCount = coordinates.points.length;
+      const cropCount = Math.min(requestedCropCount, pointCount);
+      const crops = [];
+      let maxAbs = coordinates.maxAbs || 0.001;
 
-      for (let offset = oldFrameCount + 1; offset >= 0; offset -= 1) {
-        // If time is right-to-left, the newest/current frame is on the left.
-        // Older frames are farther to the right, so we ADD the offset.
-        // If time is left-to-right, the newest/current frame is on the right.
-        // Older frames are farther to the left, so we SUBTRACT the offset.
-        const direction = isTimeRightToLeft() ? 1 : -1;
-        const start = roundPercent(selectedFrame.start + direction * selectedFrame.size * offset);
-        const end = roundPercent(selectedFrame.end + direction * selectedFrame.size * offset);
-        if (start < 0 || end > 100) continue;
+      for (let cropIndex = 0; cropIndex < cropCount; cropIndex += 1) {
+        const startIndex = Math.floor(cropIndex * pointCount / cropCount);
+        const endIndex = Math.floor((cropIndex + 1) * pointCount / cropCount);
+        const points = coordinates.points.slice(startIndex, Math.max(startIndex + 1, endIndex));
 
-        const coordinates = getPhaseCoordinates({ start, size: selectedFrame.size, end }, isMobileModeActive() ? 900 : 2400);
-        if (!coordinates || coordinates.points.length < 2) continue;
+        if (points.length < 1) continue;
 
-        maxAbs = Math.max(maxAbs, coordinates.maxAbs);
-        frames.push({
-          coordinates,
-          offset,
-          isCurrent: offset === 0
+        points.forEach(([x, y]) => {
+          maxAbs = Math.max(maxAbs, Math.abs(x), Math.abs(y));
+        });
+
+        crops.push({
+          points,
+          cropIndex,
+          startIndex,
+          endIndex: Math.max(startIndex + 1, endIndex),
+          isCurrent: cropIndex === cropCount - 1
         });
       }
 
-      if (!frames.length) return null;
+      if (!crops.length) return null;
 
       return {
-        frames,
-        maxAbs,
+        crops,
+        cropCount: crops.length,
+        maxAbs: Math.max(0.001, maxAbs),
         selectedFrame
       };
     }
@@ -2098,7 +2102,7 @@
 
     function drawPhasePortrait(view, coordinates) {
       if (view.mode === "history") {
-        drawPhaseHistoryPortrait(view);
+        drawPhaseHistoryPortrait(view, coordinates);
         return;
       }
 
@@ -2144,46 +2148,48 @@
       view.ctx.restore();
     }
 
-    function drawPhaseHistoryPortrait(view) {
-      const history = getPhaseHistoryCoordinates();
-      if (!history) return;
+    function drawPhaseHistoryPortrait(view, coordinates) {
+      const timeline = getPhaseTimelineCrops(coordinates);
+      if (!timeline) return;
 
-      const axisMax = phaseAxisMax(history.maxAbs);
-      const oldFrameCount = Number(phaseHistoryFramesSlider.value);
-      const visibleFrameCount = Math.max(1, oldFrameCount + 1);
-      const progress = phaseHistoryMotionProgress(history.selectedFrame);
+      const axisMax = phaseAxisMax(timeline.maxAbs);
+      const cropCount = Math.max(1, timeline.cropCount);
+      const progress = phaseHistoryMotionProgress(timeline.selectedFrame);
       const camera = view.camera || { yaw: -0.75, pitch: 0.55, zoom: 1, panX: 0, panY: 0 };
       const cx = cameraCenterX(view);
       const cy = cameraCenterY(view);
       const zSpacing = Math.max(0.18, Math.min(0.9, axisMax * 0.78));
-      const timelineExtent = zSpacing * Math.max(1, visibleFrameCount - 1);
+      const timelineExtent = zSpacing * Math.max(1, cropCount - 1);
       const scale = Math.min(view.width, view.height) * 0.35 * camera.zoom / Math.max(0.001, axisMax, timelineExtent * 0.62);
       const pointBaseSize = Number(phaseColorPointSizeSlider.value);
       const projectedPoints = [];
 
-      // Bottom 3D PCA timeline: yellow-only scatter points.
+      // Bottom 3D PCA timeline: yellow-only scatter crops from the SAME selected PCA result.
       const yellow = [251, 191, 36];
+      const timeDirectionSign = isTimeRightToLeft() ? -1 : 1;
 
       view.ctx.save();
       view.ctx.rect(0, 0, view.width, view.height);
       view.ctx.clip();
 
-      history.frames.forEach((frame) => {
-        const timelineIndex = oldFrameCount - frame.offset + progress;
-        const timeDirectionSign = isTimeRightToLeft() ? -1 : 1;
-        const z = timeDirectionSign * (timelineIndex - oldFrameCount / 2) * zSpacing;
-        const normalizedAge = clamp((frame.offset + progress) / Math.max(1, visibleFrameCount), 0, 1);
+      timeline.crops.forEach((crop) => {
+        // Crop index is time order inside the selected spectrogram frame.
+        // Animation shifts the crop stack smoothly along the time axis.
+        const timelineIndex = crop.cropIndex + progress;
+        const centeredIndex = timelineIndex - (cropCount - 1) / 2;
+        const z = timeDirectionSign * centeredIndex * zSpacing;
+        const normalizedTime = cropCount > 1 ? crop.cropIndex / (cropCount - 1) : 1;
 
-        const alpha = frame.isCurrent
+        const alpha = crop.isCurrent
           ? 0.98
-          : clamp(0.70 - normalizedAge * 0.48, 0.16, 0.70);
+          : clamp(0.42 + normalizedTime * 0.34, 0.34, 0.82);
 
-        const sizeScale = frame.isCurrent
-          ? 1.2
-          : clamp(1 - normalizedAge * 0.30, 0.6, 0.95);
+        const sizeScale = crop.isCurrent
+          ? 1.15
+          : clamp(0.74 + normalizedTime * 0.18, 0.70, 0.96);
 
-        for (let index = 0; index < frame.coordinates.points.length; index += 1) {
-          const point = frame.coordinates.points[index];
+        for (let index = 0; index < crop.points.length; index += 1) {
+          const point = crop.points[index];
           const projected = project3DPoint(point[0], point[1], z, scale, cx, cy, camera);
 
           projectedPoints.push({
@@ -2657,7 +2663,7 @@
       phaseTauValue.textContent = tauLabel;
       phaseFrameStartValue.textContent = `${formatPercent(selectedFrame.start)}%`;
       phaseFrameSizeValue.textContent = formatPhaseDuration(Number(windowSlider.value) * selectedFrame.size * 10);
-      phaseHistoryFramesValue.textContent = `${phaseHistoryFramesSlider.value} old`;
+      phaseHistoryFramesValue.textContent = `${phaseHistoryFramesSlider.value} crops`;
       phaseTimelineSpeedValue.textContent = `${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x`;
       updateMobileHistoryHeight();
       phaseColorPointSizeValue.textContent = `${Number(phaseColorPointSizeSlider.value).toFixed(1)} px`;
@@ -2685,7 +2691,7 @@
         } else if (view.mode === "timeZ") {
           view.title.textContent = `PC1/PC2 + time Z: ${phaseModeLabel}, ${timeDirectionLabel}, frame ${frameLabel} · 1 finger rotate, 2 fingers zoom/pan`;
         } else if (view.mode === "history") {
-          view.title.textContent = `3D PCA frame timeline: yellow scatter, ${timeDirectionLabel}, speed ${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x, current + ${phaseHistoryFramesSlider.value} old frames · 1 finger rotate, 2 fingers zoom/pan`;
+          view.title.textContent = `3D PCA frame timeline: ${phaseHistoryFramesSlider.value} crops from same selected PCA, yellow scatter, ${timeDirectionLabel}, speed ${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x · 1 finger rotate, 2 fingers zoom/pan`;
         } else if (view.mode === "spectrum") {
           view.title.textContent = `Power spectrum: 3 frame thirds, frame ${frameLabel}`;
         } else {
@@ -2850,15 +2856,14 @@
     autoMobileModeFromViewport();
     resizeCanvas();
   </script>
-
   <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js").catch((error) => {
-        console.log("Service worker registration failed:", error);
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch((error) => {
+          console.log("Service worker registration failed:", error);
+        });
       });
-    });
-  }
-</script>
+    }
+  </script>
 </body>
 </html>
