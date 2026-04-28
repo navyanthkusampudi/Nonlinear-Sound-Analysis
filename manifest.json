@@ -1,0 +1,25 @@
+{
+  "name": "Nonlinear Sound Analysis",
+  "short_name": "Sound Analysis",
+  "description": "Interactive nonlinear sound analysis tools with spectrograms, PCA phase portraits, and timelines.",
+  "start_url": "./phaseportrait-mobile.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
