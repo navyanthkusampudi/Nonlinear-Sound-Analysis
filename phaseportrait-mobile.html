@@ -300,7 +300,7 @@
 
     body.mobile-mode .resizable-phase-wrap {
       resize: none;
-      height: var(--mobile-history-height, 760px);
+      height: var(--mobile-history-height, 900px);
       min-height: 560px;
       max-height: 88dvh;
     }
@@ -360,6 +360,10 @@
 
     body.mobile-mode.mobile-controls-open .desktop-mobile-filtered-control.mobile-control-visible {
       display: flex;
+    }
+
+    body.mobile-mode.mobile-controls-open button.desktop-mobile-filtered-control.mobile-control-visible {
+      display: block;
     }
 
     body.mobile-mode .phase-controls {
@@ -444,7 +448,7 @@
     <div class="stack">
       <section class="card">
         <h1 class="title">Live Microphone Spectrogram and Phase Portrait</h1>
-        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone. Use Pause to freeze the recording and keep selecting spectrogram windows for phase plots. On mobile, use the right-side scroll strip to move up and down without rotating or dragging the plots.</p>
+        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone. Use Pause to freeze the recording and keep selecting spectrogram windows for phase plots. On mobile, use Show shared controls in the Spectrogram tab to set the common frame window, tau, and PCA dimension used by all plots. Use one finger on a 3D plot to rotate, two fingers to pinch-zoom and drag/pan, and the right-side scroll strip to move up/down the page.</p>
       </section>
 
       <section class="card">
@@ -463,15 +467,15 @@
           <div class="ctl">
             <label for="timeDirection">Time</label>
             <select id="timeDirection">
-              <option value="rtl" selected>Right to left</option>
-              <option value="ltr">Left to right</option>
+              <option value="rtl" selected>Right to left, newest on left</option>
+              <option value="ltr">Left to right, newest on right</option>
             </select>
           </div>
 
           <div class="ctl">
             <label for="maxFreq">Max Hz</label>
-            <input id="maxFreq" type="range" min="1000" max="22000" value="12000" step="500" />
-            <span id="maxFreqValue" class="value">12000</span>
+            <input id="maxFreq" type="range" min="1000" max="22000" value="6000" step="500" />
+            <span id="maxFreqValue" class="value">6000</span>
           </div>
 
           <div class="ctl">
@@ -514,16 +518,16 @@
             <input id="mobileModeToggle" type="checkbox" />
           </div>
 
-          <button id="mobileControlsToggle" class="mobile-controls-toggle" type="button" aria-expanded="false">Show controls</button>
+          <button id="mobileControlsToggle" class="mobile-controls-toggle" type="button" aria-expanded="false">Show shared controls</button>
 
           <div class="ctl">
             <label for="mobileHistoryHeight">Timeline height</label>
-            <input id="mobileHistoryHeight" type="range" min="320" max="920" value="760" step="10" />
-            <span id="mobileHistoryHeightValue" class="value">760 px</span>
+            <input id="mobileHistoryHeight" type="range" min="320" max="960" value="900" step="10" />
+            <span id="mobileHistoryHeightValue" class="value">900 px</span>
           </div>
 
           <div class="mobile-tabs" aria-label="Mobile plot selector">
-            <button class="mobile-tab is-active" type="button" data-mobile-panel="spectrogram">Spectrogram</button>
+            <button class="mobile-tab is-active" type="button" data-mobile-panel="spectrogram">Spectrogram + selection</button>
             <button class="mobile-tab" type="button" data-mobile-panel="spectrum">Spectrum</button>
             <button class="mobile-tab" type="button" data-mobile-panel="pca">3D PCA</button>
             <button class="mobile-tab" type="button" data-mobile-panel="timez">Time-Z</button>
@@ -571,14 +575,14 @@
 
           <div class="ctl">
             <label for="phaseFrameStart">Frame start</label>
-            <input id="phaseFrameStart" type="range" min="0" max="99" value="99" step="0.01" />
+            <input id="phaseFrameStart" type="range" min="0" max="99" value="0" step="0.01" />
             <span id="phaseFrameStartValue" class="value">99%</span>
           </div>
 
           <div class="ctl">
             <label for="phaseFrameSize">Frame size</label>
-            <input id="phaseFrameSize" type="range" min="0.1" max="100" value="1" step="0.01" />
-            <span id="phaseFrameSizeValue" class="value">100 ms</span>
+            <input id="phaseFrameSize" type="range" min="0.1" max="100" value="0.5" step="0.01" />
+            <span id="phaseFrameSizeValue" class="value">50 ms</span>
           </div>
 
           <div class="ctl">
@@ -603,8 +607,8 @@
 
           <div class="ctl">
             <label for="phaseAutoAxisLimit">Min axis</label>
-            <input id="phaseAutoAxisLimit" type="range" min="0.01" max="5" value="0.25" step="0.01" />
-            <span id="phaseAutoAxisLimitValue" class="value">0.25</span>
+            <input id="phaseAutoAxisLimit" type="range" min="0.01" max="5" value="0.15" step="0.01" />
+            <span id="phaseAutoAxisLimitValue" class="value">0.15</span>
           </div>
 
           <div class="ctl">
@@ -615,8 +619,8 @@
 
           <div class="ctl">
             <label for="phaseColorGamma">Gamma</label>
-            <input id="phaseColorGamma" type="range" min="0.4" max="3" value="0.5" step="0.05" />
-            <span id="phaseColorGammaValue" class="value">0.50</span>
+            <input id="phaseColorGamma" type="range" min="0.4" max="3" value="1.0" step="0.05" />
+            <span id="phaseColorGammaValue" class="value">1.00</span>
           </div>
 
           <div class="ctl">
@@ -629,6 +633,8 @@
             <label>Phase points</label>
             <span id="phasePointCountValue" class="value">0</span>
           </div>
+
+          <button id="reset3dViewBtn" type="button">Reset 3D view</button>
         </div>
 
         <div id="phaseGrid" class="phase-grid">
@@ -708,6 +714,7 @@
     const phaseAutoAxisLimitValue = document.getElementById("phaseAutoAxisLimitValue");
     const phasePointCountValue = document.getElementById("phasePointCountValue");
     const phaseDimensionValue = document.getElementById("phaseDimensionValue");
+    const reset3dViewBtn = document.getElementById("reset3dViewBtn");
     const meterFill = document.getElementById("meterFill");
     const statusText = document.getElementById("status");
     const topAnalysisGrid = document.getElementById("topAnalysisGrid");
@@ -767,7 +774,9 @@
       view.width = 0;
       view.height = 0;
       if (view.mode === "timeGlow" || view.mode === "timeZ" || view.mode === "history") {
-        view.camera = view.mode === "history" ? { yaw: -0.75, pitch: 0.55, zoom: 1 } : { yaw: 0, pitch: 0, zoom: 1 };
+        view.camera = view.mode === "history"
+          ? { yaw: -0.75, pitch: 0.55, zoom: 1, panX: 0, panY: 0 }
+          : { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
       }
     });
 
@@ -811,7 +820,7 @@
     }
 
     function updateMobileHistoryHeight() {
-      const height = clamp(Number(mobileHistoryHeightSlider.value), 320, 920);
+      const height = clamp(Number(mobileHistoryHeightSlider.value), 320, 960);
       mobileHistoryHeightSlider.value = String(height);
       mobileHistoryHeightValue.textContent = `${height} px`;
       document.documentElement.style.setProperty("--mobile-history-height", `${height}px`);
@@ -841,7 +850,7 @@
       mobileModeToggle.checked = enabled;
       if (enabled) {
         document.body.classList.remove("mobile-controls-open");
-        mobileControlsToggle.textContent = "Show controls";
+        mobileControlsToggle.textContent = "Show shared controls";
         mobileControlsToggle.setAttribute("aria-expanded", "false");
       }
       updateMobileHistoryHeight();
@@ -872,19 +881,20 @@
         { element: floorSlider.closest(".ctl"), panels: ["spectrogram", "all"] },
         { element: meterFill.closest(".ctl"), panels: ["spectrogram", "all"] },
 
-        { element: phaseTauSlider.closest(".ctl"), panels: ["pca", "timez", "timeline", "all"] },
-        { element: phasePcaModeCheckbox.closest(".ctl"), panels: ["pca", "timez", "timeline", "all"] },
-        { element: phaseDimensionControl, panels: ["pca", "timez", "timeline", "all"] },
-        { element: phaseFrameStartSlider.closest(".ctl"), panels: ["spectrum", "pca", "timez", "timeline", "all"] },
-        { element: phaseFrameSizeSlider.closest(".ctl"), panels: ["spectrum", "pca", "timez", "timeline", "all"] },
+        { element: phaseTauSlider.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
+        { element: phasePcaModeCheckbox.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
+        { element: phaseDimensionControl, panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
+        { element: phaseFrameStartSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "timeline", "all"] },
+        { element: phaseFrameSizeSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "timeline", "all"] },
         { element: phaseHistoryFramesSlider.closest(".ctl"), panels: ["timeline", "all"] },
         { element: phaseTimelineSpeedSlider.closest(".ctl"), panels: ["timeline", "all"] },
         { element: phaseAxisModeSelect.closest(".ctl"), panels: ["pca", "timez", "timeline", "all"] },
-        { element: phaseAutoAxisLimitSlider.closest(".ctl"), panels: ["pca", "timez", "timeline", "all"] },
+        { element: phaseAutoAxisLimitSlider.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
         { element: phaseColorPointSizeSlider.closest(".ctl"), panels: ["pca", "timez", "timeline", "all"] },
         { element: phaseColorGammaSlider.closest(".ctl"), panels: ["pca", "timez", "all"] },
         { element: phaseColorGlowSlider.closest(".ctl"), panels: ["pca", "timez", "all"] },
-        { element: phasePointCountValue.closest(".ctl"), panels: ["pca", "timez", "timeline", "all"] },
+        { element: phasePointCountValue.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
+        { element: reset3dViewBtn, panels: ["pca", "timez", "timeline", "all"] },
         { element: mobileHistoryHeightSlider.closest(".ctl"), panels: ["timeline", "all"] }
       ];
 
@@ -897,7 +907,7 @@
 
     function setMobileControlsOpen(open) {
       document.body.classList.toggle("mobile-controls-open", open);
-      mobileControlsToggle.textContent = open ? "Hide controls" : "Show controls";
+      mobileControlsToggle.textContent = open ? "Hide shared controls" : "Show shared controls";
       mobileControlsToggle.setAttribute("aria-expanded", open ? "true" : "false");
       applyMobileControlVisibility();
       resizeCanvas();
@@ -1156,10 +1166,18 @@
       };
     }
 
+    function cameraCenterX(view) {
+      return view.width / 2 + ((view.camera && view.camera.panX) || 0);
+    }
+
+    function cameraCenterY(view) {
+      return view.height / 2 + ((view.camera && view.camera.panY) || 0);
+    }
+
     function drawPca3dAxes(view) {
-      const cx = view.width / 2;
-      const cy = view.height / 2;
-      const camera = view.camera || { yaw: 0, pitch: 0, zoom: 1 };
+      const camera = view.camera || { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
+      const cx = cameraCenterX(view);
+      const cy = cameraCenterY(view);
       const axisScale = Math.min(view.width, view.height) * 0.28 * camera.zoom;
       const zLabel = view.mode === "timeZ" || view.mode === "history" ? "time" : "PC3";
       const axes = [
@@ -1630,6 +1648,56 @@
       drawSavedPhasePortraits();
     }
 
+    const active3dPointers = new Map();
+
+    function pointersForView(view) {
+      return Array.from(active3dPointers.values()).filter((pointer) => pointer.view === view);
+    }
+
+    function pointerCenter(pointers) {
+      return {
+        x: pointers.reduce((sum, pointer) => sum + pointer.x, 0) / Math.max(1, pointers.length),
+        y: pointers.reduce((sum, pointer) => sum + pointer.y, 0) / Math.max(1, pointers.length)
+      };
+    }
+
+    function pointerDistance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function start3dGesture(view) {
+      const pointers = pointersForView(view);
+      if (!pointers.length) {
+        phase3dDrag = null;
+        return;
+      }
+
+      if (pointers.length === 1) {
+        const pointer = pointers[0];
+        phase3dDrag = {
+          type: "rotate",
+          view,
+          x: pointer.x,
+          y: pointer.y,
+          yaw: view.camera.yaw,
+          pitch: view.camera.pitch
+        };
+      } else {
+        const center = pointerCenter(pointers);
+        const distance = pointerDistance(pointers[0], pointers[1]);
+        phase3dDrag = {
+          type: "pinch-pan",
+          view,
+          centerX: center.x,
+          centerY: center.y,
+          distance: Math.max(1, distance),
+          zoom: view.camera.zoom,
+          panX: view.camera.panX || 0,
+          panY: view.camera.panY || 0
+        };
+      }
+    }
+
     function beginPca3dDrag(event) {
       if (!phasePcaModeCheckbox.checked) return;
 
@@ -1637,37 +1705,81 @@
       if (!view || !view.camera) return;
 
       event.preventDefault();
-      phase3dDrag = {
+      active3dPointers.set(event.pointerId, {
         view,
         x: event.clientX,
-        y: event.clientY,
-        yaw: view.camera.yaw,
-        pitch: view.camera.pitch
-      };
+        y: event.clientY
+      });
+
       event.currentTarget.setPointerCapture(event.pointerId);
       event.currentTarget.style.cursor = "grabbing";
+      start3dGesture(view);
     }
 
     function updatePca3dDrag(event) {
-      if (!phase3dDrag) return;
+      const pointer = active3dPointers.get(event.pointerId);
+      if (!pointer) return;
 
       event.preventDefault();
-      const dx = event.clientX - phase3dDrag.x;
-      const dy = event.clientY - phase3dDrag.y;
-      phase3dDrag.view.camera.yaw = phase3dDrag.yaw + dx * 0.01;
-      phase3dDrag.view.camera.pitch = clamp(phase3dDrag.pitch + dy * 0.01, -1.45, 1.45);
-      redraw3dView(phase3dDrag.view);
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+
+      const view = pointer.view;
+      if (!view || !view.camera || !phase3dDrag || phase3dDrag.view !== view) return;
+
+      const pointers = pointersForView(view);
+
+      if (pointers.length >= 2) {
+        if (phase3dDrag.type !== "pinch-pan") {
+          start3dGesture(view);
+        }
+
+        const center = pointerCenter(pointers);
+        const distance = pointerDistance(pointers[0], pointers[1]);
+        const factor = distance / Math.max(1, phase3dDrag.distance);
+
+        view.camera.zoom = clamp(phase3dDrag.zoom * factor, 0.35, 7);
+        view.camera.panX = phase3dDrag.panX + (center.x - phase3dDrag.centerX);
+        view.camera.panY = phase3dDrag.panY + (center.y - phase3dDrag.centerY);
+        redraw3dView(view);
+        return;
+      }
+
+      if (pointers.length === 1) {
+        if (phase3dDrag.type !== "rotate") {
+          start3dGesture(view);
+        }
+
+        const dx = event.clientX - phase3dDrag.x;
+        const dy = event.clientY - phase3dDrag.y;
+        view.camera.yaw = phase3dDrag.yaw + dx * 0.01;
+        view.camera.pitch = clamp(phase3dDrag.pitch + dy * 0.01, -1.45, 1.45);
+        redraw3dView(view);
+      }
     }
 
     function endPca3dDrag(event) {
-      if (!phase3dDrag) return;
+      const pointer = active3dPointers.get(event.pointerId);
+      const view = pointer ? pointer.view : phaseViewForAxes(event.currentTarget);
 
-      event.preventDefault();
-      phase3dDrag = null;
+      active3dPointers.delete(event.pointerId);
+
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
-      event.currentTarget.style.cursor = "grab";
+
+      if (view) {
+        const remaining = pointersForView(view);
+        if (remaining.length) {
+          start3dGesture(view);
+        } else {
+          phase3dDrag = null;
+          event.currentTarget.style.cursor = "grab";
+        }
+      } else {
+        phase3dDrag = null;
+        event.currentTarget.style.cursor = "grab";
+      }
     }
 
     function zoomPca3d(event) {
@@ -1678,8 +1790,30 @@
 
       event.preventDefault();
       const factor = event.deltaY < 0 ? 1.12 : 0.89;
-      view.camera.zoom = clamp(view.camera.zoom * factor, 0.35, 6);
+      view.camera.zoom = clamp(view.camera.zoom * factor, 0.35, 7);
       redraw3dView(view);
+    }
+
+    function reset3dCamera(view) {
+      if (!view || !view.camera) return;
+
+      if (view.mode === "history") {
+        view.camera.yaw = -0.75;
+        view.camera.pitch = 0.55;
+      } else {
+        view.camera.yaw = 0;
+        view.camera.pitch = 0;
+      }
+
+      view.camera.zoom = 1;
+      view.camera.panX = 0;
+      view.camera.panY = 0;
+    }
+
+    function resetAll3dCameras() {
+      phaseViews.filter((view) => view.camera).forEach(reset3dCamera);
+      phaseViews.forEach(drawPhaseAxes);
+      drawSavedPhasePortraits();
     }
 
     function getPhaseFrame(maxDelaySamples, selectedFrame = syncFrameControls()) {
@@ -1909,8 +2043,13 @@
       let maxAbs = 0.001;
 
       for (let offset = oldFrameCount + 1; offset >= 0; offset -= 1) {
-        const start = roundPercent(selectedFrame.start - selectedFrame.size * offset);
-        const end = roundPercent(selectedFrame.end - selectedFrame.size * offset);
+        // If time is right-to-left, the newest/current frame is on the left.
+        // Older frames are farther to the right, so we ADD the offset.
+        // If time is left-to-right, the newest/current frame is on the right.
+        // Older frames are farther to the left, so we SUBTRACT the offset.
+        const direction = isTimeRightToLeft() ? 1 : -1;
+        const start = roundPercent(selectedFrame.start + direction * selectedFrame.size * offset);
+        const end = roundPercent(selectedFrame.end + direction * selectedFrame.size * offset);
         if (start < 0 || end > 100) continue;
 
         const coordinates = getPhaseCoordinates({ start, size: selectedFrame.size, end }, isMobileModeActive() ? 900 : 2400);
@@ -2007,9 +2146,9 @@
       const oldFrameCount = Number(phaseHistoryFramesSlider.value);
       const visibleFrameCount = Math.max(1, oldFrameCount + 1);
       const progress = phaseHistoryMotionProgress(history.selectedFrame);
-      const camera = view.camera || { yaw: -0.75, pitch: 0.55, zoom: 1 };
-      const cx = view.width / 2;
-      const cy = view.height / 2;
+      const camera = view.camera || { yaw: -0.75, pitch: 0.55, zoom: 1, panX: 0, panY: 0 };
+      const cx = cameraCenterX(view);
+      const cy = cameraCenterY(view);
       const zSpacing = Math.max(0.18, Math.min(0.9, axisMax * 0.78));
       const timelineExtent = zSpacing * Math.max(1, visibleFrameCount - 1);
       const scale = Math.min(view.width, view.height) * 0.35 * camera.zoom / Math.max(0.001, axisMax, timelineExtent * 0.62);
@@ -2072,10 +2211,10 @@
             return [x, y, (timeRatio - 0.5) * 2 * timeAxisMax];
           })
         : coordinates.points3D || coordinates.points.map(([x, y]) => [x, y, 0]);
-      const cx = view.width / 2;
-      const cy = view.height / 2;
       const axisMax = view.mode === "timeZ" ? timeAxisMax : phaseAxisMax(coordinates.maxAbs3D || coordinates.maxAbs);
-      const camera = view.camera || { yaw: 0, pitch: 0, zoom: 1 };
+      const camera = view.camera || { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
+      const cx = cameraCenterX(view);
+      const cy = cameraCenterY(view);
       const scale = Math.min(view.width, view.height) * 0.36 * camera.zoom / Math.max(0.001, axisMax);
       const baseSize = Number(phaseColorPointSizeSlider.value);
       const gamma = Number(phaseColorGammaSlider.value);
@@ -2536,11 +2675,11 @@
 
       phaseViews.forEach((view) => {
         if (view.mode === "timeGlow") {
-          view.title.textContent = `3D color PCA: ${phaseModeLabel}, frame ${frameLabel}`;
+          view.title.textContent = `3D color PCA: ${phaseModeLabel}, frame ${frameLabel} · 1 finger rotate, 2 fingers zoom/pan`;
         } else if (view.mode === "timeZ") {
-          view.title.textContent = `PC1/PC2 + time Z: ${phaseModeLabel}, ${timeDirectionLabel}, frame ${frameLabel}`;
+          view.title.textContent = `PC1/PC2 + time Z: ${phaseModeLabel}, ${timeDirectionLabel}, frame ${frameLabel} · 1 finger rotate, 2 fingers zoom/pan`;
         } else if (view.mode === "history") {
-          view.title.textContent = `3D PCA frame timeline: yellow scatter, ${timeDirectionLabel}, speed ${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x, current + ${phaseHistoryFramesSlider.value} old frames`;
+          view.title.textContent = `3D PCA frame timeline: yellow scatter, ${timeDirectionLabel}, speed ${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x, current + ${phaseHistoryFramesSlider.value} old frames · 1 finger rotate, 2 fingers zoom/pan`;
         } else if (view.mode === "spectrum") {
           view.title.textContent = `Power spectrum: 3 frame thirds, frame ${frameLabel}`;
         } else {
@@ -2616,11 +2755,18 @@
       drawSavedPhasePortraits();
     });
 
+    reset3dViewBtn.addEventListener("click", resetAll3dCameras);
+
     [windowSlider, timeDirectionSelect, maxFreqSlider, topSpectrumWidthSlider, gainSlider, floorSlider, phaseTauSlider, phasePcaModeCheckbox, phaseDimensionSlider, phaseFrameStartSlider, phaseFrameSizeSlider, phaseHistoryFramesSlider, phaseTimelineSpeedSlider, phaseAutoAxisLimitSlider, phaseColorPointSizeSlider, phaseColorGammaSlider, phaseColorGlowSlider].forEach((input) => {
       input.addEventListener("input", () => {
         if (input === phasePcaModeCheckbox && phasePcaModeCheckbox.checked) {
           phaseTauSlider.value = "0.30";
           phaseDimensionSlider.value = "3";
+        }
+
+        if (input === timeDirectionSelect) {
+          phaseFrameStartSlider.value = isTimeRightToLeft() ? "0" : String(Math.max(0, 100 - Number(phaseFrameSizeSlider.value)));
+          phaseHistoryMotionStartTime = performance.now();
         }
 
         updateLabels();
