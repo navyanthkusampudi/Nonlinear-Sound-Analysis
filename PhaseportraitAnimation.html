@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Live Microphone Spectrogram and Phase Portrait</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d12;
+      --panel: #11141a;
+      --panel-2: #0f1319;
+      --border: #232832;
+      --text: #e6e9ef;
+      --muted: #9aa4b2;
+      --accent: #51c4d3;
+      --warn: #f4b860;
+      --hot: #f46d43;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    .wrap {
+      width: calc(100vw - 16px);
+      min-height: calc(100vh - 16px);
+      margin: 8px auto;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .note {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .ctl {
+      min-height: 42px;
+      background: var(--panel-2);
+      border: 1px solid #1e2430;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ctl label {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 135px;
+      accent-color: var(--accent);
+    }
+
+    select {
+      min-height: 28px;
+      background: #151b25;
+      border: 1px solid #2b3342;
+      border-radius: 6px;
+      color: var(--text);
+      padding: 2px 8px;
+    }
+
+    .value {
+      min-width: 58px;
+      text-align: right;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+    }
+
+    button {
+      min-height: 42px;
+      cursor: pointer;
+      background: #1a2230;
+      border: 1px solid #2b3342;
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 12px;
+      font: inherit;
+    }
+
+    button:hover:not(:disabled) {
+      background: #202837;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .meter {
+      min-width: 130px;
+      height: 10px;
+      background: #05070a;
+      border: 1px solid #252b36;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--warn), var(--hot));
+      transition: width 80ms linear;
+    }
+
+    .stage {
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      background: #05070a;
+    }
+
+    .spectrogram-wrap {
+      height: min(42vh, 430px);
+      min-height: 300px;
+    }
+
+    .top-analysis-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .top-spectrum-wrap {
+      height: min(42vh, 430px);
+      min-height: 300px;
+    }
+
+    .phase-wrap {
+      height: min(42vh, 430px);
+      min-height: 330px;
+    }
+
+    .phase-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .phase-2d-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .phase-controls {
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #1e2430;
+    }
+
+    .is-hidden {
+      display: none;
+    }
+
+    .phase-panel {
+      min-width: 0;
+      background: #05070a;
+      border: 1px solid #1e2430;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      height: 32px;
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      background: #0f1319;
+      border-bottom: 1px solid #1e2430;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #axes {
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    #phaseTimeGlowAxes,
+    #phaseTimeZAxes,
+    #phaseHistoryAxes {
+      touch-action: none;
+      cursor: grab;
+    }
+
+    #phaseSpectrumAxes {
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        width: min(100vw - 20px, 1180px);
+        margin: 10px auto;
+      }
+
+      .ctl {
+        flex: 1 1 210px;
+      }
+
+      button {
+        flex: 1 1 100px;
+      }
+
+      input[type="range"] {
+        width: 120px;
+      }
+
+      .spectrogram-wrap {
+        min-height: 260px;
+      }
+
+      .top-analysis-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .top-spectrum-wrap {
+        min-height: 260px;
+      }
+
+      .phase-wrap {
+        min-height: 280px;
+      }
+
+      .phase-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .phase-2d-grid {
+        grid-template-columns: 1fr;
+      }
+
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="stack">
+      <section class="card">
+        <h1 class="title">Live Microphone Spectrogram and Phase Portrait</h1>
+        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone. Use Pause to freeze the recording and keep selecting spectrogram windows for phase plots.</p>
+      </section>
+
+      <section class="card">
+        <div class="controls">
+          <button id="startBtn" type="button">Start Mic</button>
+          <button id="pauseBtn" type="button" disabled>Pause</button>
+          <button id="stopBtn" type="button" disabled>Stop</button>
+          <button id="clearBtn" type="button">Clear</button>
+
+          <div class="ctl">
+            <label for="windowSeconds">Window</label>
+            <input id="windowSeconds" type="range" min="2" max="30" value="10" step="1" />
+            <span id="windowValue" class="value">10 s</span>
+          </div>
+
+          <div class="ctl">
+            <label for="maxFreq">Max Hz</label>
+            <input id="maxFreq" type="range" min="1000" max="22000" value="12000" step="500" />
+            <span id="maxFreqValue" class="value">12000</span>
+          </div>
+
+          <div class="ctl">
+            <label for="topSpectrumWidth">Spectrum width</label>
+            <input id="topSpectrumWidth" type="range" min="20" max="50" value="33" step="1" />
+            <span id="topSpectrumWidthValue" class="value">33%</span>
+          </div>
+
+          <div class="ctl">
+            <label for="fftSize">FFT</label>
+            <select id="fftSize">
+              <option value="1024">1024</option>
+              <option value="2048" selected>2048</option>
+              <option value="4096">4096</option>
+              <option value="8192">8192</option>
+            </select>
+          </div>
+
+          <div class="ctl">
+            <label for="gain">Gain</label>
+            <input id="gain" type="range" min="0.6" max="3.5" value="1.6" step="0.1" />
+            <span id="gainValue" class="value">1.6x</span>
+          </div>
+
+          <div class="ctl">
+            <label for="floorDb">Floor</label>
+            <input id="floorDb" type="range" min="-120" max="-40" value="-95" step="1" />
+            <span id="floorValue" class="value">-95 dB</span>
+          </div>
+
+          <div class="ctl">
+            <label>Level</label>
+            <div class="meter" aria-hidden="true"><div id="meterFill" class="meter-fill"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card stage">
+        <div id="topAnalysisGrid" class="top-analysis-grid">
+          <div class="canvas-wrap spectrogram-wrap">
+            <canvas id="spectrogram" aria-label="Live scrolling microphone spectrogram"></canvas>
+            <canvas id="axes" aria-hidden="true"></canvas>
+          </div>
+
+          <div class="phase-panel">
+            <div id="phaseSpectrumTitle" class="panel-title">Power spectrum by frame thirds</div>
+            <div class="canvas-wrap top-spectrum-wrap">
+              <canvas id="phaseSpectrum" aria-label="Power spectrum for three time segments in the selected phase window"></canvas>
+              <canvas id="phaseSpectrumAxes" aria-hidden="true"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="controls phase-controls">
+          <div class="ctl">
+            <label for="phaseTau">Tau</label>
+            <input id="phaseTau" type="range" min="0.01" max="80" value="0.30" step="0.01" />
+            <span id="phaseTauValue" class="value">0.30 ms</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phasePcaMode">PCA</label>
+            <input id="phasePcaMode" type="checkbox" checked />
+          </div>
+
+          <div id="phaseDimensionControl" class="ctl is-hidden">
+            <label for="phaseDimension">D</label>
+            <input id="phaseDimension" type="range" min="3" max="12" value="3" step="1" />
+            <span id="phaseDimensionValue" class="value">3</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseFrameStart">Frame start</label>
+            <input id="phaseFrameStart" type="range" min="0" max="99" value="99" step="0.01" />
+            <span id="phaseFrameStartValue" class="value">99%</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseFrameSize">Frame size</label>
+            <input id="phaseFrameSize" type="range" min="0.1" max="100" value="1" step="0.01" />
+            <span id="phaseFrameSizeValue" class="value">100 ms</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseHistoryFrames">History</label>
+            <input id="phaseHistoryFrames" type="range" min="0" max="12" value="5" step="1" />
+            <span id="phaseHistoryFramesValue" class="value">5 old</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseAxisMode">Axis</label>
+            <select id="phaseAxisMode">
+              <option value="auto" selected>Auto</option>
+              <option value="fixed">Fixed</option>
+            </select>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseAutoAxisLimit">Min axis</label>
+            <input id="phaseAutoAxisLimit" type="range" min="0.01" max="5" value="0.25" step="0.01" />
+            <span id="phaseAutoAxisLimitValue" class="value">0.25</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseColorPointSize">Color size</label>
+            <input id="phaseColorPointSize" type="range" min="0.5" max="5" value="1.5" step="0.1" />
+            <span id="phaseColorPointSizeValue" class="value">1.5 px</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseColorGamma">Gamma</label>
+            <input id="phaseColorGamma" type="range" min="0.4" max="3" value="0.5" step="0.05" />
+            <span id="phaseColorGammaValue" class="value">0.50</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseColorGlow">Glow</label>
+            <input id="phaseColorGlow" type="range" min="0" max="1" value="1" step="0.05" />
+            <span id="phaseColorGlowValue" class="value">1.00</span>
+          </div>
+
+          <div class="ctl">
+            <label>Phase points</label>
+            <span id="phasePointCountValue" class="value">0</span>
+          </div>
+
+        </div>
+
+        <div id="phaseGrid" class="phase-grid">
+          <div class="phase-panel">
+            <div id="phaseTimeGlowTitle" class="panel-title">3D color PCA phase space</div>
+            <div class="canvas-wrap phase-wrap">
+              <canvas id="phaseTimeGlow" aria-label="3D time-colored PCA phase portrait scatter plot"></canvas>
+              <canvas id="phaseTimeGlowAxes" aria-hidden="true"></canvas>
+            </div>
+          </div>
+
+          <div class="phase-panel">
+            <div id="phaseTimeZTitle" class="panel-title">PC1/PC2 time-Z phase space</div>
+            <div class="canvas-wrap phase-wrap">
+              <canvas id="phaseTimeZ" aria-label="3D phase portrait with PC1 and PC2 on XY and time on Z"></canvas>
+              <canvas id="phaseTimeZAxes" aria-hidden="true"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase-2d-grid">
+          <div class="phase-panel">
+            <div id="phaseHistoryTitle" class="panel-title">3D PCA frame timeline</div>
+            <div class="canvas-wrap phase-wrap">
+              <canvas id="phaseHistory" aria-label="Historical PCA scatter frames separated on a time axis"></canvas>
+              <canvas id="phaseHistoryAxes" aria-hidden="true"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("spectrogram");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const axesCanvas = document.getElementById("axes");
+    const axesCtx = axesCanvas.getContext("2d");
+
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const windowSlider = document.getElementById("windowSeconds");
+    const maxFreqSlider = document.getElementById("maxFreq");
+    const topSpectrumWidthSlider = document.getElementById("topSpectrumWidth");
+    const fftSizeSelect = document.getElementById("fftSize");
+    const gainSlider = document.getElementById("gain");
+    const floorSlider = document.getElementById("floorDb");
+    const phaseTauSlider = document.getElementById("phaseTau");
+    const phaseFrameStartSlider = document.getElementById("phaseFrameStart");
+    const phaseFrameSizeSlider = document.getElementById("phaseFrameSize");
+    const phaseHistoryFramesSlider = document.getElementById("phaseHistoryFrames");
+    const phaseColorPointSizeSlider = document.getElementById("phaseColorPointSize");
+    const phaseColorGammaSlider = document.getElementById("phaseColorGamma");
+    const phaseColorGlowSlider = document.getElementById("phaseColorGlow");
+    const phaseAxisModeSelect = document.getElementById("phaseAxisMode");
+    const phaseAutoAxisLimitSlider = document.getElementById("phaseAutoAxisLimit");
+    const phasePcaModeCheckbox = document.getElementById("phasePcaMode");
+    const phaseDimensionControl = document.getElementById("phaseDimensionControl");
+    const phaseDimensionSlider = document.getElementById("phaseDimension");
+    const windowValue = document.getElementById("windowValue");
+    const maxFreqValue = document.getElementById("maxFreqValue");
+    const topSpectrumWidthValue = document.getElementById("topSpectrumWidthValue");
+    const gainValue = document.getElementById("gainValue");
+    const floorValue = document.getElementById("floorValue");
+    const phaseTauValue = document.getElementById("phaseTauValue");
+    const phaseFrameStartValue = document.getElementById("phaseFrameStartValue");
+    const phaseFrameSizeValue = document.getElementById("phaseFrameSizeValue");
+    const phaseHistoryFramesValue = document.getElementById("phaseHistoryFramesValue");
+    const phaseColorPointSizeValue = document.getElementById("phaseColorPointSizeValue");
+    const phaseColorGammaValue = document.getElementById("phaseColorGammaValue");
+    const phaseColorGlowValue = document.getElementById("phaseColorGlowValue");
+    const phaseAutoAxisLimitValue = document.getElementById("phaseAutoAxisLimitValue");
+    const phasePointCountValue = document.getElementById("phasePointCountValue");
+    const phaseDimensionValue = document.getElementById("phaseDimensionValue");
+    const meterFill = document.getElementById("meterFill");
+    const statusText = document.getElementById("status");
+    const topAnalysisGrid = document.getElementById("topAnalysisGrid");
+    const phaseViews = [
+      {
+        name: "3D PCA frame timeline",
+        mode: "history",
+        canvas: document.getElementById("phaseHistory"),
+        axesCanvas: document.getElementById("phaseHistoryAxes"),
+        title: document.getElementById("phaseHistoryTitle"),
+        rgb: [81, 196, 211]
+      },
+      {
+        name: "3D color PCA phase space",
+        mode: "timeGlow",
+        canvas: document.getElementById("phaseTimeGlow"),
+        axesCanvas: document.getElementById("phaseTimeGlowAxes"),
+        title: document.getElementById("phaseTimeGlowTitle"),
+        rgb: [94, 234, 212]
+      },
+      {
+        name: "PC1/PC2 time-Z phase space",
+        mode: "timeZ",
+        canvas: document.getElementById("phaseTimeZ"),
+        axesCanvas: document.getElementById("phaseTimeZAxes"),
+        title: document.getElementById("phaseTimeZTitle"),
+        rgb: [125, 211, 252]
+      },
+      {
+        name: "Power spectrum",
+        mode: "spectrum",
+        canvas: document.getElementById("phaseSpectrum"),
+        axesCanvas: document.getElementById("phaseSpectrumAxes"),
+        title: document.getElementById("phaseSpectrumTitle"),
+        rgb: [230, 233, 239]
+      }
+    ];
+
+    phaseViews.forEach((view) => {
+      view.ctx = view.canvas.getContext("2d", { alpha: false });
+      view.axesCtx = view.axesCanvas.getContext("2d");
+      view.width = 0;
+      view.height = 0;
+      if (view.mode === "timeGlow" || view.mode === "timeZ" || view.mode === "history") {
+        view.camera = view.mode === "history" ? { yaw: -0.75, pitch: 0.55, zoom: 1 } : { yaw: 0, pitch: 0, zoom: 1 };
+      }
+    });
+
+    let audioContext = null;
+    let analyser = null;
+    let micSource = null;
+    let micStream = null;
+    let processorNode = null;
+    let frequencyData = null;
+    let timeData = null;
+    let waveformBuffer = null;
+    let waveformWriteIndex = 0;
+    let waveformSampleCount = 0;
+    let currentSampleRate = 44100;
+    let lastPhaseAxisMax = 1;
+    let fixedPhaseAxisMax = 1;
+    let animationId = 0;
+    let lastDrawTime = 0;
+    let phaseHistoryMotionStartTime = 0;
+    let scrollCarry = 0;
+    let dpr = 1;
+    let canvasCssWidth = 0;
+    let canvasCssHeight = 0;
+    let phaseWindowDrag = null;
+    let phase3dDrag = null;
+    let lastPhasePointCount = 0;
+    let spectrumZoom = { minHz: 0, maxHz: null };
+    let spectrumHover = null;
+    let spectrumPan = null;
+    const SPECTRUM_SOURCE_SAMPLE_LIMIT = 16384;
+    const SPECTRUM_MIN_FFT_SIZE = 65536;
+    const SPECTRUM_MAX_FFT_SIZE = 131072;
+    const SPECTRUM_ZERO_PAD_FACTOR = 8;
+
+    function resizeCanvas() {
+      updateTopAnalysisSplit();
+
+      const rect = canvas.getBoundingClientRect();
+      dpr = Math.max(1, window.devicePixelRatio || 1);
+      canvasCssWidth = Math.max(1, rect.width);
+      canvasCssHeight = Math.max(1, rect.height);
+      canvas.width = Math.round(canvasCssWidth * dpr);
+      canvas.height = Math.round(canvasCssHeight * dpr);
+      axesCanvas.width = canvas.width;
+      axesCanvas.height = canvas.height;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      axesCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      resizePhaseCanvases();
+
+      clearSpectrogram();
+      drawAxes();
+    }
+
+    function updateTopAnalysisSplit() {
+      const spectrumPercent = clamp(Number(topSpectrumWidthSlider.value), 20, 50);
+      const spectrogramPercent = 100 - spectrumPercent;
+
+      topSpectrumWidthSlider.value = String(spectrumPercent);
+      topSpectrumWidthValue.textContent = `${spectrumPercent}%`;
+      topAnalysisGrid.style.gridTemplateColumns = `${spectrogramPercent}fr ${spectrumPercent}fr`;
+    }
+
+    function resizePhaseCanvases() {
+      phaseViews.forEach((view) => {
+        const phaseRect = view.canvas.getBoundingClientRect();
+        view.width = Math.max(1, phaseRect.width);
+        view.height = Math.max(1, phaseRect.height);
+        view.canvas.width = Math.round(view.width * dpr);
+        view.canvas.height = Math.round(view.height * dpr);
+        view.axesCanvas.width = view.canvas.width;
+        view.axesCanvas.height = view.canvas.height;
+        view.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        view.axesCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        clearPhasePortrait(view);
+        drawPhaseAxes(view);
+      });
+    }
+
+    function clearSpectrogram() {
+      ctx.fillStyle = "#05070a";
+      ctx.fillRect(0, 0, canvasCssWidth, canvasCssHeight);
+    }
+
+    function clearPhasePortrait(view) {
+      view.ctx.fillStyle = "#05070a";
+      view.ctx.fillRect(0, 0, view.width, view.height);
+      if (view.mode === "spectrum") {
+        view.spectra = null;
+        view.spectrumScale = null;
+      }
+    }
+
+    function drawAxes() {
+      const maxFreq = Number(maxFreqSlider.value);
+
+      axesCtx.clearRect(0, 0, canvasCssWidth, canvasCssHeight);
+      axesCtx.save();
+      axesCtx.lineWidth = 1;
+      axesCtx.font = "12px ui-sans-serif, system-ui, sans-serif";
+      axesCtx.fillStyle = "rgba(230, 233, 239, 0.72)";
+      axesCtx.strokeStyle = "rgba(154, 164, 178, 0.16)";
+
+      for (let i = 0; i <= 4; i += 1) {
+        const y = (canvasCssHeight - 1) * (i / 4);
+        const hz = Math.round(maxFreq * (1 - i / 4));
+        axesCtx.beginPath();
+        axesCtx.moveTo(0, y);
+        axesCtx.lineTo(canvasCssWidth, y);
+        axesCtx.stroke();
+        axesCtx.fillText(`${hz} Hz`, 8, Math.max(14, y - 5));
+      }
+
+      axesCtx.fillStyle = "rgba(154, 164, 178, 0.72)";
+      axesCtx.fillText("time ->", canvasCssWidth - 68, canvasCssHeight - 12);
+      axesCtx.restore();
+
+      drawPhaseWindowOverlay();
+    }
+
+    function drawPhaseWindowOverlay() {
+      if (!canvasCssWidth || !canvasCssHeight) return;
+
+      const windowSeconds = Number(windowSlider.value);
+      const selectedFrame = syncFrameControls();
+      const x1 = canvasCssWidth * (selectedFrame.start / 100);
+      const x2 = canvasCssWidth * (selectedFrame.end / 100);
+      const width = Math.max(2, x2 - x1);
+
+      axesCtx.save();
+      axesCtx.fillStyle = "rgba(255, 255, 255, 0.12)";
+      axesCtx.strokeStyle = "rgba(255, 255, 255, 0.92)";
+      axesCtx.lineWidth = 2;
+      axesCtx.fillRect(x1, 0, width, canvasCssHeight);
+      axesCtx.strokeRect(x1 + 1, 1, Math.max(1, width - 2), Math.max(1, canvasCssHeight - 2));
+      axesCtx.fillStyle = "rgba(255, 255, 255, 0.95)";
+      axesCtx.fillRect(Math.max(0, x1 - 3), 0, 6, canvasCssHeight);
+      axesCtx.fillRect(Math.min(canvasCssWidth - 6, x2 - 3), 0, 6, canvasCssHeight);
+
+      axesCtx.fillStyle = "rgba(255, 255, 255, 0.95)";
+      axesCtx.font = "12px ui-sans-serif, system-ui, sans-serif";
+      const durationMs = Math.round(windowSeconds * selectedFrame.size / 100 * 1000);
+      const label = `phase window ${durationMs} ms`;
+      axesCtx.fillText(label, Math.max(8, Math.min(canvasCssWidth - 138, x1 + 8)), 22);
+      axesCtx.restore();
+    }
+
+    function drawPhaseAxes(view) {
+      const cx = view.width / 2;
+      const cy = view.height / 2;
+      const tauLabel = formatTau(Number(phaseTauSlider.value));
+
+      view.axesCtx.clearRect(0, 0, view.width, view.height);
+      view.axesCtx.save();
+      view.axesCtx.lineWidth = 1;
+      view.axesCtx.font = "12px ui-sans-serif, system-ui, sans-serif";
+      view.axesCtx.strokeStyle = "rgba(154, 164, 178, 0.14)";
+      view.axesCtx.fillStyle = "rgba(230, 233, 239, 0.72)";
+
+      if (view.mode === "spectrum") {
+        drawSpectrumAxes(view);
+        view.axesCtx.restore();
+        return;
+      }
+
+      if (view.mode === "timeGlow" || view.mode === "timeZ" || view.mode === "history") {
+        drawPca3dAxes(view);
+        view.axesCtx.restore();
+        return;
+      }
+
+      for (let i = 1; i < 4; i += 1) {
+        const x = view.width * (i / 4);
+        const y = view.height * (i / 4);
+        view.axesCtx.beginPath();
+        view.axesCtx.moveTo(x, 0);
+        view.axesCtx.lineTo(x, view.height);
+        view.axesCtx.moveTo(0, y);
+        view.axesCtx.lineTo(view.width, y);
+        view.axesCtx.stroke();
+      }
+
+      view.axesCtx.strokeStyle = "rgba(244, 184, 96, 0.35)";
+      view.axesCtx.beginPath();
+      view.axesCtx.moveTo(cx, 0);
+      view.axesCtx.lineTo(cx, view.height);
+      view.axesCtx.moveTo(0, cy);
+      view.axesCtx.lineTo(view.width, cy);
+      view.axesCtx.stroke();
+
+      view.axesCtx.fillStyle = "rgba(154, 164, 178, 0.72)";
+      if (phasePcaModeCheckbox.checked) {
+        view.axesCtx.fillText("PC1", view.width - 42, cy - 8);
+        view.axesCtx.fillText("PC2", cx + 8, 16);
+      } else {
+        view.axesCtx.fillText("x(t)", view.width - 42, cy - 8);
+        view.axesCtx.fillText(`x(t-${tauLabel})`, cx + 8, 16);
+      }
+      view.axesCtx.restore();
+    }
+
+    function drawSpectrumAxes(view) {
+      const range = spectrumVisibleRange();
+      const minHz = range.minHz;
+      const maxHz = range.maxHz;
+      const xTickCount = view.width < 520 ? 4 : 6;
+
+      for (let i = 1; i < xTickCount; i += 1) {
+        const x = view.width * (i / xTickCount);
+        view.axesCtx.beginPath();
+        view.axesCtx.moveTo(x, 0);
+        view.axesCtx.lineTo(x, view.height);
+        view.axesCtx.stroke();
+      }
+
+      for (let i = 1; i < 4; i += 1) {
+        const y = view.height * (i / 4);
+        view.axesCtx.beginPath();
+        view.axesCtx.moveTo(0, y);
+        view.axesCtx.lineTo(view.width, y);
+        view.axesCtx.stroke();
+      }
+
+      view.axesCtx.strokeStyle = "rgba(244, 184, 96, 0.28)";
+      view.axesCtx.beginPath();
+      view.axesCtx.moveTo(0, view.height - 1);
+      view.axesCtx.lineTo(view.width, view.height - 1);
+      view.axesCtx.stroke();
+
+      view.axesCtx.fillStyle = "rgba(154, 164, 178, 0.72)";
+      for (let i = 0; i <= xTickCount; i += 1) {
+        const ratio = i / xTickCount;
+        const label = formatHzLabel(minHz + (maxHz - minHz) * ratio);
+        const x = clamp(view.width * ratio - (i === 0 ? 0 : label.length * 3.5), 8, view.width - label.length * 7 - 8);
+        view.axesCtx.fillText(label, x, view.height - 10);
+      }
+      view.axesCtx.fillText("power", 8, 16);
+      drawSpectrumHover(view);
+    }
+
+    function project3DPoint(x, y, z, scale, cx, cy, camera) {
+      const cosY = Math.cos(camera.yaw);
+      const sinY = Math.sin(camera.yaw);
+      const cosP = Math.cos(camera.pitch);
+      const sinP = Math.sin(camera.pitch);
+      const x1 = x * cosY - z * sinY;
+      const z1 = x * sinY + z * cosY;
+      const y1 = y * cosP - z1 * sinP;
+      const z2 = y * sinP + z1 * cosP;
+      const perspective = 1 / (1 + z2 * 0.28);
+
+      return {
+        x: cx + x1 * scale * perspective,
+        y: cy - y1 * scale * perspective,
+        depth: z2
+      };
+    }
+
+    function drawPca3dAxes(view) {
+      const cx = view.width / 2;
+      const cy = view.height / 2;
+      const camera = view.camera || { yaw: 0, pitch: 0, zoom: 1 };
+      const axisScale = Math.min(view.width, view.height) * 0.28 * camera.zoom;
+      const zLabel = view.mode === "timeZ" || view.mode === "history" ? "time" : "PC3";
+      const axes = [
+        { label: "PC1", point: [1, 0, 0], color: "rgba(81, 196, 211, 0.72)" },
+        { label: "PC2", point: [0, 1, 0], color: "rgba(244, 184, 96, 0.72)" },
+        { label: zLabel, point: [0, 0, 1], color: "rgba(230, 233, 239, 0.72)" }
+      ];
+
+      axes.forEach((axis) => {
+        const end = project3DPoint(axis.point[0], axis.point[1], axis.point[2], axisScale, cx, cy, camera);
+        view.axesCtx.strokeStyle = axis.color;
+        view.axesCtx.fillStyle = axis.color;
+        view.axesCtx.beginPath();
+        view.axesCtx.moveTo(cx, cy);
+        view.axesCtx.lineTo(end.x, end.y);
+        view.axesCtx.stroke();
+        view.axesCtx.fillText(axis.label, end.x + 6, end.y - 4);
+      });
+    }
+
+    function colorForValue(value) {
+      const v = Math.max(0, Math.min(1, value));
+      const stops = [
+        [0.00, 5, 7, 10],
+        [0.18, 20, 36, 70],
+        [0.38, 34, 112, 147],
+        [0.60, 81, 196, 211],
+        [0.78, 244, 184, 96],
+        [1.00, 244, 82, 67]
+      ];
+
+      for (let i = 1; i < stops.length; i += 1) {
+        if (v <= stops[i][0]) {
+          const prev = stops[i - 1];
+          const next = stops[i];
+          const t = (v - prev[0]) / (next[0] - prev[0]);
+          const r = Math.round(prev[1] + (next[1] - prev[1]) * t);
+          const g = Math.round(prev[2] + (next[2] - prev[2]) * t);
+          const b = Math.round(prev[3] + (next[3] - prev[3]) * t);
+          return `rgb(${r}, ${g}, ${b})`;
+        }
+      }
+
+      return "rgb(244, 82, 67)";
+    }
+
+    function rebuildAnalyser() {
+      if (!audioContext) return;
+
+      const previousAnalyser = analyser;
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = Number(fftSizeSelect.value);
+      analyser.smoothingTimeConstant = 0.25;
+      analyser.minDecibels = Number(floorSlider.value);
+      analyser.maxDecibels = -20;
+
+      frequencyData = new Uint8Array(analyser.frequencyBinCount);
+      timeData = new Uint8Array(analyser.fftSize);
+
+      if (micSource) {
+        if (previousAnalyser) {
+          try {
+            micSource.disconnect(previousAnalyser);
+          } catch (error) {
+            // The previous analyser may already be disconnected after stop/rebuild.
+          }
+        }
+        micSource.connect(analyser);
+      }
+    }
+
+    function resetWaveformBuffer() {
+      const maxWindowSeconds = Number(windowSlider.max);
+      const capacity = Math.ceil(currentSampleRate * maxWindowSeconds);
+      waveformBuffer = new Float32Array(capacity);
+      waveformWriteIndex = 0;
+      waveformSampleCount = 0;
+    }
+
+    function appendWaveformSamples(input) {
+      if (!waveformBuffer) return;
+
+      for (let i = 0; i < input.length; i += 1) {
+        waveformBuffer[waveformWriteIndex] = input[i];
+        waveformWriteIndex = (waveformWriteIndex + 1) % waveformBuffer.length;
+      }
+
+      waveformSampleCount = Math.min(waveformBuffer.length, waveformSampleCount + input.length);
+    }
+
+    function waveformSampleByAge(ageSamples) {
+      if (!waveformBuffer || ageSamples < 0 || ageSamples >= waveformSampleCount) return 0;
+
+      const index = (waveformWriteIndex - 1 - ageSamples + waveformBuffer.length) % waveformBuffer.length;
+      return waveformBuffer[index];
+    }
+
+    function setupWaveformCapture() {
+      if (!audioContext || !micSource) return;
+
+      resetWaveformBuffer();
+      if (processorNode) {
+        processorNode.disconnect();
+      }
+
+      processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+      processorNode.onaudioprocess = (event) => {
+        const input = event.inputBuffer.getChannelData(0);
+        appendWaveformSamples(input);
+
+        const output = event.outputBuffer.getChannelData(0);
+        output.fill(0);
+      };
+
+      micSource.connect(processorNode);
+      processorNode.connect(audioContext.destination);
+    }
+
+    async function startMicrophone() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          statusText.textContent = "This browser does not support microphone recording through getUserMedia.";
+          return;
+        }
+
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+          statusText.textContent = "This browser does not support the Web Audio API.";
+          return;
+        }
+
+        startBtn.disabled = true;
+        statusText.textContent = "Requesting microphone permission...";
+
+        try {
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            }
+          });
+        } catch (preferredError) {
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
+
+        audioContext = new AudioContextClass();
+        await audioContext.resume();
+        currentSampleRate = audioContext.sampleRate;
+        micSource = audioContext.createMediaStreamSource(micStream);
+        rebuildAnalyser();
+        setupWaveformCapture();
+
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+        statusText.textContent = `Microphone running. Sample rate: ${audioContext.sampleRate} Hz.`;
+        drawAxes();
+        lastDrawTime = performance.now();
+        phaseHistoryMotionStartTime = lastDrawTime;
+        scrollCarry = 0;
+        animationId = requestAnimationFrame(drawSpectrogram);
+      } catch (error) {
+        if (micStream) {
+          micStream.getTracks().forEach((track) => track.stop());
+          micStream = null;
+        }
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        stopBtn.disabled = true;
+        statusText.textContent = `Microphone could not start: ${error.message}`;
+      }
+    }
+
+    function shutdownMicrophone(keepData) {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = 0;
+      }
+
+      if (micSource) {
+        micSource.disconnect();
+        micSource = null;
+      }
+
+      if (processorNode) {
+        processorNode.disconnect();
+        processorNode.onaudioprocess = null;
+        processorNode = null;
+      }
+
+      if (micStream) {
+        micStream.getTracks().forEach((track) => track.stop());
+        micStream = null;
+      }
+
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+
+      analyser = null;
+      frequencyData = null;
+      timeData = null;
+      meterFill.style.width = "0%";
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      stopBtn.disabled = keepData ? false : true;
+
+      if (!keepData) {
+        waveformBuffer = null;
+        waveformWriteIndex = 0;
+        waveformSampleCount = 0;
+      }
+
+      drawAxes();
+    }
+
+    function pauseMicrophone() {
+      if (!audioContext && !analyser) return;
+
+      shutdownMicrophone(true);
+      drawSavedPhasePortraits();
+      statusText.textContent = "Recording paused. Drag or resize the white spectrogram window to update the phase plots from saved data.";
+    }
+
+    function stopMicrophone() {
+      shutdownMicrophone(false);
+      lastPhasePointCount = 0;
+      updatePhaseTitles();
+      phaseViews.forEach(clearPhasePortrait);
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      stopBtn.disabled = true;
+      statusText.textContent = "Microphone stopped.";
+    }
+
+    function shiftCanvas(px) {
+      if (px <= 0) return;
+      const shift = Math.min(px, canvasCssWidth);
+      ctx.drawImage(canvas, shift * dpr, 0, (canvasCssWidth - shift) * dpr, canvasCssHeight * dpr, 0, 0, canvasCssWidth - shift, canvasCssHeight);
+      ctx.fillStyle = "#05070a";
+      ctx.fillRect(canvasCssWidth - shift, 0, shift, canvasCssHeight);
+    }
+
+    function drawFrequencyColumn(x, width) {
+      if (!analyser || !frequencyData || !audioContext) return;
+
+      analyser.getByteFrequencyData(frequencyData);
+
+      const maxFreq = Number(maxFreqSlider.value);
+      const gain = Number(gainSlider.value);
+      const nyquist = audioContext.sampleRate / 2;
+      const maxBin = Math.min(frequencyData.length - 1, Math.floor(maxFreq / nyquist * frequencyData.length));
+      const imageHeight = Math.floor(canvasCssHeight);
+
+      for (let y = 0; y < imageHeight; y += 1) {
+        const freqRatio = 1 - y / Math.max(1, imageHeight - 1);
+        const bin = Math.min(maxBin, Math.max(0, Math.floor(freqRatio * maxBin)));
+        const normalized = Math.min(1, (frequencyData[bin] / 255) * gain);
+        ctx.fillStyle = colorForValue(normalized);
+        ctx.fillRect(x, y, width, 1.2);
+      }
+    }
+
+    function updateLevelMeter() {
+      if (!timeData) return;
+
+      let peak = 0;
+      for (let i = 0; i < timeData.length; i += 1) {
+        peak = Math.max(peak, Math.abs(timeData[i] - 128) / 128);
+      }
+      meterFill.style.width = `${Math.round(Math.min(1, peak * 2.5) * 100)}%`;
+    }
+
+    function roundPercent(value) {
+      return Math.round(value * 100) / 100;
+    }
+
+    function formatPercent(value) {
+      return roundPercent(value).toFixed(2).replace(/\.?0+$/, "");
+    }
+
+    function minFrameSizePercent() {
+      return 1 / Math.max(0.001, Number(windowSlider.value));
+    }
+
+    function syncFrameControls() {
+      const minFrameSize = minFrameSizePercent();
+      let frameSize = clamp(Number(phaseFrameSizeSlider.value), minFrameSize, 100);
+      frameSize = roundPercent(frameSize);
+      phaseFrameSizeSlider.min = String(minFrameSize);
+
+      if (Number(phaseFrameSizeSlider.value) !== frameSize) {
+        phaseFrameSizeSlider.value = String(frameSize);
+      }
+
+      const maxStart = Math.max(0, 100 - frameSize);
+      phaseFrameStartSlider.max = String(maxStart);
+
+      if (Number(phaseFrameStartSlider.value) > maxStart) {
+        phaseFrameStartSlider.value = String(roundPercent(maxStart));
+      }
+
+      const start = roundPercent(Number(phaseFrameStartSlider.value));
+
+      return {
+        start,
+        size: frameSize,
+        end: roundPercent(start + frameSize)
+      };
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function formatTau(value) {
+      if (value < 10) {
+        return `${value.toFixed(2)} ms`;
+      }
+
+      return `${value.toFixed(1).replace(/\.0$/, "")} ms`;
+    }
+
+    function formatPhaseDuration(ms) {
+      if (ms < 1000) {
+        return `${Math.round(ms)} ms`;
+      }
+
+      return `${(ms / 1000).toFixed(2).replace(/0$/, "").replace(/\.0$/, "")} s`;
+    }
+
+    function phaseTraceAlpha() {
+      return 0.9;
+    }
+
+    function phaseTraceColor(view) {
+      return `rgba(${view.rgb[0]}, ${view.rgb[1]}, ${view.rgb[2]}, ${phaseTraceAlpha()})`;
+    }
+
+    function phaseAutoAxisLimit() {
+      return Math.max(0.001, Number(phaseAutoAxisLimitSlider.value) || 0);
+    }
+
+    function phaseAxisMax(dataMax) {
+      if (phaseAxisModeSelect.value === "fixed") {
+        return Math.max(0.001, fixedPhaseAxisMax);
+      }
+
+      return Math.max(phaseAutoAxisLimit(), dataMax || 0.001);
+    }
+
+    function setPhaseWindow(start, size) {
+      const minFrameSize = minFrameSizePercent();
+      const roundedSize = roundPercent(clamp(size, minFrameSize, 100));
+      const roundedStart = roundPercent(clamp(start, 0, 100 - roundedSize));
+
+      phaseFrameSizeSlider.value = String(roundedSize);
+      phaseFrameStartSlider.value = String(roundedStart);
+      updateLabels();
+      drawAxes();
+      drawSavedPhasePortraits();
+    }
+
+    function spectrogramPointerPercent(event) {
+      const rect = axesCanvas.getBoundingClientRect();
+      const x = clamp(event.clientX - rect.left, 0, rect.width);
+      return rect.width > 0 ? x / rect.width * 100 : 0;
+    }
+
+    function updateSpectrogramCursor(event) {
+      if (phaseWindowDrag) return;
+
+      const selectedFrame = syncFrameControls();
+      const pct = spectrogramPointerPercent(event);
+      const handlePct = Math.max(1.2, 10 / Math.max(1, canvasCssWidth) * 100);
+
+      if (Math.abs(pct - selectedFrame.start) <= handlePct || Math.abs(pct - selectedFrame.end) <= handlePct) {
+        axesCanvas.style.cursor = "ew-resize";
+      } else if (pct > selectedFrame.start && pct < selectedFrame.end) {
+        axesCanvas.style.cursor = "move";
+      } else {
+        axesCanvas.style.cursor = "crosshair";
+      }
+    }
+
+    function beginPhaseWindowDrag(event) {
+      event.preventDefault();
+      const selectedFrame = syncFrameControls();
+      const pct = spectrogramPointerPercent(event);
+      const handlePct = Math.max(1.2, 10 / Math.max(1, canvasCssWidth) * 100);
+      let mode = "draw";
+
+      if (Math.abs(pct - selectedFrame.start) <= handlePct) {
+        mode = "resize-left";
+      } else if (Math.abs(pct - selectedFrame.end) <= handlePct) {
+        mode = "resize-right";
+      } else if (pct > selectedFrame.start && pct < selectedFrame.end) {
+        mode = "move";
+      }
+
+      phaseWindowDrag = {
+        mode,
+        anchor: pct,
+        start: selectedFrame.start,
+        size: selectedFrame.size,
+        end: selectedFrame.end,
+        moveOffset: pct - selectedFrame.start
+      };
+
+      axesCanvas.setPointerCapture(event.pointerId);
+      axesCanvas.style.cursor = mode === "move" ? "move" : "ew-resize";
+      updatePhaseWindowFromPointer(event);
+    }
+
+    function updatePhaseWindowFromPointer(event) {
+      if (!phaseWindowDrag) return;
+
+      event.preventDefault();
+      const pct = spectrogramPointerPercent(event);
+
+      if (phaseWindowDrag.mode === "move") {
+        setPhaseWindow(pct - phaseWindowDrag.moveOffset, phaseWindowDrag.size);
+      } else if (phaseWindowDrag.mode === "resize-left") {
+        const start = clamp(pct, 0, phaseWindowDrag.end - minFrameSizePercent());
+        setPhaseWindow(start, phaseWindowDrag.end - start);
+      } else if (phaseWindowDrag.mode === "resize-right") {
+        const end = clamp(pct, phaseWindowDrag.start + minFrameSizePercent(), 100);
+        setPhaseWindow(phaseWindowDrag.start, end - phaseWindowDrag.start);
+      } else {
+        const start = Math.min(phaseWindowDrag.anchor, pct);
+        const end = Math.max(phaseWindowDrag.anchor, pct);
+        setPhaseWindow(start, Math.max(minFrameSizePercent(), end - start));
+      }
+    }
+
+    function endPhaseWindowDrag(event) {
+      if (!phaseWindowDrag) return;
+
+      event.preventDefault();
+      phaseWindowDrag = null;
+      if (axesCanvas.hasPointerCapture(event.pointerId)) {
+        axesCanvas.releasePointerCapture(event.pointerId);
+      }
+      updateSpectrogramCursor(event);
+    }
+
+    function phaseViewForAxes(axesCanvasElement) {
+      return phaseViews.find((view) => view.axesCanvas === axesCanvasElement);
+    }
+
+    function redraw3dView(view) {
+      if (!view) return;
+
+      drawPhaseAxes(view);
+      drawSavedPhasePortraits();
+    }
+
+    function beginPca3dDrag(event) {
+      if (!phasePcaModeCheckbox.checked) return;
+
+      const view = phaseViewForAxes(event.currentTarget);
+      if (!view || !view.camera) return;
+
+      event.preventDefault();
+      phase3dDrag = {
+        view,
+        x: event.clientX,
+        y: event.clientY,
+        yaw: view.camera.yaw,
+        pitch: view.camera.pitch
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.style.cursor = "grabbing";
+    }
+
+    function updatePca3dDrag(event) {
+      if (!phase3dDrag) return;
+
+      event.preventDefault();
+      const dx = event.clientX - phase3dDrag.x;
+      const dy = event.clientY - phase3dDrag.y;
+      phase3dDrag.view.camera.yaw = phase3dDrag.yaw + dx * 0.01;
+      phase3dDrag.view.camera.pitch = clamp(phase3dDrag.pitch + dy * 0.01, -1.45, 1.45);
+      redraw3dView(phase3dDrag.view);
+    }
+
+    function endPca3dDrag(event) {
+      if (!phase3dDrag) return;
+
+      event.preventDefault();
+      phase3dDrag = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      event.currentTarget.style.cursor = "grab";
+    }
+
+    function zoomPca3d(event) {
+      if (!phasePcaModeCheckbox.checked) return;
+
+      const view = phaseViewForAxes(event.currentTarget);
+      if (!view || !view.camera) return;
+
+      event.preventDefault();
+      const factor = event.deltaY < 0 ? 1.12 : 0.89;
+      view.camera.zoom = clamp(view.camera.zoom * factor, 0.35, 6);
+      redraw3dView(view);
+    }
+
+    function getPhaseFrame(maxDelaySamples, selectedFrame = syncFrameControls()) {
+      if (!currentSampleRate || !waveformBuffer || waveformSampleCount <= maxDelaySamples + 8) return null;
+
+      const sampleRate = currentSampleRate;
+      const windowSamples = Math.round(Number(windowSlider.value) * sampleRate);
+      const oldestSelectionAge = Math.round(windowSamples * (1 - selectedFrame.start / 100));
+      const newestSelectionAge = Math.round(windowSamples * (1 - selectedFrame.end / 100));
+      const maxDrawableAge = waveformSampleCount - 1 - maxDelaySamples;
+      const olderAge = Math.min(oldestSelectionAge, maxDrawableAge);
+      const newerAge = Math.max(0, Math.min(newestSelectionAge, olderAge - 8));
+
+      return {
+        olderAge,
+        newerAge,
+        sampleCount: olderAge - newerAge + 1
+      };
+    }
+
+    function dominantEigenvector(matrix) {
+      const dimension = matrix.length;
+      let vector = Array.from({ length: dimension }, (_, index) => index === 0 ? 1 : 0);
+
+      for (let iteration = 0; iteration < 50; iteration += 1) {
+        const next = new Array(dimension).fill(0);
+
+        for (let row = 0; row < dimension; row += 1) {
+          for (let col = 0; col < dimension; col += 1) {
+            next[row] += matrix[row][col] * vector[col];
+          }
+        }
+
+        const norm = Math.hypot(...next);
+        if (norm < 1e-12) break;
+        vector = next.map((value) => value / norm);
+      }
+
+      return vector;
+    }
+
+    function eigenvalueForVector(matrix, vector) {
+      let value = 0;
+
+      for (let row = 0; row < matrix.length; row += 1) {
+        for (let col = 0; col < matrix.length; col += 1) {
+          value += vector[row] * matrix[row][col] * vector[col];
+        }
+      }
+
+      return value;
+    }
+
+    function projectPca(vectors, dimension, componentCount) {
+      const means = new Array(dimension).fill(0);
+
+      vectors.forEach((vector) => {
+        for (let d = 0; d < dimension; d += 1) {
+          means[d] += vector[d];
+        }
+      });
+
+      for (let d = 0; d < dimension; d += 1) {
+        means[d] /= vectors.length;
+      }
+
+      const centered = vectors.map((vector) => vector.map((value, d) => value - means[d]));
+      const covariance = Array.from({ length: dimension }, () => new Array(dimension).fill(0));
+
+      centered.forEach((vector) => {
+        for (let row = 0; row < dimension; row += 1) {
+          for (let col = row; col < dimension; col += 1) {
+            covariance[row][col] += vector[row] * vector[col];
+          }
+        }
+      });
+
+      const divisor = Math.max(1, centered.length - 1);
+      for (let row = 0; row < dimension; row += 1) {
+        for (let col = row; col < dimension; col += 1) {
+          covariance[row][col] /= divisor;
+          covariance[col][row] = covariance[row][col];
+        }
+      }
+
+      let working = covariance.map((row) => row.slice());
+      const components = [];
+
+      for (let component = 0; component < componentCount; component += 1) {
+        const pc = dominantEigenvector(working);
+        const lambda = eigenvalueForVector(working, pc);
+        components.push(pc);
+        working = working.map((row, rowIndex) => row.map((value, colIndex) => value - lambda * pc[rowIndex] * pc[colIndex]));
+      }
+
+      return centered.map((vector) => {
+        return components.map((component) => {
+          let value = 0;
+
+          for (let d = 0; d < dimension; d += 1) {
+            value += vector[d] * component[d];
+          }
+
+          return value;
+        });
+      });
+    }
+
+    function getPhaseCoordinates(selectedFrame = syncFrameControls(), pointLimit = Infinity) {
+      if (!currentSampleRate || !waveformBuffer || waveformSampleCount < 10) return;
+
+      const usePca = phasePcaModeCheckbox.checked;
+      const delayMs = Number(phaseTauSlider.value);
+      const delaySamples = Math.min(waveformSampleCount - 2, Math.max(1, Math.round(currentSampleRate * delayMs / 1000)));
+      const dimension = usePca ? Number(phaseDimensionSlider.value) : 2;
+      const maxDelaySamples = delaySamples * (dimension - 1);
+      const frame = getPhaseFrame(maxDelaySamples, selectedFrame);
+      if (!frame || frame.sampleCount < 8) return;
+
+      const vectors = [];
+      const samples = [];
+      const sampleStep = Math.max(1, Math.ceil(frame.sampleCount / pointLimit));
+
+      for (let i = 0; i < frame.sampleCount; i += sampleStep) {
+        const age = frame.olderAge - i;
+        const sample = waveformSampleByAge(age);
+        samples.push(sample);
+
+        if (usePca) {
+          const vector = [];
+          for (let d = 0; d < dimension; d += 1) {
+            vector.push(waveformSampleByAge(age + d * delaySamples));
+          }
+          vectors.push(vector);
+        } else {
+          vectors.push([
+            waveformSampleByAge(age),
+            waveformSampleByAge(age + delaySamples)
+          ]);
+        }
+      }
+
+      const projected = usePca ? projectPca(vectors, dimension, 3) : vectors;
+      const points = usePca ? projected.map((point) => [point[0], point[1]]) : projected;
+      const points3D = usePca ? projected.map((point) => [point[0], point[1], point[2] || 0]) : null;
+      let maxAbs = 0.001;
+      let maxAbs3D = 0.001;
+
+      points.forEach(([x, y]) => {
+        maxAbs = Math.max(maxAbs, Math.abs(x), Math.abs(y));
+      });
+
+      if (points3D) {
+        points3D.forEach(([x, y, z]) => {
+          maxAbs3D = Math.max(maxAbs3D, Math.abs(x), Math.abs(y), Math.abs(z));
+        });
+      }
+
+      return {
+        points,
+        points3D,
+        samples,
+        pointCount: points.length,
+        maxAbs: Math.max(0.001, maxAbs),
+        maxAbs3D: Math.max(0.001, maxAbs3D)
+      };
+    }
+
+    function phaseTimeColorSegments(pointCount, baseSize) {
+      return [
+        { start: 0, end: Math.ceil(pointCount / 3), color: [56, 189, 248], size: baseSize },
+        { start: Math.ceil(pointCount / 3), end: Math.ceil(pointCount * 2 / 3), color: [52, 211, 153], size: baseSize * 1.25 },
+        { start: Math.ceil(pointCount * 2 / 3), end: pointCount, color: [251, 191, 36], size: baseSize * 1.5 }
+      ];
+    }
+
+    function phaseTimeSegmentForIndex(segments, index) {
+      return segments.find((segment) => index >= segment.start && index < segment.end) || segments[segments.length - 1];
+    }
+
+    function spectrumView() {
+      return phaseViews.find((view) => view.mode === "spectrum");
+    }
+
+    function spectrumFullMaxHz() {
+      const nyquist = currentSampleRate ? currentSampleRate / 2 : Number(maxFreqSlider.value);
+      return Math.max(1, Math.min(Number(maxFreqSlider.value), nyquist));
+    }
+
+    function spectrumVisibleRange() {
+      const fullMaxHz = spectrumFullMaxHz();
+      let minHz = clamp(spectrumZoom.minHz || 0, 0, fullMaxHz);
+      let maxHz = spectrumZoom.maxHz == null ? fullMaxHz : clamp(spectrumZoom.maxHz, 0, fullMaxHz);
+
+      if (maxHz - minHz < 10) {
+        maxHz = Math.min(fullMaxHz, minHz + 10);
+        minHz = Math.max(0, maxHz - 10);
+      }
+
+      return { minHz, maxHz, fullMaxHz };
+    }
+
+    function clampSpectrumZoom() {
+      const range = spectrumVisibleRange();
+      spectrumZoom = {
+        minHz: range.minHz,
+        maxHz: Math.abs(range.maxHz - range.fullMaxHz) < 1 ? null : range.maxHz
+      };
+    }
+
+    function formatHzLabel(value) {
+      if (value >= 1000) {
+        return `${(value / 1000).toFixed(value >= 10000 ? 1 : 2).replace(/\.?0+$/, "")} kHz`;
+      }
+
+      return `${Math.round(value)} Hz`;
+    }
+
+    function getPhaseHistoryCoordinates() {
+      const selectedFrame = syncFrameControls();
+      const oldFrameCount = Number(phaseHistoryFramesSlider.value);
+      const frames = [];
+      let maxAbs = 0.001;
+
+      for (let offset = oldFrameCount + 1; offset >= 0; offset -= 1) {
+        const start = roundPercent(selectedFrame.start - selectedFrame.size * offset);
+        const end = roundPercent(selectedFrame.end - selectedFrame.size * offset);
+        if (start < 0 || end > 100) continue;
+
+        const coordinates = getPhaseCoordinates({ start, size: selectedFrame.size, end }, 2400);
+        if (!coordinates || coordinates.points.length < 2) continue;
+
+        maxAbs = Math.max(maxAbs, coordinates.maxAbs);
+        frames.push({
+          coordinates,
+          offset,
+          isCurrent: offset === 0
+        });
+      }
+
+      if (!frames.length) return null;
+
+      return {
+        frames,
+        maxAbs,
+        selectedFrame
+      };
+    }
+
+    function phaseHistoryMotionProgress(selectedFrame) {
+      if (!analyser) return 0;
+
+      const frameMs = Math.max(16, Number(windowSlider.value) * selectedFrame.size / 100 * 1000);
+      return ((performance.now() - phaseHistoryMotionStartTime) % frameMs) / frameMs;
+    }
+
+    function drawPhasePortrait(view, coordinates) {
+      if (view.mode === "history") {
+        drawPhaseHistoryPortrait(view);
+        return;
+      }
+
+      if (!coordinates || coordinates.points.length < 2) return;
+
+      view.ctx.fillStyle = "#05070a";
+      view.ctx.fillRect(0, 0, view.width, view.height);
+      view.ctx.save();
+
+      if (view.mode === "spectrum") {
+        drawPowerSpectrum(view, coordinates);
+        view.ctx.restore();
+        return;
+      }
+
+      if (view.mode === "timeGlow" || view.mode === "timeZ") {
+        drawTimeGlowPortrait(view, coordinates);
+        view.ctx.restore();
+        return;
+      }
+
+      const cx = view.width / 2;
+      const cy = view.height / 2;
+      const axisMax = phaseAxisMax(coordinates.maxAbs);
+      const scale = Math.min(view.width, view.height) * 0.42 / Math.max(0.001, axisMax);
+
+      view.ctx.lineWidth = 1.25;
+      view.ctx.lineJoin = "round";
+      view.ctx.lineCap = "round";
+
+      const segments = phaseTimeColorSegments(coordinates.points.length, 1);
+      for (let index = 1; index < coordinates.points.length; index += 1) {
+        const previous = coordinates.points[index - 1];
+        const current = coordinates.points[index];
+        const segment = phaseTimeSegmentForIndex(segments, index);
+        view.ctx.strokeStyle = `rgba(${segment.color[0]}, ${segment.color[1]}, ${segment.color[2]}, ${phaseTraceAlpha()})`;
+        view.ctx.beginPath();
+        view.ctx.moveTo(cx + previous[0] * scale, cy - previous[1] * scale);
+        view.ctx.lineTo(cx + current[0] * scale, cy - current[1] * scale);
+        view.ctx.stroke();
+      }
+
+      view.ctx.restore();
+    }
+
+    function drawPhaseHistoryPortrait(view) {
+      const history = getPhaseHistoryCoordinates();
+      if (!history) return;
+
+      const axisMax = phaseAxisMax(history.maxAbs);
+      const oldFrameCount = Number(phaseHistoryFramesSlider.value);
+      const visibleFrameCount = Math.max(1, oldFrameCount + 1);
+      const progress = phaseHistoryMotionProgress(history.selectedFrame);
+      const camera = view.camera || { yaw: -0.75, pitch: 0.55, zoom: 1 };
+      const cx = view.width / 2;
+      const cy = view.height / 2;
+      const zSpacing = Math.max(0.18, Math.min(0.9, axisMax * 0.78));
+      const timelineExtent = zSpacing * Math.max(1, visibleFrameCount - 1);
+      const scale = Math.min(view.width, view.height) * 0.35 * camera.zoom / Math.max(0.001, axisMax, timelineExtent * 0.62);
+      const pointBaseSize = Number(phaseColorPointSizeSlider.value);
+      const planeRadius = axisMax * 1.06;
+      const projectedPoints = [];
+
+      view.ctx.save();
+      view.ctx.rect(0, 0, view.width, view.height);
+      view.ctx.clip();
+
+      history.frames.forEach((frame) => {
+        const timelineIndex = oldFrameCount - frame.offset + progress;
+        const z = (timelineIndex - oldFrameCount / 2) * zSpacing;
+        const normalizedAge = clamp((frame.offset + progress) / Math.max(1, visibleFrameCount), 0, 1);
+        const alpha = frame.isCurrent ? 0.96 : clamp(0.72 - normalizedAge * 0.52, 0.12, 0.72);
+        const sizeScale = frame.isCurrent ? 1.18 : clamp(1 - normalizedAge * 0.32, 0.58, 0.92);
+        const segments = phaseTimeColorSegments(frame.coordinates.points.length, pointBaseSize);
+        const corners = [
+          [-planeRadius, -planeRadius, z],
+          [planeRadius, -planeRadius, z],
+          [planeRadius, planeRadius, z],
+          [-planeRadius, planeRadius, z]
+        ].map((corner) => project3DPoint(corner[0], corner[1], corner[2], scale, cx, cy, camera));
+
+        view.ctx.strokeStyle = `rgba(154, 164, 178, ${alpha * 0.20})`;
+        view.ctx.beginPath();
+        view.ctx.moveTo(corners[0].x, corners[0].y);
+        for (let cornerIndex = 1; cornerIndex < corners.length; cornerIndex += 1) {
+          view.ctx.lineTo(corners[cornerIndex].x, corners[cornerIndex].y);
+        }
+        view.ctx.closePath();
+        view.ctx.stroke();
+
+        for (let index = 0; index < frame.coordinates.points.length; index += 1) {
+          const point = frame.coordinates.points[index];
+          const segment = phaseTimeSegmentForIndex(segments, index);
+          const projected = project3DPoint(point[0], point[1], z, scale, cx, cy, camera);
+          projectedPoints.push({
+            x: projected.x,
+            y: projected.y,
+            depth: projected.depth,
+            color: segment.color,
+            alpha,
+            size: Math.max(0.65, segment.size * sizeScale)
+          });
+        }
+      });
+
+      projectedPoints.sort((a, b) => a.depth - b.depth);
+      projectedPoints.forEach((point) => {
+        const half = point.size / 2;
+        view.ctx.fillStyle = `rgba(${point.color[0]}, ${point.color[1]}, ${point.color[2]}, ${point.alpha})`;
+        view.ctx.fillRect(point.x - half, point.y - half, point.size, point.size);
+      });
+
+      view.ctx.restore();
+    }
+
+    function drawTimeGlowPortrait(view, coordinates) {
+      const pointCount = coordinates.points.length;
+      const timeAxisMax = phaseAxisMax(coordinates.maxAbs);
+      const sourcePoints = view.mode === "timeZ"
+        ? coordinates.points.map(([x, y], index) => {
+            const timeRatio = pointCount > 1 ? index / (pointCount - 1) : 0.5;
+            return [x, y, (timeRatio - 0.5) * 2 * timeAxisMax];
+          })
+        : coordinates.points3D || coordinates.points.map(([x, y]) => [x, y, 0]);
+      const cx = view.width / 2;
+      const cy = view.height / 2;
+      const axisMax = view.mode === "timeZ" ? timeAxisMax : phaseAxisMax(coordinates.maxAbs3D || coordinates.maxAbs);
+      const camera = view.camera || { yaw: 0, pitch: 0, zoom: 1 };
+      const scale = Math.min(view.width, view.height) * 0.36 * camera.zoom / Math.max(0.001, axisMax);
+      const baseSize = Number(phaseColorPointSizeSlider.value);
+      const gamma = Number(phaseColorGammaSlider.value);
+      const glow = Number(phaseColorGlowSlider.value);
+      const alpha = clamp(Math.pow(0.78, 1 / Math.max(0.01, gamma)), 0.08, 1);
+      const projected = sourcePoints.map((point, index) => {
+        const projectedPoint = project3DPoint(point[0], point[1], point[2], scale, cx, cy, camera);
+        projectedPoint.index = index;
+        return projectedPoint;
+      });
+      const segments = phaseTimeColorSegments(pointCount, baseSize);
+
+      view.ctx.shadowBlur = 0;
+      view.ctx.globalCompositeOperation = "source-over";
+      projected.sort((a, b) => a.depth - b.depth);
+
+      if (glow > 0) {
+        projected.forEach((point) => {
+          const segment = phaseTimeSegmentForIndex(segments, point.index);
+          const size = segment.size * (1 + glow * 3);
+          const half = size / 2;
+          view.ctx.fillStyle = `rgba(${segment.color[0]}, ${segment.color[1]}, ${segment.color[2]}, ${0.08 * glow * alpha})`;
+          view.ctx.fillRect(point.x - half, point.y - half, size, size);
+        });
+      }
+
+      projected.forEach((point) => {
+        const segment = phaseTimeSegmentForIndex(segments, point.index);
+        const size = segment.size;
+        const half = size / 2;
+        view.ctx.fillStyle = `rgba(${segment.color[0]}, ${segment.color[1]}, ${segment.color[2]}, ${alpha})`;
+        view.ctx.fillRect(point.x - half, point.y - half, size, size);
+      });
+    }
+
+    function nextPowerOfTwo(value) {
+      let size = 1;
+      while (size < value) {
+        size *= 2;
+      }
+      return size;
+    }
+
+    function fftInPlace(real, imag) {
+      const n = real.length;
+      let j = 0;
+
+      for (let i = 1; i < n; i += 1) {
+        let bit = n >> 1;
+        while (j & bit) {
+          j ^= bit;
+          bit >>= 1;
+        }
+        j ^= bit;
+
+        if (i < j) {
+          const tempReal = real[i];
+          const tempImag = imag[i];
+          real[i] = real[j];
+          imag[i] = imag[j];
+          real[j] = tempReal;
+          imag[j] = tempImag;
+        }
+      }
+
+      for (let length = 2; length <= n; length *= 2) {
+        const angle = -2 * Math.PI / length;
+        const wLengthReal = Math.cos(angle);
+        const wLengthImag = Math.sin(angle);
+
+        for (let i = 0; i < n; i += length) {
+          let wReal = 1;
+          let wImag = 0;
+          const halfLength = length / 2;
+
+          for (let k = 0; k < halfLength; k += 1) {
+            const evenIndex = i + k;
+            const oddIndex = evenIndex + halfLength;
+            const oddReal = real[oddIndex] * wReal - imag[oddIndex] * wImag;
+            const oddImag = real[oddIndex] * wImag + imag[oddIndex] * wReal;
+
+            real[oddIndex] = real[evenIndex] - oddReal;
+            imag[oddIndex] = imag[evenIndex] - oddImag;
+            real[evenIndex] += oddReal;
+            imag[evenIndex] += oddImag;
+
+            const nextWReal = wReal * wLengthReal - wImag * wLengthImag;
+            wImag = wReal * wLengthImag + wImag * wLengthReal;
+            wReal = nextWReal;
+          }
+        }
+      }
+    }
+
+    function computeSegmentSpectrum(samples) {
+      if (samples.length < 8) return null;
+
+      const sourceLength = Math.min(samples.length, SPECTRUM_SOURCE_SAMPLE_LIMIT);
+      const fftSize = Math.min(
+        SPECTRUM_MAX_FFT_SIZE,
+        Math.max(SPECTRUM_MIN_FFT_SIZE, nextPowerOfTwo(sourceLength * SPECTRUM_ZERO_PAD_FACTOR))
+      );
+      const real = new Float32Array(fftSize);
+      const imag = new Float32Array(fftSize);
+      let mean = 0;
+
+      for (let i = 0; i < sourceLength; i += 1) {
+        mean += samples[i];
+      }
+      mean /= sourceLength;
+
+      for (let i = 0; i < sourceLength; i += 1) {
+        const windowValue = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / Math.max(1, sourceLength - 1));
+        real[i] = (samples[i] - mean) * windowValue;
+      }
+
+      fftInPlace(real, imag);
+
+      const binCount = fftSize / 2;
+      const bins = [];
+      for (let bin = 1; bin < binCount; bin += 1) {
+        const freq = bin * currentSampleRate / fftSize;
+        const magnitude = Math.hypot(real[bin], imag[bin]) / fftSize;
+        bins.push({ freq, db: 20 * Math.log10(magnitude + 1e-9) });
+      }
+
+      return bins;
+    }
+
+    function drawPowerSpectrum(view, coordinates) {
+      if (!coordinates.samples || coordinates.samples.length < 16) return;
+
+      const range = spectrumVisibleRange();
+      const minHz = range.minHz;
+      const maxHz = range.maxHz;
+      const segmentLength = Math.floor(coordinates.samples.length / 3);
+      if (segmentLength < 8) return;
+
+      const spectra = [];
+      const segments = phaseTimeColorSegments(3, 1);
+
+      for (let segmentIndex = 0; segmentIndex < 3; segmentIndex += 1) {
+        const start = segmentIndex * segmentLength;
+        const end = segmentIndex === 2 ? coordinates.samples.length : start + segmentLength;
+        const spectrum = computeSegmentSpectrum(coordinates.samples.slice(start, end));
+        if (spectrum) {
+          spectra.push({ spectrum, color: segments[segmentIndex].color });
+        }
+      }
+
+      if (!spectra.length) return;
+
+      let maxDb = -160;
+      let hasVisiblePoint = false;
+      spectra.forEach(({ spectrum }) => {
+        spectrum.forEach((point) => {
+          if (point.freq >= minHz && point.freq <= maxHz) {
+            hasVisiblePoint = true;
+            maxDb = Math.max(maxDb, point.db);
+          }
+        });
+      });
+      if (!hasVisiblePoint) return;
+      const minDb = maxDb - 70;
+
+      view.spectra = spectra;
+      view.spectrumScale = { minHz, maxHz, minDb, maxDb };
+
+      view.ctx.lineWidth = 1.4;
+      view.ctx.lineJoin = "round";
+      view.ctx.lineCap = "round";
+
+      spectra.forEach(({ spectrum, color }) => {
+        view.ctx.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.72)`;
+        view.ctx.beginPath();
+        let started = false;
+
+        spectrum.forEach((point) => {
+          if (point.freq < minHz || point.freq > maxHz) return;
+
+          const x = (point.freq - minHz) / Math.max(1, maxHz - minHz) * view.width;
+          const normalized = clamp((point.db - minDb) / Math.max(1, maxDb - minDb), 0, 1);
+          const y = view.height - normalized * (view.height - 18) - 8;
+
+          if (!started) {
+            view.ctx.moveTo(x, y);
+            started = true;
+          } else {
+            view.ctx.lineTo(x, y);
+          }
+        });
+
+        view.ctx.stroke();
+      });
+    }
+
+    function spectrumPointToCanvas(view, point) {
+      if (!view.spectrumScale) return null;
+
+      const { minHz, maxHz, minDb, maxDb } = view.spectrumScale;
+      const x = (point.freq - minHz) / Math.max(1, maxHz - minHz) * view.width;
+      const normalized = clamp((point.db - minDb) / Math.max(1, maxDb - minDb), 0, 1);
+      const y = view.height - normalized * (view.height - 18) - 8;
+      return { x, y };
+    }
+
+    function drawSpectrumHover(view) {
+      if (!spectrumHover || !view.spectrumScale) return;
+
+      const point = spectrumHover.point;
+      const canvasPoint = spectrumPointToCanvas(view, point);
+      if (!canvasPoint) return;
+
+      const color = spectrumHover.color;
+      const label = `${formatHzLabel(point.freq)}  ${point.db.toFixed(1)} dB`;
+      const labelWidth = Math.min(168, Math.max(112, label.length * 7));
+      const labelX = clamp(canvasPoint.x + 10, 6, view.width - labelWidth - 6);
+      const labelY = clamp(canvasPoint.y - 28, 8, view.height - 34);
+
+      view.axesCtx.save();
+      view.axesCtx.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.9)`;
+      view.axesCtx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.95)`;
+      view.axesCtx.lineWidth = 1;
+      view.axesCtx.beginPath();
+      view.axesCtx.moveTo(canvasPoint.x, 0);
+      view.axesCtx.lineTo(canvasPoint.x, view.height);
+      view.axesCtx.stroke();
+      view.axesCtx.beginPath();
+      view.axesCtx.arc(canvasPoint.x, canvasPoint.y, 3.5, 0, Math.PI * 2);
+      view.axesCtx.fill();
+      view.axesCtx.fillStyle = "rgba(5, 7, 10, 0.84)";
+      view.axesCtx.fillRect(labelX, labelY, labelWidth, 22);
+      view.axesCtx.strokeStyle = "rgba(154, 164, 178, 0.28)";
+      view.axesCtx.strokeRect(labelX, labelY, labelWidth, 22);
+      view.axesCtx.fillStyle = "rgba(230, 233, 239, 0.94)";
+      view.axesCtx.fillText(label, labelX + 7, labelY + 15);
+      view.axesCtx.restore();
+    }
+
+    function updateSpectrumHover(event) {
+      if (spectrumPan) return;
+
+      const view = spectrumView();
+      if (!view || !view.spectra || !view.spectrumScale) return;
+
+      const rect = view.axesCanvas.getBoundingClientRect();
+      const x = clamp(event.clientX - rect.left, 0, rect.width);
+      const freq = view.spectrumScale.minHz + (x / Math.max(1, rect.width)) * (view.spectrumScale.maxHz - view.spectrumScale.minHz);
+      let best = null;
+
+      view.spectra.forEach(({ spectrum, color }) => {
+        spectrum.forEach((point) => {
+          if (point.freq < view.spectrumScale.minHz || point.freq > view.spectrumScale.maxHz) return;
+
+          const distance = Math.abs(point.freq - freq);
+          if (!best || distance < best.distance) {
+            best = { point, color, distance };
+          }
+        });
+      });
+
+      if (!best) return;
+
+      spectrumHover = best;
+      drawPhaseAxes(view);
+    }
+
+    function beginSpectrumPan(event) {
+      const view = spectrumView();
+      if (!view) return;
+
+      const range = spectrumVisibleRange();
+      if (range.maxHz - range.minHz >= range.fullMaxHz - 1) return;
+
+      event.preventDefault();
+      spectrumPan = {
+        x: event.clientX,
+        minHz: range.minHz,
+        maxHz: range.maxHz
+      };
+      spectrumHover = null;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.style.cursor = "grabbing";
+    }
+
+    function updateSpectrumPan(event) {
+      if (!spectrumPan) return;
+
+      const view = spectrumView();
+      if (!view) return;
+
+      event.preventDefault();
+      const rect = view.axesCanvas.getBoundingClientRect();
+      const fullMaxHz = spectrumFullMaxHz();
+      const windowWidthHz = spectrumPan.maxHz - spectrumPan.minHz;
+      const dx = event.clientX - spectrumPan.x;
+      const deltaHz = -dx / Math.max(1, rect.width) * windowWidthHz;
+      let minHz = spectrumPan.minHz + deltaHz;
+      let maxHz = minHz + windowWidthHz;
+
+      if (minHz < 0) {
+        minHz = 0;
+        maxHz = windowWidthHz;
+      }
+      if (maxHz > fullMaxHz) {
+        maxHz = fullMaxHz;
+        minHz = Math.max(0, maxHz - windowWidthHz);
+      }
+
+      spectrumZoom = {
+        minHz,
+        maxHz: Math.abs(maxHz - fullMaxHz) < 1 && minHz < 1 ? null : maxHz
+      };
+      drawPhaseAxes(view);
+      drawSavedPhasePortraits();
+    }
+
+    function endSpectrumPan(event) {
+      if (!spectrumPan) return;
+
+      spectrumPan = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      event.currentTarget.style.cursor = "crosshair";
+      updateSpectrumHover(event);
+    }
+
+    function clearSpectrumHover() {
+      if (spectrumPan) return;
+
+      spectrumHover = null;
+      const view = spectrumView();
+      if (view) {
+        drawPhaseAxes(view);
+      }
+    }
+
+    function zoomSpectrum(event) {
+      const view = spectrumView();
+      if (!view) return;
+
+      event.preventDefault();
+      const rect = view.axesCanvas.getBoundingClientRect();
+      const pointerRatio = rect.width > 0 ? clamp((event.clientX - rect.left) / rect.width, 0, 1) : 0.5;
+      const range = spectrumVisibleRange();
+      const fullMaxHz = range.fullMaxHz;
+      const currentWidth = range.maxHz - range.minHz;
+      const factor = event.deltaY < 0 ? 0.74 : 1.35;
+      const minWidth = Math.min(fullMaxHz, Math.max(10, fullMaxHz / 300));
+      const nextWidth = clamp(currentWidth * factor, minWidth, fullMaxHz);
+      const anchorHz = range.minHz + pointerRatio * currentWidth;
+      let minHz = anchorHz - pointerRatio * nextWidth;
+      let maxHz = minHz + nextWidth;
+
+      if (minHz < 0) {
+        minHz = 0;
+        maxHz = nextWidth;
+      }
+      if (maxHz > fullMaxHz) {
+        maxHz = fullMaxHz;
+        minHz = Math.max(0, maxHz - nextWidth);
+      }
+
+      spectrumZoom = {
+        minHz,
+        maxHz: Math.abs(maxHz - fullMaxHz) < 1 && minHz < 1 ? null : maxHz
+      };
+      drawPhaseAxes(view);
+      drawSavedPhasePortraits();
+    }
+
+    function resetSpectrumZoom() {
+      spectrumZoom = { minHz: 0, maxHz: null };
+      clearSpectrumHover();
+      drawSavedPhasePortraits();
+    }
+
+    function drawSavedPhasePortraits() {
+      const coordinates = getPhaseCoordinates();
+      lastPhasePointCount = coordinates ? coordinates.pointCount : 0;
+      if (coordinates) {
+        lastPhaseAxisMax = Math.max(coordinates.maxAbs, coordinates.maxAbs3D || 0.001);
+      }
+      phaseViews.forEach((view) => {
+        clearPhasePortrait(view);
+        drawPhasePortrait(view, coordinates);
+      });
+      updatePhaseTitles();
+    }
+
+    function drawSpectrogram(now) {
+      if (!analyser) return;
+
+      const elapsed = Math.max(0, now - lastDrawTime);
+      lastDrawTime = now;
+      analyser.getByteTimeDomainData(timeData);
+      updateLevelMeter();
+      drawSavedPhasePortraits();
+
+      const windowSeconds = Number(windowSlider.value);
+      scrollCarry += elapsed / 1000 * (canvasCssWidth / windowSeconds);
+      const pixels = Math.floor(scrollCarry);
+
+      if (pixels > 0) {
+        scrollCarry -= pixels;
+        shiftCanvas(pixels);
+        drawFrequencyColumn(canvasCssWidth - pixels, pixels);
+      }
+
+      animationId = requestAnimationFrame(drawSpectrogram);
+    }
+
+    function updateLabels() {
+      const selectedFrame = syncFrameControls();
+      const usePca = phasePcaModeCheckbox.checked;
+      const tauLabel = formatTau(Number(phaseTauSlider.value));
+      const autoAxisLimitLabel = phaseAutoAxisLimit().toFixed(2);
+
+      phaseDimensionControl.classList.toggle("is-hidden", !usePca);
+      updateTopAnalysisSplit();
+
+      windowValue.textContent = `${windowSlider.value} s`;
+      maxFreqValue.textContent = maxFreqSlider.value;
+      gainValue.textContent = `${Number(gainSlider.value).toFixed(1)}x`;
+      floorValue.textContent = `${floorSlider.value} dB`;
+      phaseTauValue.textContent = tauLabel;
+      phaseFrameStartValue.textContent = `${formatPercent(selectedFrame.start)}%`;
+      phaseFrameSizeValue.textContent = formatPhaseDuration(Number(windowSlider.value) * selectedFrame.size * 10);
+      phaseHistoryFramesValue.textContent = `${phaseHistoryFramesSlider.value} old`;
+      phaseColorPointSizeValue.textContent = `${Number(phaseColorPointSizeSlider.value).toFixed(1)} px`;
+      phaseColorGammaValue.textContent = Number(phaseColorGammaSlider.value).toFixed(2);
+      phaseColorGlowValue.textContent = Number(phaseColorGlowSlider.value).toFixed(2);
+      phaseAutoAxisLimitValue.textContent = autoAxisLimitLabel;
+      phaseDimensionValue.textContent = phaseDimensionSlider.value;
+      updatePhaseTitles();
+    }
+
+    function updatePhaseTitles() {
+      const selectedFrame = syncFrameControls();
+      const usePca = phasePcaModeCheckbox.checked;
+      const tauLabel = formatTau(Number(phaseTauSlider.value));
+      const phaseModeLabel = usePca ? `PCA D=${phaseDimensionSlider.value}, tau ${tauLabel}` : `tau ${tauLabel}`;
+      const formattedPointCount = lastPhasePointCount.toLocaleString();
+      const frameLabel = `${formatPercent(selectedFrame.start)}-${formatPercent(selectedFrame.end)}%`;
+
+      phasePointCountValue.textContent = formattedPointCount;
+
+      phaseViews.forEach((view) => {
+        if (view.mode === "timeGlow") {
+          view.title.textContent = `3D color PCA: ${phaseModeLabel}, frame ${frameLabel}`;
+        } else if (view.mode === "timeZ") {
+          view.title.textContent = `PC1/PC2 + time Z: ${phaseModeLabel}, frame ${frameLabel}`;
+        } else if (view.mode === "history") {
+          view.title.textContent = `3D PCA frame timeline: current + ${phaseHistoryFramesSlider.value} old frames, ${phaseModeLabel}`;
+        } else if (view.mode === "spectrum") {
+          view.title.textContent = `Power spectrum: 3 frame thirds, frame ${frameLabel}`;
+        } else {
+          view.title.textContent = `${view.name}: ${phaseModeLabel}, frame ${frameLabel}`;
+        }
+      });
+    }
+
+    startBtn.addEventListener("click", startMicrophone);
+    pauseBtn.addEventListener("click", pauseMicrophone);
+    stopBtn.addEventListener("click", stopMicrophone);
+    clearBtn.addEventListener("click", () => {
+      clearSpectrogram();
+      if (audioContext) {
+        resetWaveformBuffer();
+      } else {
+        waveformBuffer = null;
+        waveformWriteIndex = 0;
+        waveformSampleCount = 0;
+      }
+      lastPhasePointCount = 0;
+      updatePhaseTitles();
+      phaseViews.forEach(clearPhasePortrait);
+    });
+
+    axesCanvas.addEventListener("pointerdown", beginPhaseWindowDrag);
+    axesCanvas.addEventListener("pointermove", (event) => {
+      if (phaseWindowDrag) {
+        updatePhaseWindowFromPointer(event);
+      } else {
+        updateSpectrogramCursor(event);
+      }
+    });
+    axesCanvas.addEventListener("pointerup", endPhaseWindowDrag);
+    axesCanvas.addEventListener("pointercancel", endPhaseWindowDrag);
+    axesCanvas.addEventListener("pointerleave", () => {
+      if (!phaseWindowDrag) {
+        axesCanvas.style.cursor = "default";
+      }
+    });
+
+    phaseViews.filter((view) => view.camera).forEach((view) => {
+      const axesViewCanvas = view.axesCanvas;
+      axesViewCanvas.addEventListener("pointerdown", beginPca3dDrag);
+      axesViewCanvas.addEventListener("pointermove", updatePca3dDrag);
+      axesViewCanvas.addEventListener("pointerup", endPca3dDrag);
+      axesViewCanvas.addEventListener("pointercancel", endPca3dDrag);
+      axesViewCanvas.addEventListener("wheel", zoomPca3d, { passive: false });
+    });
+
+    const spectrumAxesCanvas = spectrumView().axesCanvas;
+    spectrumAxesCanvas.addEventListener("pointerdown", beginSpectrumPan);
+    spectrumAxesCanvas.addEventListener("pointermove", updateSpectrumHover);
+    spectrumAxesCanvas.addEventListener("pointermove", updateSpectrumPan);
+    spectrumAxesCanvas.addEventListener("pointerup", endSpectrumPan);
+    spectrumAxesCanvas.addEventListener("pointercancel", endSpectrumPan);
+    spectrumAxesCanvas.addEventListener("pointerleave", clearSpectrumHover);
+    spectrumAxesCanvas.addEventListener("wheel", zoomSpectrum, { passive: false });
+    spectrumAxesCanvas.addEventListener("dblclick", resetSpectrumZoom);
+
+    fftSizeSelect.addEventListener("change", () => {
+      if (audioContext) {
+        rebuildAnalyser();
+      }
+      drawAxes();
+    });
+
+    phaseAxisModeSelect.addEventListener("change", () => {
+      if (phaseAxisModeSelect.value === "fixed") {
+        fixedPhaseAxisMax = Math.max(phaseAutoAxisLimit(), lastPhaseAxisMax);
+      }
+      updateLabels();
+      drawSavedPhasePortraits();
+    });
+
+    [windowSlider, maxFreqSlider, topSpectrumWidthSlider, gainSlider, floorSlider, phaseTauSlider, phasePcaModeCheckbox, phaseDimensionSlider, phaseFrameStartSlider, phaseFrameSizeSlider, phaseHistoryFramesSlider, phaseAutoAxisLimitSlider, phaseColorPointSizeSlider, phaseColorGammaSlider, phaseColorGlowSlider].forEach((input) => {
+      input.addEventListener("input", () => {
+        if (input === phasePcaModeCheckbox && phasePcaModeCheckbox.checked) {
+          phaseTauSlider.value = "0.30";
+          phaseDimensionSlider.value = "3";
+        }
+
+        updateLabels();
+        if (input === topSpectrumWidthSlider) {
+          resizeCanvas();
+          drawSavedPhasePortraits();
+          return;
+        }
+        if (input === phasePcaModeCheckbox) {
+          resizePhaseCanvases();
+        }
+        if (analyser) {
+          analyser.minDecibels = Number(floorSlider.value);
+        }
+        if (input === maxFreqSlider) {
+          clampSpectrumZoom();
+          clearSpectrumHover();
+          drawAxes();
+          phaseViews.forEach(drawPhaseAxes);
+        }
+        if (input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseHistoryFramesSlider) {
+          phaseViews.forEach(drawPhaseAxes);
+        }
+        if (input === windowSlider || input === phaseTauSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseHistoryFramesSlider) {
+          drawAxes();
+        }
+        if (input === windowSlider || input === maxFreqSlider || input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseHistoryFramesSlider || input === phaseAutoAxisLimitSlider || input === phaseColorPointSizeSlider || input === phaseColorGammaSlider || input === phaseColorGlowSlider) {
+          drawSavedPhasePortraits();
+        }
+      });
+    });
+
+    window.addEventListener("resize", resizeCanvas);
+
+    updateLabels();
+    resizeCanvas();
+  </script>
+</body>
+</html>
