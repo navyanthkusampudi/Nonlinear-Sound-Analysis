@@ -134,6 +134,10 @@
       opacity: 0.48;
     }
 
+    .file-input {
+      display: none;
+    }
+
     .meter {
       min-width: 130px;
       height: 10px;
@@ -166,6 +170,25 @@
       min-height: 300px;
     }
 
+    .spectrogram-scrollbar {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 8px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      padding: 3px 8px;
+      background: rgba(5, 7, 10, 0.78);
+      border: 1px solid rgba(154, 164, 178, 0.24);
+      border-radius: 8px;
+      z-index: 3;
+    }
+
+    .spectrogram-scrollbar input {
+      width: 100%;
+    }
+
     .top-analysis-grid {
       display: grid;
       grid-template-columns: 2fr 1fr;
@@ -183,25 +206,10 @@
       min-height: 330px;
     }
 
-    .resizable-phase-wrap {
-      resize: vertical;
-      overflow: hidden;
-      min-height: 220px;
-      max-height: 85vh;
-      height: 430px;
-    }
-
     .phase-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
-    }
-
-    .phase-2d-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      margin-top: 14px;
     }
 
     .phase-controls {
@@ -211,7 +219,7 @@
     }
 
     .is-hidden {
-      display: none;
+      display: none !important;
     }
 
     .phase-panel {
@@ -247,7 +255,7 @@
 
     #phaseTimeGlowAxes,
     #phaseTimeZAxes,
-    #phaseHistoryAxes {
+    #phasePcaLineAxes {
       touch-action: none;
       cursor: grab;
     }
@@ -288,8 +296,7 @@
     }
 
     body.mobile-mode .top-analysis-grid,
-    body.mobile-mode .phase-grid,
-    body.mobile-mode .phase-2d-grid {
+    body.mobile-mode .phase-grid {
       grid-template-columns: 1fr !important;
     }
 
@@ -302,13 +309,6 @@
     body.mobile-mode .phase-wrap {
       height: 76dvh;
       min-height: 560px;
-    }
-
-    body.mobile-mode .resizable-phase-wrap {
-      resize: none;
-      height: var(--mobile-history-height, 900px);
-      min-height: 560px;
-      max-height: 88dvh;
     }
 
     body.mobile-mode input[type="range"] {
@@ -435,15 +435,7 @@
         min-height: 560px;
       }
 
-      .resizable-phase-wrap {
-        min-height: 560px;
-      }
-
       .phase-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .phase-2d-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -454,15 +446,18 @@
     <div class="stack">
       <section class="card">
         <h1 class="title">Live Microphone Spectrogram and Phase Portrait</h1>
-        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone. Use Pause to freeze the recording and keep selecting spectrogram windows for phase plots. On mobile, use Show shared controls in the Spectrogram tab to set the common frame window, tau, and PCA dimension used by all plots. Use one finger on a 3D plot to rotate, two fingers to pinch-zoom and drag/pan, and the right-side scroll strip to move up/down the page.</p>
+        <p id="status" class="note">Click Start Mic, allow microphone access, then make sound near the microphone, or upload a WAV/MP3 file. Use Pause to freeze microphone recording and keep selecting spectrogram windows for phase plots. On mobile, use Show shared controls in the Spectrogram tab to set the common frame window, tau, and PCA dimension used by all plots. Use one finger on a 3D plot to rotate, two fingers to pinch-zoom and drag/pan, and the right-side scroll strip to move up/down the page.</p>
       </section>
 
       <section class="card">
         <div class="controls">
           <button id="startBtn" type="button">Start Mic</button>
+          <button id="playFileBtn" type="button" disabled>Play</button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
           <button id="stopBtn" type="button" disabled>Stop</button>
           <button id="clearBtn" type="button">Clear</button>
+          <button id="uploadBtn" type="button">Upload WAV/MP3</button>
+          <input id="audioFileInput" class="file-input" type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp3,audio/*" aria-label="Upload WAV or MP3 audio file" />
 
           <div class="ctl">
             <label for="windowSeconds">Window</label>
@@ -488,6 +483,18 @@
             <label for="topSpectrumWidth">Spectrum width</label>
             <input id="topSpectrumWidth" type="range" min="20" max="50" value="33" step="1" />
             <span id="topSpectrumWidthValue" class="value">33%</span>
+          </div>
+
+          <div id="spectrogramZoomControl" class="ctl is-hidden">
+            <label for="spectrogramZoom">Spec zoom</label>
+            <input id="spectrogramZoom" type="range" min="1" max="50" value="1" step="0.1" />
+            <span id="spectrogramZoomValue" class="value">1.0x</span>
+          </div>
+
+          <div id="playbackRateControl" class="ctl is-hidden">
+            <label for="playbackRate">Speed</label>
+            <input id="playbackRate" type="range" min="0.25" max="2" value="1" step="0.05" />
+            <span id="playbackRateValue" class="value">1.00x</span>
           </div>
 
           <div class="ctl">
@@ -526,18 +533,12 @@
 
           <button id="mobileControlsToggle" class="mobile-controls-toggle" type="button" aria-expanded="false">Show shared controls</button>
 
-          <div class="ctl">
-            <label for="mobileHistoryHeight">Timeline height</label>
-            <input id="mobileHistoryHeight" type="range" min="320" max="960" value="900" step="10" />
-            <span id="mobileHistoryHeightValue" class="value">900 px</span>
-          </div>
-
           <div class="mobile-tabs" aria-label="Mobile plot selector">
             <button class="mobile-tab is-active" type="button" data-mobile-panel="spectrogram">Spectrogram + selection</button>
             <button class="mobile-tab" type="button" data-mobile-panel="spectrum">Spectrum</button>
             <button class="mobile-tab" type="button" data-mobile-panel="pca">3D PCA</button>
             <button class="mobile-tab" type="button" data-mobile-panel="timez">Time-Z</button>
-            <button class="mobile-tab" type="button" data-mobile-panel="timeline">Timeline</button>
+            <button class="mobile-tab" type="button" data-mobile-panel="line">PCA line</button>
             <button class="mobile-tab" type="button" data-mobile-panel="all">All</button>
           </div>
         </div>
@@ -548,6 +549,9 @@
           <div id="spectrogramPanel" class="canvas-wrap spectrogram-wrap">
             <canvas id="spectrogram" aria-label="Live scrolling microphone spectrogram"></canvas>
             <canvas id="axes" aria-hidden="true"></canvas>
+            <div id="spectrogramScrollBar" class="spectrogram-scrollbar is-hidden">
+              <input id="spectrogramScroll" type="range" min="0" max="100" value="0" step="0.1" aria-label="Scroll through uploaded audio spectrogram" />
+            </div>
           </div>
 
           <div id="spectrumPanel" class="phase-panel">
@@ -589,18 +593,6 @@
             <label for="phaseFrameSize">Frame size</label>
             <input id="phaseFrameSize" type="range" min="0.1" max="100" value="0.5" step="0.01" />
             <span id="phaseFrameSizeValue" class="value">50 ms</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseHistoryFrames">History</label>
-            <input id="phaseHistoryFrames" type="range" min="0" max="12" value="5" step="1" />
-            <span id="phaseHistoryFramesValue" class="value">5 old</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseTimelineSpeed">Timeline speed</label>
-            <input id="phaseTimelineSpeed" type="range" min="0" max="2" value="0.25" step="0.05" />
-            <span id="phaseTimelineSpeedValue" class="value">0.25x</span>
           </div>
 
           <div class="ctl">
@@ -659,14 +651,12 @@
               <canvas id="phaseTimeZAxes" aria-hidden="true"></canvas>
             </div>
           </div>
-        </div>
 
-        <div class="phase-2d-grid">
-          <div id="timelinePanel" class="phase-panel">
-            <div id="phaseHistoryTitle" class="panel-title">3D PCA frame timeline</div>
-            <div id="phaseHistoryWrap" class="canvas-wrap phase-wrap resizable-phase-wrap">
-              <canvas id="phaseHistory" aria-label="Historical PCA scatter frames separated on a time axis"></canvas>
-              <canvas id="phaseHistoryAxes" aria-hidden="true"></canvas>
+          <div id="linePanel" class="phase-panel">
+            <div id="phasePcaLineTitle" class="panel-title">3D PCA continuous line</div>
+            <div class="canvas-wrap phase-wrap">
+              <canvas id="phasePcaLine" aria-label="3D time-colored PCA phase portrait continuous line plot"></canvas>
+              <canvas id="phasePcaLineAxes" aria-hidden="true"></canvas>
             </div>
           </div>
         </div>
@@ -681,21 +671,30 @@
     const axesCtx = axesCanvas.getContext("2d");
 
     const startBtn = document.getElementById("startBtn");
+    const playFileBtn = document.getElementById("playFileBtn");
     const pauseBtn = document.getElementById("pauseBtn");
     const stopBtn = document.getElementById("stopBtn");
     const clearBtn = document.getElementById("clearBtn");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const audioFileInput = document.getElementById("audioFileInput");
     const windowSlider = document.getElementById("windowSeconds");
     const timeDirectionSelect = document.getElementById("timeDirection");
     const maxFreqSlider = document.getElementById("maxFreq");
     const topSpectrumWidthSlider = document.getElementById("topSpectrumWidth");
+    const spectrogramZoomControl = document.getElementById("spectrogramZoomControl");
+    const spectrogramZoomSlider = document.getElementById("spectrogramZoom");
+    const spectrogramZoomValue = document.getElementById("spectrogramZoomValue");
+    const playbackRateControl = document.getElementById("playbackRateControl");
+    const playbackRateSlider = document.getElementById("playbackRate");
+    const playbackRateValue = document.getElementById("playbackRateValue");
+    const spectrogramScrollBar = document.getElementById("spectrogramScrollBar");
+    const spectrogramScrollSlider = document.getElementById("spectrogramScroll");
     const fftSizeSelect = document.getElementById("fftSize");
     const gainSlider = document.getElementById("gain");
     const floorSlider = document.getElementById("floorDb");
     const phaseTauSlider = document.getElementById("phaseTau");
     const phaseFrameStartSlider = document.getElementById("phaseFrameStart");
     const phaseFrameSizeSlider = document.getElementById("phaseFrameSize");
-    const phaseHistoryFramesSlider = document.getElementById("phaseHistoryFrames");
-    const phaseTimelineSpeedSlider = document.getElementById("phaseTimelineSpeed");
     const phaseColorPointSizeSlider = document.getElementById("phaseColorPointSize");
     const phaseColorGammaSlider = document.getElementById("phaseColorGamma");
     const phaseColorGlowSlider = document.getElementById("phaseColorGlow");
@@ -712,8 +711,6 @@
     const phaseTauValue = document.getElementById("phaseTauValue");
     const phaseFrameStartValue = document.getElementById("phaseFrameStartValue");
     const phaseFrameSizeValue = document.getElementById("phaseFrameSizeValue");
-    const phaseHistoryFramesValue = document.getElementById("phaseHistoryFramesValue");
-    const phaseTimelineSpeedValue = document.getElementById("phaseTimelineSpeedValue");
     const phaseColorPointSizeValue = document.getElementById("phaseColorPointSizeValue");
     const phaseColorGammaValue = document.getElementById("phaseColorGammaValue");
     const phaseColorGlowValue = document.getElementById("phaseColorGlowValue");
@@ -724,30 +721,19 @@
     const meterFill = document.getElementById("meterFill");
     const statusText = document.getElementById("status");
     const topAnalysisGrid = document.getElementById("topAnalysisGrid");
-    const phaseHistoryWrap = document.getElementById("phaseHistoryWrap");
     const mobileModeToggle = document.getElementById("mobileModeToggle");
     const mobileControlsToggle = document.getElementById("mobileControlsToggle");
-    const mobileHistoryHeightSlider = document.getElementById("mobileHistoryHeight");
-    const mobileHistoryHeightValue = document.getElementById("mobileHistoryHeightValue");
     const mobileTabButtons = Array.from(document.querySelectorAll(".mobile-tab"));
     const mobilePanels = {
       spectrogram: document.getElementById("spectrogramPanel"),
       spectrum: document.getElementById("spectrumPanel"),
       pca: document.getElementById("pcaPanel"),
       timez: document.getElementById("timeZPanel"),
-      timeline: document.getElementById("timelinePanel")
+      line: document.getElementById("linePanel")
     };
     let activeMobilePanel = "spectrogram";
 
     const phaseViews = [
-      {
-        name: "3D PCA frame timeline",
-        mode: "history",
-        canvas: document.getElementById("phaseHistory"),
-        axesCanvas: document.getElementById("phaseHistoryAxes"),
-        title: document.getElementById("phaseHistoryTitle"),
-        rgb: [251, 191, 36]
-      },
       {
         name: "3D color PCA phase space",
         mode: "timeGlow",
@@ -765,6 +751,14 @@
         rgb: [125, 211, 252]
       },
       {
+        name: "3D PCA continuous line",
+        mode: "pcaLine",
+        canvas: document.getElementById("phasePcaLine"),
+        axesCanvas: document.getElementById("phasePcaLineAxes"),
+        title: document.getElementById("phasePcaLineTitle"),
+        rgb: [94, 234, 212]
+      },
+      {
         name: "Power spectrum",
         mode: "spectrum",
         canvas: document.getElementById("phaseSpectrum"),
@@ -779,10 +773,8 @@
       view.axesCtx = view.axesCanvas.getContext("2d");
       view.width = 0;
       view.height = 0;
-      if (view.mode === "timeGlow" || view.mode === "timeZ" || view.mode === "history") {
-        view.camera = view.mode === "history"
-          ? { yaw: -0.75, pitch: 0.55, zoom: 1, panX: 0, panY: 0 }
-          : { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
+      if (view.mode === "timeGlow" || view.mode === "timeZ" || view.mode === "pcaLine") {
+        view.camera = { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
       }
     });
 
@@ -801,7 +793,6 @@
     let fixedPhaseAxisMax = 1;
     let animationId = 0;
     let lastDrawTime = 0;
-    let phaseHistoryMotionStartTime = 0;
     let scrollCarry = 0;
     let dpr = 1;
     let canvasCssWidth = 0;
@@ -809,6 +800,17 @@
     let phaseWindowDrag = null;
     let phase3dDrag = null;
     let lastPhasePointCount = 0;
+    let activeSource = "none";
+    let uploadedAudioBuffer = null;
+    let fileAudioContext = null;
+    let fileSourceNode = null;
+    let filePlaybackOffset = 0;
+    let filePlaybackStartedAt = 0;
+    let filePlaybackAnimationId = 0;
+    let lastFilePlaybackDrawTime = 0;
+    let isFilePlaying = false;
+    let fileDurationSeconds = 0;
+    let spectrogramViewStartSeconds = 0;
     let spectrumZoom = { minHz: 0, maxHz: null };
     let spectrumHover = null;
     let spectrumPan = null;
@@ -823,13 +825,6 @@
 
     function isMobileModeActive() {
       return document.body.classList.contains("mobile-mode");
-    }
-
-    function updateMobileHistoryHeight() {
-      const height = clamp(Number(mobileHistoryHeightSlider.value), 320, 960);
-      mobileHistoryHeightSlider.value = String(height);
-      mobileHistoryHeightValue.textContent = `${height} px`;
-      document.documentElement.style.setProperty("--mobile-history-height", `${height}px`);
     }
 
     function applyMobilePanelVisibility() {
@@ -859,7 +854,6 @@
         mobileControlsToggle.textContent = "Show shared controls";
         mobileControlsToggle.setAttribute("aria-expanded", "false");
       }
-      updateMobileHistoryHeight();
       applyMobilePanelVisibility();
       applyMobileControlVisibility();
       resizeCanvas();
@@ -878,30 +872,29 @@
 
     function setupMobileControlGroups() {
       const controlGroups = [
-        { element: windowSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "timeline", "all"] },
-        { element: timeDirectionSelect.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
+        { element: windowSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "line", "all"] },
+        { element: timeDirectionSelect.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "line", "all"] },
         { element: maxFreqSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "all"] },
         { element: topSpectrumWidthSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "all"] },
+        { element: spectrogramZoomControl, panels: ["spectrogram", "all"] },
+        { element: playbackRateControl, panels: ["spectrogram", "all"] },
         { element: fftSizeSelect.closest(".ctl"), panels: ["spectrogram", "spectrum", "all"] },
         { element: gainSlider.closest(".ctl"), panels: ["spectrogram", "all"] },
         { element: floorSlider.closest(".ctl"), panels: ["spectrogram", "all"] },
         { element: meterFill.closest(".ctl"), panels: ["spectrogram", "all"] },
 
-        { element: phaseTauSlider.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
-        { element: phasePcaModeCheckbox.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
-        { element: phaseDimensionControl, panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
-        { element: phaseFrameStartSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "timeline", "all"] },
-        { element: phaseFrameSizeSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "timeline", "all"] },
-        { element: phaseHistoryFramesSlider.closest(".ctl"), panels: ["timeline", "all"] },
-        { element: phaseTimelineSpeedSlider.closest(".ctl"), panels: ["timeline", "all"] },
-        { element: phaseAxisModeSelect.closest(".ctl"), panels: ["pca", "timez", "timeline", "all"] },
-        { element: phaseAutoAxisLimitSlider.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
-        { element: phaseColorPointSizeSlider.closest(".ctl"), panels: ["pca", "timez", "timeline", "all"] },
-        { element: phaseColorGammaSlider.closest(".ctl"), panels: ["pca", "timez", "all"] },
-        { element: phaseColorGlowSlider.closest(".ctl"), panels: ["pca", "timez", "all"] },
-        { element: phasePointCountValue.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "timeline", "all"] },
-        { element: reset3dViewBtn, panels: ["pca", "timez", "timeline", "all"] },
-        { element: mobileHistoryHeightSlider.closest(".ctl"), panels: ["timeline", "all"] }
+        { element: phaseTauSlider.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "line", "all"] },
+        { element: phasePcaModeCheckbox.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "line", "all"] },
+        { element: phaseDimensionControl, panels: ["spectrogram", "pca", "timez", "line", "all"] },
+        { element: phaseFrameStartSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "line", "all"] },
+        { element: phaseFrameSizeSlider.closest(".ctl"), panels: ["spectrogram", "spectrum", "pca", "timez", "line", "all"] },
+        { element: phaseAxisModeSelect.closest(".ctl"), panels: ["pca", "timez", "line", "all"] },
+        { element: phaseAutoAxisLimitSlider.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "line", "all"] },
+        { element: phaseColorPointSizeSlider.closest(".ctl"), panels: ["pca", "timez", "line", "all"] },
+        { element: phaseColorGammaSlider.closest(".ctl"), panels: ["pca", "timez", "line", "all"] },
+        { element: phaseColorGlowSlider.closest(".ctl"), panels: ["pca", "timez", "line", "all"] },
+        { element: phasePointCountValue.closest(".ctl"), panels: ["spectrogram", "pca", "timez", "line", "all"] },
+        { element: reset3dViewBtn, panels: ["pca", "timez", "line", "all"] }
       ];
 
       controlGroups.forEach((group) => {
@@ -960,7 +953,11 @@
 
       resizePhaseCanvases();
 
-      clearSpectrogram();
+      if (activeSource === "file" && waveformBuffer && waveformSampleCount) {
+        drawStaticSpectrogram();
+      } else {
+        clearSpectrogram();
+      }
       drawAxes();
     }
 
@@ -1024,6 +1021,12 @@
       }
 
       axesCtx.fillStyle = "rgba(154, 164, 178, 0.72)";
+      if (activeSource === "file" && fileDurationSeconds > 0) {
+        const view = spectrogramVisibleSampleRange();
+        const startSeconds = view.startSample / Math.max(1, currentSampleRate);
+        const endSeconds = view.endSample / Math.max(1, currentSampleRate);
+        axesCtx.fillText(`${formatSeconds(startSeconds)}-${formatSeconds(endSeconds)}`, Math.max(8, canvasCssWidth - 142), canvasCssHeight - 32);
+      }
       if (isTimeRightToLeft()) {
         axesCtx.fillText("<- time", 8, canvasCssHeight - 12);
       } else {
@@ -1037,7 +1040,7 @@
     function drawPhaseWindowOverlay() {
       if (!canvasCssWidth || !canvasCssHeight) return;
 
-      const windowSeconds = Number(windowSlider.value);
+      const windowSeconds = spectrogramVisibleSeconds();
       const selectedFrame = syncFrameControls();
       const x1 = canvasCssWidth * (selectedFrame.start / 100);
       const x2 = canvasCssWidth * (selectedFrame.end / 100);
@@ -1079,7 +1082,7 @@
         return;
       }
 
-      if (view.mode === "timeGlow" || view.mode === "timeZ" || view.mode === "history") {
+      if (view.mode === "timeGlow" || view.mode === "timeZ" || view.mode === "pcaLine") {
         drawPca3dAxes(view);
         view.axesCtx.restore();
         return;
@@ -1185,7 +1188,7 @@
       const cx = cameraCenterX(view);
       const cy = cameraCenterY(view);
       const axisScale = Math.min(view.width, view.height) * 0.28 * camera.zoom;
-      const zLabel = view.mode === "timeZ" || view.mode === "history" ? "time" : "PC3";
+      const zLabel = view.mode === "timeZ" ? "time" : "PC3";
       const axes = [
         { label: "PC1", point: [1, 0, 0], color: "rgba(81, 196, 211, 0.72)" },
         { label: "PC2", point: [0, 1, 0], color: "rgba(244, 184, 96, 0.72)" },
@@ -1274,6 +1277,38 @@
       waveformSampleCount = Math.min(waveformBuffer.length, waveformSampleCount + input.length);
     }
 
+    function loadAudioBufferIntoWaveform(audioBuffer) {
+      currentSampleRate = audioBuffer.sampleRate;
+      const keepSamples = Math.max(1, audioBuffer.length);
+      waveformBuffer = new Float32Array(keepSamples);
+      const channelCount = Math.max(1, audioBuffer.numberOfChannels);
+      const channels = [];
+      let peak = 0;
+
+      for (let channel = 0; channel < channelCount; channel += 1) {
+        channels.push(audioBuffer.getChannelData(channel));
+      }
+
+      for (let i = 0; i < keepSamples; i += 1) {
+        let sample = 0;
+        for (let channel = 0; channel < channelCount; channel += 1) {
+          sample += channels[channel][i];
+        }
+        sample /= channelCount;
+        waveformBuffer[i] = sample;
+        peak = Math.max(peak, Math.abs(sample));
+      }
+
+      waveformWriteIndex = keepSamples % waveformBuffer.length;
+      waveformSampleCount = keepSamples;
+      meterFill.style.width = `${Math.round(Math.min(1, peak * 2.5) * 100)}%`;
+
+      return {
+        keptSeconds: keepSamples / Math.max(1, currentSampleRate),
+        totalSeconds: audioBuffer.duration
+      };
+    }
+
     function waveformSampleByAge(ageSamples) {
       if (!waveformBuffer || ageSamples < 0 || ageSamples >= waveformSampleCount) return 0;
 
@@ -1302,6 +1337,147 @@
       processorNode.connect(audioContext.destination);
     }
 
+    function stopFilePlayback(resetPosition = false) {
+      if (filePlaybackAnimationId) {
+        cancelAnimationFrame(filePlaybackAnimationId);
+        filePlaybackAnimationId = 0;
+      }
+
+      if (fileSourceNode) {
+        fileSourceNode.onended = null;
+        try {
+          fileSourceNode.stop();
+        } catch (error) {
+          // AudioBufferSourceNode may already have ended.
+        }
+        fileSourceNode.disconnect();
+        fileSourceNode = null;
+      }
+
+      if (fileAudioContext) {
+        fileAudioContext.close();
+        fileAudioContext = null;
+      }
+
+      isFilePlaying = false;
+      if (resetPosition) {
+        filePlaybackOffset = spectrogramViewStartSeconds;
+      }
+      playFileBtn.disabled = activeSource !== "file" || !uploadedAudioBuffer;
+      pauseBtn.disabled = true;
+    }
+
+    function playbackRate() {
+      return Math.max(0.01, Number(playbackRateSlider.value) || 1);
+    }
+
+    function filePlaybackTime() {
+      if (!isFilePlaying || !fileAudioContext) {
+        return clamp(filePlaybackOffset, 0, fileDurationSeconds || 0);
+      }
+
+      return clamp(filePlaybackOffset + (fileAudioContext.currentTime - filePlaybackStartedAt) * playbackRate(), 0, fileDurationSeconds || 0);
+    }
+
+    function updateFileLevelMeter(currentTime) {
+      if (!waveformBuffer || !currentSampleRate) return;
+
+      const centerSample = clamp(Math.round(currentTime * currentSampleRate), 0, waveformSampleCount - 1);
+      const start = Math.max(0, centerSample - 512);
+      const end = Math.min(waveformSampleCount - 1, centerSample + 512);
+      let peak = 0;
+
+      for (let sampleIndex = start; sampleIndex <= end; sampleIndex += 1) {
+        const age = waveformSampleCount - 1 - sampleIndex;
+        peak = Math.max(peak, Math.abs(waveformSampleByAge(age)));
+      }
+
+      meterFill.style.width = `${Math.round(Math.min(1, peak * 2.5) * 100)}%`;
+    }
+
+    function updateFilePlaybackFrame(now) {
+      if (!isFilePlaying) return;
+
+      const currentTime = filePlaybackTime();
+      const visibleSeconds = Math.min(fileDurationSeconds, spectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, fileDurationSeconds - visibleSeconds);
+      spectrogramViewStartSeconds = clamp(currentTime - visibleSeconds, 0, maxStartSeconds);
+      updateFileLevelMeter(currentTime);
+
+      if (!lastFilePlaybackDrawTime || now - lastFilePlaybackDrawTime > 120) {
+        lastFilePlaybackDrawTime = now;
+        redrawFileSpectrogramAndPlots();
+      }
+
+      if (currentTime >= fileDurationSeconds - 0.01) {
+        stopFilePlayback(false);
+        filePlaybackOffset = 0;
+        spectrogramViewStartSeconds = 0;
+        redrawFileSpectrogramAndPlots();
+        statusText.textContent = "Audio file playback finished.";
+        return;
+      }
+
+      filePlaybackAnimationId = requestAnimationFrame(updateFilePlaybackFrame);
+    }
+
+    async function playAudioFile() {
+      if (activeSource !== "file" || !uploadedAudioBuffer) return;
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        statusText.textContent = "This browser does not support the Web Audio API.";
+        return;
+      }
+
+      stopFilePlayback(false);
+      filePlaybackOffset = clamp(filePlaybackOffset || spectrogramViewStartSeconds, 0, Math.max(0, fileDurationSeconds - 0.001));
+      fileAudioContext = new AudioContextClass();
+      await fileAudioContext.resume();
+      fileSourceNode = fileAudioContext.createBufferSource();
+      fileSourceNode.buffer = uploadedAudioBuffer;
+      fileSourceNode.playbackRate.setValueAtTime(playbackRate(), fileAudioContext.currentTime);
+      fileSourceNode.connect(fileAudioContext.destination);
+      filePlaybackStartedAt = fileAudioContext.currentTime;
+      isFilePlaying = true;
+      lastFilePlaybackDrawTime = 0;
+      playFileBtn.disabled = true;
+      pauseBtn.disabled = false;
+      stopBtn.disabled = false;
+      statusText.textContent = `Playing uploaded audio from ${formatSeconds(filePlaybackOffset)} at ${playbackRate().toFixed(2)}x.`;
+
+      fileSourceNode.onended = () => {
+        if (!isFilePlaying) return;
+        stopFilePlayback(false);
+        filePlaybackOffset = 0;
+        spectrogramViewStartSeconds = 0;
+        redrawFileSpectrogramAndPlots();
+        statusText.textContent = "Audio file playback finished.";
+      };
+      fileSourceNode.start(0, filePlaybackOffset);
+      filePlaybackAnimationId = requestAnimationFrame(updateFilePlaybackFrame);
+    }
+
+    function pauseAudioFile() {
+      if (activeSource !== "file") return;
+
+      filePlaybackOffset = filePlaybackTime();
+      stopFilePlayback(false);
+      redrawFileSpectrogramAndPlots();
+      statusText.textContent = `Audio file paused at ${formatSeconds(filePlaybackOffset)}.`;
+    }
+
+    function stopAudioFile() {
+      if (activeSource !== "file") return;
+
+      stopFilePlayback(false);
+      filePlaybackOffset = spectrogramViewStartSeconds;
+      redrawFileSpectrogramAndPlots();
+      stopBtn.disabled = false;
+      pauseBtn.disabled = true;
+      statusText.textContent = `Audio file stopped. Playback will resume from ${formatSeconds(filePlaybackOffset)}.`;
+    }
+
     async function startMicrophone() {
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1315,7 +1491,27 @@
           return;
         }
 
+        if (activeSource === "file") {
+          stopFilePlayback(false);
+          activeSource = "none";
+          uploadedAudioBuffer = null;
+          filePlaybackOffset = 0;
+          audioFileInput.value = "";
+          waveformBuffer = null;
+          waveformWriteIndex = 0;
+          waveformSampleCount = 0;
+          fileDurationSeconds = 0;
+          spectrogramViewStartSeconds = 0;
+          lastPhasePointCount = 0;
+          phaseViews.forEach(clearPhasePortrait);
+          clearSpectrogram();
+          drawAxes();
+        }
+
         startBtn.disabled = true;
+        playFileBtn.disabled = true;
+        uploadBtn.disabled = true;
+        audioFileInput.disabled = true;
         statusText.textContent = "Requesting microphone permission...";
 
         try {
@@ -1337,12 +1533,12 @@
         rebuildAnalyser();
         setupWaveformCapture();
 
+        activeSource = "mic";
         pauseBtn.disabled = false;
         stopBtn.disabled = false;
         statusText.textContent = `Microphone running. Sample rate: ${audioContext.sampleRate} Hz.`;
         drawAxes();
         lastDrawTime = performance.now();
-        phaseHistoryMotionStartTime = lastDrawTime;
         scrollCarry = 0;
         animationId = requestAnimationFrame(drawSpectrogram);
       } catch (error) {
@@ -1351,6 +1547,9 @@
           micStream = null;
         }
         startBtn.disabled = false;
+        playFileBtn.disabled = activeSource !== "file" || !uploadedAudioBuffer;
+        uploadBtn.disabled = false;
+        audioFileInput.disabled = false;
         pauseBtn.disabled = true;
         stopBtn.disabled = true;
         statusText.textContent = `Microphone could not start: ${error.message}`;
@@ -1389,6 +1588,9 @@
       timeData = null;
       meterFill.style.width = "0%";
       startBtn.disabled = false;
+      playFileBtn.disabled = activeSource !== "file" || !uploadedAudioBuffer;
+      uploadBtn.disabled = false;
+      audioFileInput.disabled = false;
       pauseBtn.disabled = true;
       stopBtn.disabled = keepData ? false : true;
 
@@ -1396,8 +1598,14 @@
         waveformBuffer = null;
         waveformWriteIndex = 0;
         waveformSampleCount = 0;
+        activeSource = "none";
+        fileDurationSeconds = 0;
+        spectrogramViewStartSeconds = 0;
+      } else {
+        activeSource = "paused";
       }
 
+      updateSpectrogramViewportControls();
       drawAxes();
     }
 
@@ -1409,15 +1617,36 @@
       statusText.textContent = "Recording paused. Drag or resize the white spectrogram window to update the phase plots from saved data.";
     }
 
+    function pauseCurrentSource() {
+      if (activeSource === "file") {
+        pauseAudioFile();
+        return;
+      }
+
+      pauseMicrophone();
+    }
+
     function stopMicrophone() {
+      const stoppedSource = activeSource;
       shutdownMicrophone(false);
       lastPhasePointCount = 0;
       updatePhaseTitles();
       phaseViews.forEach(clearPhasePortrait);
       startBtn.disabled = false;
+      playFileBtn.disabled = true;
       pauseBtn.disabled = true;
       stopBtn.disabled = true;
-      statusText.textContent = "Microphone stopped.";
+      audioFileInput.value = "";
+      statusText.textContent = stoppedSource === "file" ? "Audio file cleared." : "Microphone stopped.";
+    }
+
+    function stopCurrentSource() {
+      if (activeSource === "file") {
+        stopAudioFile();
+        return;
+      }
+
+      stopMicrophone();
     }
 
     function shiftCanvas(px) {
@@ -1466,6 +1695,234 @@
       meterFill.style.width = `${Math.round(Math.min(1, peak * 2.5) * 100)}%`;
     }
 
+    function spectrogramVisibleSeconds() {
+      if (activeSource === "file" && fileDurationSeconds > 0) {
+        const zoom = Math.max(1, Number(spectrogramZoomSlider.value) || 1);
+        return Math.max(0.02, fileDurationSeconds / zoom);
+      }
+
+      return Number(windowSlider.value);
+    }
+
+    function spectrogramVisibleSampleRange() {
+      if (activeSource !== "file" || !waveformSampleCount) {
+        const samples = Math.max(1, Math.round(Number(windowSlider.value) * currentSampleRate));
+        return {
+          startSample: Math.max(0, waveformSampleCount - samples),
+          endSample: Math.max(0, waveformSampleCount - 1)
+        };
+      }
+
+      const visibleSeconds = Math.min(fileDurationSeconds, spectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, fileDurationSeconds - visibleSeconds);
+      spectrogramViewStartSeconds = clamp(spectrogramViewStartSeconds, 0, maxStartSeconds);
+
+      const startSample = clamp(Math.round(spectrogramViewStartSeconds * currentSampleRate), 0, waveformSampleCount - 1);
+      const endSeconds = isFilePlaying ? filePlaybackTime() : spectrogramViewStartSeconds + visibleSeconds;
+      const endSample = clamp(Math.round(endSeconds * currentSampleRate), startSample, waveformSampleCount - 1);
+
+      return { startSample, endSample };
+    }
+
+    function updateSpectrogramViewportControls() {
+      const showFileControls = activeSource === "file" && fileDurationSeconds > 0;
+      spectrogramZoomControl.classList.toggle("is-hidden", !showFileControls);
+      playbackRateControl.classList.toggle("is-hidden", !showFileControls);
+      spectrogramScrollBar.classList.toggle("is-hidden", !showFileControls);
+      playbackRateValue.textContent = `${playbackRate().toFixed(2)}x`;
+
+      if (!showFileControls) return;
+
+      const maxZoom = Math.max(1, Math.min(100, fileDurationSeconds / 0.05));
+      spectrogramZoomSlider.max = String(maxZoom);
+      spectrogramZoomSlider.value = String(clamp(Number(spectrogramZoomSlider.value) || 1, 1, maxZoom));
+      spectrogramZoomValue.textContent = `${Number(spectrogramZoomSlider.value).toFixed(1)}x`;
+
+      const visibleSeconds = Math.min(fileDurationSeconds, spectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, fileDurationSeconds - visibleSeconds);
+      spectrogramViewStartSeconds = clamp(spectrogramViewStartSeconds, 0, maxStartSeconds);
+      spectrogramScrollSlider.disabled = maxStartSeconds <= 0;
+      spectrogramScrollSlider.value = maxStartSeconds > 0 ? String(spectrogramViewStartSeconds / maxStartSeconds * 100) : "0";
+    }
+
+    function redrawFileSpectrogramAndPlots() {
+      if (activeSource !== "file") return;
+
+      updateSpectrogramViewportControls();
+      drawStaticSpectrogram();
+      drawAxes();
+      drawSavedPhasePortraits();
+    }
+
+    function drawStaticSpectrogram() {
+      clearSpectrogram();
+      if (!waveformBuffer || waveformSampleCount < 8 || !canvasCssWidth || !canvasCssHeight) return;
+
+      const fftSize = Number(fftSizeSelect.value);
+      const halfFft = Math.floor(fftSize / 2);
+      const real = new Float32Array(fftSize);
+      const imag = new Float32Array(fftSize);
+      const columns = Math.max(1, Math.min(Math.floor(canvasCssWidth), 900));
+      const columnWidth = canvasCssWidth / columns;
+      const imageHeight = Math.floor(canvasCssHeight);
+      const view = spectrogramVisibleSampleRange();
+      const windowSamples = Math.max(1, view.endSample - view.startSample + 1);
+      const maxFreq = Number(maxFreqSlider.value);
+      const nyquist = currentSampleRate / 2;
+      const maxBin = Math.min(halfFft - 1, Math.max(1, Math.floor(maxFreq / nyquist * halfFft)));
+      const gain = Number(gainSlider.value);
+      const floorDb = Number(floorSlider.value);
+      const ceilingDb = -20;
+
+      for (let x = 0; x < columns; x += 1) {
+        real.fill(0);
+        imag.fill(0);
+
+        const ratio = columns > 1 ? x / (columns - 1) : 1;
+        const timeRatio = isTimeRightToLeft() ? 1 - ratio : ratio;
+        const centerSample = Math.round(view.startSample + timeRatio * (windowSamples - 1));
+        const centerAge = waveformSampleCount - 1 - centerSample;
+        if (centerAge > waveformSampleCount - 1 + halfFft) continue;
+
+        let mean = 0;
+        let validCount = 0;
+        for (let i = 0; i < fftSize; i += 1) {
+          const age = centerAge + halfFft - i;
+          if (age >= 0 && age < waveformSampleCount) {
+            const sample = waveformSampleByAge(age);
+            real[i] = sample;
+            mean += sample;
+            validCount += 1;
+          }
+        }
+
+        if (validCount < 8) continue;
+        mean /= validCount;
+
+        for (let i = 0; i < fftSize; i += 1) {
+          const windowValue = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / Math.max(1, fftSize - 1));
+          real[i] = (real[i] - mean) * windowValue;
+        }
+
+        fftInPlace(real, imag);
+
+        const drawX = x * columnWidth;
+        for (let y = 0; y < imageHeight; y += 1) {
+          const freqRatio = 1 - y / Math.max(1, imageHeight - 1);
+          const bin = Math.min(maxBin, Math.max(1, Math.floor(freqRatio * maxBin)));
+          const magnitude = Math.hypot(real[bin], imag[bin]) / fftSize;
+          const db = 20 * Math.log10(magnitude + 1e-9);
+          const normalized = clamp((db - floorDb) / Math.max(1, ceilingDb - floorDb), 0, 1);
+          ctx.fillStyle = colorForValue(Math.min(1, normalized * gain));
+          ctx.fillRect(drawX, y, Math.ceil(columnWidth) + 0.5, 1.2);
+        }
+      }
+    }
+
+    function formatSeconds(value) {
+      if (value < 10) {
+        return `${value.toFixed(2).replace(/0$/, "").replace(/\.0$/, "")} s`;
+      }
+
+      return `${value.toFixed(1).replace(/\.0$/, "")} s`;
+    }
+
+    async function loadAudioFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        statusText.textContent = "This browser does not support the Web Audio API.";
+        return;
+      }
+
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = 0;
+      }
+      if (activeSource === "file") {
+        stopFilePlayback(false);
+      }
+      if (activeSource === "mic" || audioContext || analyser) {
+        shutdownMicrophone(false);
+      }
+
+      startBtn.disabled = true;
+      playFileBtn.disabled = true;
+      pauseBtn.disabled = true;
+      stopBtn.disabled = true;
+      uploadBtn.disabled = true;
+      audioFileInput.disabled = true;
+      statusText.textContent = `Loading ${file.name}...`;
+
+      let decodeContext = null;
+      try {
+        decodeContext = new AudioContextClass();
+        const arrayBuffer = await file.arrayBuffer();
+        const audioBuffer = await decodeContext.decodeAudioData(arrayBuffer);
+        if (decodeContext.close) {
+          decodeContext.close();
+          decodeContext = null;
+        }
+
+        const visibleSeconds = clamp(Math.ceil(audioBuffer.duration), Number(windowSlider.min), Number(windowSlider.max));
+        windowSlider.value = String(visibleSeconds);
+        uploadedAudioBuffer = audioBuffer;
+        const loaded = loadAudioBufferIntoWaveform(audioBuffer);
+        fileDurationSeconds = loaded.totalSeconds;
+        filePlaybackOffset = 0;
+        spectrogramZoomSlider.value = "1";
+        playbackRateSlider.value = "1";
+        spectrogramViewStartSeconds = 0;
+        spectrogramScrollSlider.value = "0";
+
+        activeSource = "file";
+        analyser = null;
+        frequencyData = null;
+        timeData = null;
+        lastPhasePointCount = 0;
+        scrollCarry = 0;
+
+        updateLabels();
+        clampSpectrumZoom();
+        drawStaticSpectrogram();
+        drawAxes();
+        drawSavedPhasePortraits();
+
+        startBtn.disabled = false;
+        playFileBtn.disabled = false;
+        pauseBtn.disabled = true;
+        stopBtn.disabled = false;
+        statusText.textContent = `Loaded ${file.name}. Sample rate: ${Math.round(currentSampleRate)} Hz. Press Play to listen and animate the analysis, or use Spec zoom and the scrollbar to choose a region.`;
+      } catch (error) {
+        activeSource = "none";
+        uploadedAudioBuffer = null;
+        filePlaybackOffset = 0;
+        fileDurationSeconds = 0;
+        spectrogramViewStartSeconds = 0;
+        waveformBuffer = null;
+        waveformWriteIndex = 0;
+        waveformSampleCount = 0;
+        meterFill.style.width = "0%";
+        clearSpectrogram();
+        drawAxes();
+        drawSavedPhasePortraits();
+        startBtn.disabled = false;
+        playFileBtn.disabled = true;
+        pauseBtn.disabled = true;
+        stopBtn.disabled = true;
+        audioFileInput.value = "";
+        statusText.textContent = `Audio file could not be loaded: ${error.message}`;
+      } finally {
+        if (decodeContext && decodeContext.close) {
+          decodeContext.close();
+        }
+        uploadBtn.disabled = false;
+        audioFileInput.disabled = false;
+      }
+    }
+
     function roundPercent(value) {
       return Math.round(value * 100) / 100;
     }
@@ -1475,7 +1932,7 @@
     }
 
     function minFrameSizePercent() {
-      return 1 / Math.max(0.001, Number(windowSlider.value));
+      return 1 / Math.max(0.001, spectrogramVisibleSeconds());
     }
 
     function syncFrameControls() {
@@ -1803,13 +2260,8 @@
     function reset3dCamera(view) {
       if (!view || !view.camera) return;
 
-      if (view.mode === "history") {
-        view.camera.yaw = -0.75;
-        view.camera.pitch = 0.55;
-      } else {
-        view.camera.yaw = 0;
-        view.camera.pitch = 0;
-      }
+      view.camera.yaw = 0;
+      view.camera.pitch = 0;
 
       view.camera.zoom = 1;
       view.camera.panX = 0;
@@ -1825,17 +2277,35 @@
     function getPhaseFrame(maxDelaySamples, selectedFrame = syncFrameControls()) {
       if (!currentSampleRate || !waveformBuffer || waveformSampleCount <= maxDelaySamples + 8) return null;
 
-      const sampleRate = currentSampleRate;
-      const windowSamples = Math.round(Number(windowSlider.value) * sampleRate);
-      const oldestSelectionAge = isTimeRightToLeft()
-        ? Math.round(windowSamples * (selectedFrame.end / 100))
-        : Math.round(windowSamples * (1 - selectedFrame.start / 100));
-      const newestSelectionAge = isTimeRightToLeft()
-        ? Math.round(windowSamples * (selectedFrame.start / 100))
-        : Math.round(windowSamples * (1 - selectedFrame.end / 100));
       const maxDrawableAge = waveformSampleCount - 1 - maxDelaySamples;
-      const olderAge = Math.min(oldestSelectionAge, maxDrawableAge);
-      const newerAge = Math.max(0, Math.min(newestSelectionAge, olderAge - 8));
+      let olderAge;
+      let newerAge;
+
+      if (activeSource === "file") {
+        const view = spectrogramVisibleSampleRange();
+        const visibleSamples = Math.max(1, view.endSample - view.startSample);
+        const olderSample = isTimeRightToLeft()
+          ? Math.round(view.startSample + visibleSamples * (1 - selectedFrame.end / 100))
+          : Math.round(view.startSample + visibleSamples * (selectedFrame.start / 100));
+        const newerSample = isTimeRightToLeft()
+          ? Math.round(view.startSample + visibleSamples * (1 - selectedFrame.start / 100))
+          : Math.round(view.startSample + visibleSamples * (selectedFrame.end / 100));
+        const oldestSelectionAge = waveformSampleCount - 1 - olderSample;
+        const newestSelectionAge = waveformSampleCount - 1 - newerSample;
+        olderAge = Math.min(oldestSelectionAge, maxDrawableAge);
+        newerAge = Math.max(0, Math.min(newestSelectionAge, olderAge - 8));
+      } else {
+        const sampleRate = currentSampleRate;
+        const windowSamples = Math.round(Number(windowSlider.value) * sampleRate);
+        const oldestSelectionAge = isTimeRightToLeft()
+          ? Math.round(windowSamples * (selectedFrame.end / 100))
+          : Math.round(windowSamples * (1 - selectedFrame.start / 100));
+        const newestSelectionAge = isTimeRightToLeft()
+          ? Math.round(windowSamples * (selectedFrame.start / 100))
+          : Math.round(windowSamples * (1 - selectedFrame.end / 100));
+        olderAge = Math.min(oldestSelectionAge, maxDrawableAge);
+        newerAge = Math.max(0, Math.min(newestSelectionAge, olderAge - 8));
+      }
 
       return {
         olderAge,
@@ -2042,66 +2512,7 @@
       return `${Math.round(value)} Hz`;
     }
 
-    function getPhaseHistoryCoordinates() {
-      const selectedFrame = syncFrameControls();
-      const oldFrameCount = Number(phaseHistoryFramesSlider.value);
-      const frames = [];
-      let maxAbs = 0.001;
-
-      for (let offset = oldFrameCount + 1; offset >= 0; offset -= 1) {
-        // If time is right-to-left, the newest/current frame is on the left.
-        // Older frames are farther to the right, so we ADD the offset.
-        // If time is left-to-right, the newest/current frame is on the right.
-        // Older frames are farther to the left, so we SUBTRACT the offset.
-        const direction = isTimeRightToLeft() ? 1 : -1;
-        const start = roundPercent(selectedFrame.start + direction * selectedFrame.size * offset);
-        const end = roundPercent(selectedFrame.end + direction * selectedFrame.size * offset);
-        if (start < 0 || end > 100) continue;
-
-        const coordinates = getPhaseCoordinates({ start, size: selectedFrame.size, end }, isMobileModeActive() ? 900 : 2400);
-        if (!coordinates || coordinates.points.length < 2) continue;
-
-        maxAbs = Math.max(maxAbs, coordinates.maxAbs);
-        frames.push({
-          coordinates,
-          offset,
-          isCurrent: offset === 0
-        });
-      }
-
-      if (!frames.length) return null;
-
-      return {
-        frames,
-        maxAbs,
-        selectedFrame
-      };
-    }
-
-    function phaseHistoryMotionProgress(selectedFrame) {
-      if (!analyser) return 0;
-
-      const speed = Number(phaseTimelineSpeedSlider.value);
-
-      // 0 pauses the bottom 3D PCA timeline animation.
-      if (speed <= 0) return 0;
-
-      const baseFrameMs = Math.max(
-        16,
-        Number(windowSlider.value) * selectedFrame.size / 100 * 1000
-      );
-
-      const frameMs = baseFrameMs / speed;
-
-      return ((performance.now() - phaseHistoryMotionStartTime) % frameMs) / frameMs;
-    }
-
     function drawPhasePortrait(view, coordinates) {
-      if (view.mode === "history") {
-        drawPhaseHistoryPortrait(view);
-        return;
-      }
-
       if (!coordinates || coordinates.points.length < 2) return;
 
       view.ctx.fillStyle = "#05070a";
@@ -2110,6 +2521,12 @@
 
       if (view.mode === "spectrum") {
         drawPowerSpectrum(view, coordinates);
+        view.ctx.restore();
+        return;
+      }
+
+      if (view.mode === "pcaLine") {
+        drawPcaLinePortrait(view, coordinates);
         view.ctx.restore();
         return;
       }
@@ -2140,69 +2557,6 @@
         view.ctx.lineTo(cx + current[0] * scale, cy - current[1] * scale);
         view.ctx.stroke();
       }
-
-      view.ctx.restore();
-    }
-
-    function drawPhaseHistoryPortrait(view) {
-      const history = getPhaseHistoryCoordinates();
-      if (!history) return;
-
-      const axisMax = phaseAxisMax(history.maxAbs);
-      const oldFrameCount = Number(phaseHistoryFramesSlider.value);
-      const visibleFrameCount = Math.max(1, oldFrameCount + 1);
-      const progress = phaseHistoryMotionProgress(history.selectedFrame);
-      const camera = view.camera || { yaw: -0.75, pitch: 0.55, zoom: 1, panX: 0, panY: 0 };
-      const cx = cameraCenterX(view);
-      const cy = cameraCenterY(view);
-      const zSpacing = Math.max(0.18, Math.min(0.9, axisMax * 0.78));
-      const timelineExtent = zSpacing * Math.max(1, visibleFrameCount - 1);
-      const scale = Math.min(view.width, view.height) * 0.35 * camera.zoom / Math.max(0.001, axisMax, timelineExtent * 0.62);
-      const pointBaseSize = Number(phaseColorPointSizeSlider.value);
-      const projectedPoints = [];
-
-      // Bottom 3D PCA timeline: yellow-only scatter points.
-      const yellow = [251, 191, 36];
-
-      view.ctx.save();
-      view.ctx.rect(0, 0, view.width, view.height);
-      view.ctx.clip();
-
-      history.frames.forEach((frame) => {
-        const timelineIndex = oldFrameCount - frame.offset + progress;
-        const timeDirectionSign = isTimeRightToLeft() ? -1 : 1;
-        const z = timeDirectionSign * (timelineIndex - oldFrameCount / 2) * zSpacing;
-        const normalizedAge = clamp((frame.offset + progress) / Math.max(1, visibleFrameCount), 0, 1);
-
-        const alpha = frame.isCurrent
-          ? 0.98
-          : clamp(0.70 - normalizedAge * 0.48, 0.16, 0.70);
-
-        const sizeScale = frame.isCurrent
-          ? 1.2
-          : clamp(1 - normalizedAge * 0.30, 0.6, 0.95);
-
-        for (let index = 0; index < frame.coordinates.points.length; index += 1) {
-          const point = frame.coordinates.points[index];
-          const projected = project3DPoint(point[0], point[1], z, scale, cx, cy, camera);
-
-          projectedPoints.push({
-            x: projected.x,
-            y: projected.y,
-            depth: projected.depth,
-            alpha,
-            size: Math.max(0.65, pointBaseSize * sizeScale)
-          });
-        }
-      });
-
-      projectedPoints.sort((a, b) => a.depth - b.depth);
-
-      projectedPoints.forEach((point) => {
-        const half = point.size / 2;
-        view.ctx.fillStyle = `rgba(${yellow[0]}, ${yellow[1]}, ${yellow[2]}, ${point.alpha})`;
-        view.ctx.fillRect(point.x - half, point.y - half, point.size, point.size);
-      });
 
       view.ctx.restore();
     }
@@ -2254,6 +2608,43 @@
         view.ctx.fillStyle = `rgba(${segment.color[0]}, ${segment.color[1]}, ${segment.color[2]}, ${alpha})`;
         view.ctx.fillRect(point.x - half, point.y - half, size, size);
       });
+    }
+
+    function drawPcaLinePortrait(view, coordinates) {
+      const sourcePoints = coordinates.points3D || coordinates.points.map(([x, y]) => [x, y, 0]);
+      if (sourcePoints.length < 2) return;
+
+      const axisMax = phaseAxisMax(coordinates.maxAbs3D || coordinates.maxAbs);
+      const camera = view.camera || { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
+      const cx = cameraCenterX(view);
+      const cy = cameraCenterY(view);
+      const scale = Math.min(view.width, view.height) * 0.36 * camera.zoom / Math.max(0.001, axisMax);
+      const lineWidth = clamp(Number(phaseColorPointSizeSlider.value) * 0.9, 0.75, 4);
+      const alpha = clamp(Math.pow(0.86, 1 / Math.max(0.01, Number(phaseColorGammaSlider.value))), 0.12, 1);
+      const projected = sourcePoints.map((point) => project3DPoint(point[0], point[1], point[2], scale, cx, cy, camera));
+      const segments = phaseTimeColorSegments(sourcePoints.length, 1);
+
+      view.ctx.save();
+      view.ctx.rect(0, 0, view.width, view.height);
+      view.ctx.clip();
+      view.ctx.lineWidth = lineWidth;
+      view.ctx.lineJoin = "round";
+      view.ctx.lineCap = "round";
+      view.ctx.globalCompositeOperation = "source-over";
+
+      for (let index = 1; index < projected.length; index += 1) {
+        const previous = projected[index - 1];
+        const current = projected[index];
+        const segment = phaseTimeSegmentForIndex(segments, index);
+
+        view.ctx.strokeStyle = `rgba(${segment.color[0]}, ${segment.color[1]}, ${segment.color[2]}, ${alpha})`;
+        view.ctx.beginPath();
+        view.ctx.moveTo(previous.x, previous.y);
+        view.ctx.lineTo(current.x, current.y);
+        view.ctx.stroke();
+      }
+
+      view.ctx.restore();
     }
 
     function nextPowerOfTwo(value) {
@@ -2648,6 +3039,7 @@
 
       phaseDimensionControl.classList.toggle("is-hidden", !usePca);
       updateTopAnalysisSplit();
+      updateSpectrogramViewportControls();
       applyMobileControlVisibility();
 
       windowValue.textContent = `${windowSlider.value} s`;
@@ -2656,10 +3048,7 @@
       floorValue.textContent = `${floorSlider.value} dB`;
       phaseTauValue.textContent = tauLabel;
       phaseFrameStartValue.textContent = `${formatPercent(selectedFrame.start)}%`;
-      phaseFrameSizeValue.textContent = formatPhaseDuration(Number(windowSlider.value) * selectedFrame.size * 10);
-      phaseHistoryFramesValue.textContent = `${phaseHistoryFramesSlider.value} old`;
-      phaseTimelineSpeedValue.textContent = `${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x`;
-      updateMobileHistoryHeight();
+      phaseFrameSizeValue.textContent = formatPhaseDuration(spectrogramVisibleSeconds() * selectedFrame.size * 10);
       phaseColorPointSizeValue.textContent = `${Number(phaseColorPointSizeSlider.value).toFixed(1)} px`;
       phaseColorGammaValue.textContent = Number(phaseColorGammaSlider.value).toFixed(2);
       phaseColorGlowValue.textContent = Number(phaseColorGlowSlider.value).toFixed(2);
@@ -2684,8 +3073,8 @@
           view.title.textContent = `3D color PCA: ${phaseModeLabel}, frame ${frameLabel} · 1 finger rotate, 2 fingers zoom/pan`;
         } else if (view.mode === "timeZ") {
           view.title.textContent = `PC1/PC2 + time Z: ${phaseModeLabel}, ${timeDirectionLabel}, frame ${frameLabel} · 1 finger rotate, 2 fingers zoom/pan`;
-        } else if (view.mode === "history") {
-          view.title.textContent = `3D PCA frame timeline: yellow scatter, ${timeDirectionLabel}, speed ${Number(phaseTimelineSpeedSlider.value).toFixed(2)}x, current + ${phaseHistoryFramesSlider.value} old frames · 1 finger rotate, 2 fingers zoom/pan`;
+        } else if (view.mode === "pcaLine") {
+          view.title.textContent = `3D PCA line: ${phaseModeLabel}, frame ${frameLabel} · 1 finger rotate, 2 fingers zoom/pan`;
         } else if (view.mode === "spectrum") {
           view.title.textContent = `Power spectrum: 3 frame thirds, frame ${frameLabel}`;
         } else {
@@ -2695,9 +3084,21 @@
     }
 
     startBtn.addEventListener("click", startMicrophone);
-    pauseBtn.addEventListener("click", pauseMicrophone);
-    stopBtn.addEventListener("click", stopMicrophone);
+    playFileBtn.addEventListener("click", playAudioFile);
+    pauseBtn.addEventListener("click", pauseCurrentSource);
+    stopBtn.addEventListener("click", stopCurrentSource);
+    uploadBtn.addEventListener("click", () => {
+      if (!audioFileInput.disabled) {
+        audioFileInput.click();
+      }
+    });
+    audioFileInput.addEventListener("change", loadAudioFile);
     clearBtn.addEventListener("click", () => {
+      if (activeSource === "file") {
+        stopFilePlayback(false);
+        uploadedAudioBuffer = null;
+        filePlaybackOffset = 0;
+      }
       clearSpectrogram();
       if (audioContext) {
         resetWaveformBuffer();
@@ -2705,10 +3106,20 @@
         waveformBuffer = null;
         waveformWriteIndex = 0;
         waveformSampleCount = 0;
+        activeSource = "none";
+        fileDurationSeconds = 0;
+        spectrogramViewStartSeconds = 0;
+        audioFileInput.value = "";
+        playFileBtn.disabled = true;
+        pauseBtn.disabled = true;
+        stopBtn.disabled = true;
       }
+      meterFill.style.width = "0%";
       lastPhasePointCount = 0;
+      updateSpectrogramViewportControls();
       updatePhaseTitles();
       phaseViews.forEach(clearPhasePortrait);
+      drawAxes();
     });
 
     axesCanvas.addEventListener("pointerdown", beginPhaseWindowDrag);
@@ -2750,6 +3161,10 @@
       if (audioContext) {
         rebuildAnalyser();
       }
+      if (activeSource === "file") {
+        drawStaticSpectrogram();
+        drawSavedPhasePortraits();
+      }
       drawAxes();
     });
 
@@ -2763,7 +3178,44 @@
 
     reset3dViewBtn.addEventListener("click", resetAll3dCameras);
 
-    [windowSlider, timeDirectionSelect, maxFreqSlider, topSpectrumWidthSlider, gainSlider, floorSlider, phaseTauSlider, phasePcaModeCheckbox, phaseDimensionSlider, phaseFrameStartSlider, phaseFrameSizeSlider, phaseHistoryFramesSlider, phaseTimelineSpeedSlider, phaseAutoAxisLimitSlider, phaseColorPointSizeSlider, phaseColorGammaSlider, phaseColorGlowSlider].forEach((input) => {
+    spectrogramZoomSlider.addEventListener("input", () => {
+      if (activeSource !== "file") return;
+
+      const visibleSeconds = Math.min(fileDurationSeconds, spectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, fileDurationSeconds - visibleSeconds);
+      spectrogramViewStartSeconds = clamp(spectrogramViewStartSeconds, 0, maxStartSeconds);
+      if (!isFilePlaying) {
+        filePlaybackOffset = spectrogramViewStartSeconds;
+      }
+      updateLabels();
+      redrawFileSpectrogramAndPlots();
+    });
+
+    spectrogramScrollSlider.addEventListener("input", () => {
+      if (activeSource !== "file") return;
+
+      const visibleSeconds = Math.min(fileDurationSeconds, spectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, fileDurationSeconds - visibleSeconds);
+      spectrogramViewStartSeconds = maxStartSeconds * (Number(spectrogramScrollSlider.value) / 100);
+      if (!isFilePlaying) {
+        filePlaybackOffset = spectrogramViewStartSeconds;
+      }
+      redrawFileSpectrogramAndPlots();
+    });
+
+    playbackRateSlider.addEventListener("input", () => {
+      playbackRateValue.textContent = `${playbackRate().toFixed(2)}x`;
+      if (activeSource !== "file") return;
+
+      if (isFilePlaying) {
+        const resumeAt = filePlaybackTime();
+        stopFilePlayback(false);
+        filePlaybackOffset = resumeAt;
+        playAudioFile();
+      }
+    });
+
+    [windowSlider, timeDirectionSelect, maxFreqSlider, topSpectrumWidthSlider, gainSlider, floorSlider, phaseTauSlider, phasePcaModeCheckbox, phaseDimensionSlider, phaseFrameStartSlider, phaseFrameSizeSlider, phaseAutoAxisLimitSlider, phaseColorPointSizeSlider, phaseColorGammaSlider, phaseColorGlowSlider].forEach((input) => {
       input.addEventListener("input", () => {
         if (input === phasePcaModeCheckbox && phasePcaModeCheckbox.checked) {
           phaseTauSlider.value = "0.30";
@@ -2772,7 +3224,6 @@
 
         if (input === timeDirectionSelect) {
           phaseFrameStartSlider.value = isTimeRightToLeft() ? "0" : String(Math.max(0, 100 - Number(phaseFrameSizeSlider.value)));
-          phaseHistoryMotionStartTime = performance.now();
         }
 
         updateLabels();
@@ -2787,19 +3238,23 @@
         if (analyser) {
           analyser.minDecibels = Number(floorSlider.value);
         }
+        if (activeSource === "file" && (input === windowSlider || input === timeDirectionSelect || input === maxFreqSlider || input === gainSlider || input === floorSlider)) {
+          drawStaticSpectrogram();
+          drawAxes();
+        }
         if (input === maxFreqSlider) {
           clampSpectrumZoom();
           clearSpectrumHover();
           drawAxes();
           phaseViews.forEach(drawPhaseAxes);
         }
-        if (input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseHistoryFramesSlider) {
+        if (input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider) {
           phaseViews.forEach(drawPhaseAxes);
         }
-        if (input === windowSlider || input === timeDirectionSelect || input === phaseTauSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseHistoryFramesSlider) {
+        if (input === windowSlider || input === timeDirectionSelect || input === phaseTauSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider) {
           drawAxes();
         }
-        if (input === windowSlider || input === timeDirectionSelect || input === maxFreqSlider || input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseHistoryFramesSlider || input === phaseTimelineSpeedSlider || input === phaseAutoAxisLimitSlider || input === phaseColorPointSizeSlider || input === phaseColorGammaSlider || input === phaseColorGlowSlider) {
+        if (input === windowSlider || input === timeDirectionSelect || input === maxFreqSlider || input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseAutoAxisLimitSlider || input === phaseColorPointSizeSlider || input === phaseColorGammaSlider || input === phaseColorGlowSlider) {
           drawSavedPhasePortraits();
         }
       });
@@ -2813,12 +3268,6 @@
       setMobileControlsOpen(!document.body.classList.contains("mobile-controls-open"));
     });
 
-    mobileHistoryHeightSlider.addEventListener("input", () => {
-      updateMobileHistoryHeight();
-      resizePhaseCanvases();
-      drawSavedPhasePortraits();
-    });
-
     mobileTabButtons.forEach((button) => {
       button.addEventListener("click", () => {
         activeMobilePanel = button.dataset.mobilePanel;
@@ -2830,15 +3279,6 @@
         drawSavedPhasePortraits();
       });
     });
-
-    if (window.ResizeObserver && phaseHistoryWrap) {
-      const phaseHistoryResizeObserver = new ResizeObserver(() => {
-        resizePhaseCanvases();
-        drawSavedPhasePortraits();
-      });
-
-      phaseHistoryResizeObserver.observe(phaseHistoryWrap);
-    }
 
     window.addEventListener("resize", () => {
       autoMobileModeFromViewport();
