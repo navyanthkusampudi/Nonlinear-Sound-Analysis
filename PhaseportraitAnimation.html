@@ -69,6 +69,29 @@
       align-items: center;
     }
 
+    .more-controls-toggle {
+      min-height: 42px;
+      border-color: rgba(81, 196, 211, 0.34);
+    }
+
+    .more-controls-toggle[aria-expanded="true"] {
+      color: var(--accent);
+      border-color: rgba(81, 196, 211, 0.72);
+      background: #162632;
+    }
+
+    .top-controls:not(.show-advanced) .top-advanced-control,
+    .phase-controls-bottom:not(.show-advanced) .phase-advanced-control,
+    .pca-spec-controls:not(.show-advanced) .pca-advanced-control {
+      display: none;
+    }
+
+    .top-controls.show-advanced .top-advanced-control:not(.is-hidden),
+    .phase-controls-bottom.show-advanced .phase-advanced-control:not(.is-hidden),
+    .pca-spec-controls.show-advanced .pca-advanced-control:not(.is-hidden) {
+      display: flex;
+    }
+
     .ctl {
       min-height: 42px;
       background: var(--panel-2);
@@ -164,6 +187,15 @@
       min-height: 300px;
     }
 
+    .pca-spectrogram-wrap {
+      height: min(42vh, 430px);
+      min-height: 300px;
+    }
+
+    .pca-spectrogram-panel {
+      min-width: 0;
+    }
+
     .spectrogram-scrollbar {
       position: absolute;
       left: 12px;
@@ -195,6 +227,92 @@
       min-height: 300px;
     }
 
+    .spectrum-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .spectrum-titlebar span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .spectrum-controls-toggle,
+    .spectrum-controls-close {
+      min-height: 22px;
+      height: 22px;
+      padding: 1px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .spectrum-controls-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      padding: 0;
+      font-size: 16px;
+      z-index: 1;
+    }
+
+    .spectrum-controls {
+      padding: 10px;
+      gap: 8px;
+      background: #0f1319;
+    }
+
+    .spectrum-controls-popover {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      max-height: calc(100% - 16px);
+      overflow: auto;
+      z-index: 5;
+      padding: 10px 40px 10px 10px;
+      background: rgba(15, 19, 25, 0.96);
+      border: 1px solid rgba(154, 164, 178, 0.28);
+      border-radius: 8px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(6px);
+    }
+
+    .spectrum-controls .ctl {
+      min-height: 34px;
+      padding: 6px 8px;
+    }
+
+    .spectrum-controls input[type="range"] {
+      width: 92px;
+    }
+
+    .spectrum-controls input[type="number"] {
+      width: 96px;
+      min-height: 26px;
+      background: #151b25;
+      border: 1px solid #2b3342;
+      border-radius: 6px;
+      color: var(--text);
+      padding: 2px 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .spectrum-controls select {
+      min-height: 26px;
+    }
+
+    .spectrum-f0-readout {
+      min-width: 142px;
+      text-align: left;
+    }
+
     .phase-wrap {
       height: min(42vh, 430px);
       min-height: 330px;
@@ -210,6 +328,15 @@
       margin-bottom: 14px;
       padding-bottom: 14px;
       border-bottom: 1px solid #1e2430;
+    }
+
+    .phase-controls-bottom {
+      margin-top: 14px;
+      margin-bottom: 0;
+      padding-top: 14px;
+      padding-bottom: 0;
+      border-top: 1px solid #1e2430;
+      border-bottom: 0;
     }
 
     .is-hidden {
@@ -242,7 +369,8 @@
       height: 100%;
     }
 
-    #axes {
+    #axes,
+    #pcaSpectrogramAxes {
       touch-action: none;
       cursor: crosshair;
     }
@@ -277,7 +405,8 @@
         width: 120px;
       }
 
-      .spectrogram-wrap {
+      .spectrogram-wrap,
+      .pca-spectrogram-wrap {
         min-height: 260px;
       }
 
@@ -309,7 +438,7 @@
       </section>
 
       <section class="card">
-        <div class="controls">
+        <div id="mainControls" class="controls top-controls">
           <button id="startBtn" type="button">Start Mic</button>
           <button id="playFileBtn" type="button" disabled>Play</button>
           <button id="pauseBtn" type="button" disabled>Pause</button>
@@ -317,8 +446,10 @@
           <button id="clearBtn" type="button">Clear</button>
           <button id="uploadBtn" type="button">Upload WAV/MP3</button>
           <input id="audioFileInput" class="file-input" type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp3,audio/*" aria-label="Upload WAV or MP3 audio file" />
+          <button id="togglePcaSpectrogramBtn" type="button">Show PCA Spectrogram</button>
+          <button id="mainAdvancedToggle" class="more-controls-toggle" type="button" aria-expanded="false">More controls</button>
 
-          <div class="ctl">
+          <div class="ctl top-advanced-control">
             <label for="windowSeconds">Window</label>
             <input id="windowSeconds" type="range" min="2" max="30" value="10" step="1" />
             <span id="windowValue" class="value">10 s</span>
@@ -330,7 +461,7 @@
             <span id="maxFreqValue" class="value">12000</span>
           </div>
 
-          <div class="ctl">
+          <div class="ctl top-advanced-control">
             <label for="topSpectrumWidth">Spectrum width</label>
             <input id="topSpectrumWidth" type="range" min="20" max="50" value="33" step="1" />
             <span id="topSpectrumWidthValue" class="value">33%</span>
@@ -342,7 +473,7 @@
             <span id="spectrogramZoomValue" class="value">1.0x</span>
           </div>
 
-          <div id="playbackRateControl" class="ctl is-hidden">
+          <div id="playbackRateControl" class="ctl top-advanced-control is-hidden">
             <label for="playbackRate">Speed</label>
             <input id="playbackRate" type="range" min="0.25" max="2" value="1" step="0.05" />
             <span id="playbackRateValue" class="value">1.00x</span>
@@ -351,26 +482,31 @@
           <div class="ctl">
             <label for="fftSize">FFT</label>
             <select id="fftSize">
+              <option value="128">128</option>
+              <option value="256">256</option>
+              <option value="512">512</option>
               <option value="1024">1024</option>
               <option value="2048" selected>2048</option>
               <option value="4096">4096</option>
               <option value="8192">8192</option>
+              <option value="16384">16384</option>
+              <option value="32768">32768</option>
             </select>
           </div>
 
-          <div class="ctl">
+          <div class="ctl top-advanced-control">
             <label for="gain">Gain</label>
             <input id="gain" type="range" min="0.6" max="3.5" value="1.6" step="0.1" />
             <span id="gainValue" class="value">1.6x</span>
           </div>
 
-          <div class="ctl">
+          <div class="ctl top-advanced-control">
             <label for="floorDb">Floor</label>
             <input id="floorDb" type="range" min="-120" max="-40" value="-95" step="1" />
             <span id="floorValue" class="value">-95 dB</span>
           </div>
 
-          <div class="ctl">
+          <div class="ctl top-advanced-control">
             <label>Level</label>
             <div class="meter" aria-hidden="true"><div id="meterFill" class="meter-fill"></div></div>
           </div>
@@ -388,85 +524,176 @@
           </div>
 
           <div class="phase-panel">
-            <div id="phaseSpectrumTitle" class="panel-title">Power spectrum by frame thirds</div>
+            <div class="panel-title spectrum-titlebar">
+              <span id="phaseSpectrumTitle">Power spectrum by frame thirds</span>
+              <button id="spectrumControlsToggle" class="spectrum-controls-toggle" type="button" aria-expanded="false" aria-controls="spectrumControlsPopover">Controls</button>
+            </div>
             <div class="canvas-wrap top-spectrum-wrap">
               <canvas id="phaseSpectrum" aria-label="Power spectrum for three time segments in the selected phase window"></canvas>
               <canvas id="phaseSpectrumAxes" aria-hidden="true"></canvas>
+              <div id="spectrumControlsPopover" class="controls spectrum-controls spectrum-controls-popover is-hidden" aria-label="Power spectrum harmonic analysis controls">
+                <button id="spectrumControlsClose" class="spectrum-controls-close" type="button" aria-label="Hide power spectrum controls">×</button>
+
+                <div class="ctl">
+                  <label for="spectrumHarmonics">Harmonics</label>
+                  <input id="spectrumHarmonics" type="checkbox" checked />
+                </div>
+
+                <div class="ctl">
+                  <label for="spectrumF0Mode">F0</label>
+                  <select id="spectrumF0Mode">
+                    <option value="auto" selected>Auto</option>
+                    <option value="manual">Manual/drag</option>
+                  </select>
+                </div>
+
+                <div class="ctl">
+                  <label for="spectrumManualF0">Manual F0</label>
+                  <input id="spectrumManualF0" type="number" min="0.01" max="22000" value="220" step="0.01" inputmode="decimal" />
+                  <span id="spectrumManualF0Value" class="value">220 Hz</span>
+                </div>
+
+                <div class="ctl">
+                  <label for="spectrumF0Min">Min F0</label>
+                  <input id="spectrumF0Min" type="number" min="0.01" max="22000" value="1" step="0.01" inputmode="decimal" />
+                  <span id="spectrumF0MinValue" class="value">1 Hz</span>
+                </div>
+
+                <div class="ctl">
+                  <label for="spectrumF0Max">Max F0</label>
+                  <input id="spectrumF0Max" type="number" min="0.01" max="22000" value="22000" step="0.01" inputmode="decimal" />
+                  <span id="spectrumF0MaxValue" class="value">22 kHz</span>
+                </div>
+
+                <div class="ctl">
+                  <label for="spectrumSourceCount">Sources</label>
+                  <select id="spectrumSourceCount">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                  </select>
+                </div>
+
+                <div class="ctl">
+                  <label for="spectrumSubharmonics">Subharmonics</label>
+                  <input id="spectrumSubharmonics" type="checkbox" checked />
+                </div>
+
+                <div class="ctl">
+                  <label for="spectrumLockF0">Lock</label>
+                  <input id="spectrumLockF0" type="checkbox" />
+                </div>
+
+                <div class="ctl">
+                  <label>Detected</label>
+                  <span id="spectrumF0Readout" class="value spectrum-f0-readout">F0 —</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="pcaSpectrogramSection" class="card stage is-hidden">
+        <div id="pcaSpecControls" class="controls phase-controls pca-spec-controls">
+          <button id="redrawPcaSpectrogramBtn" type="button">Redraw PCA</button>
+          <button id="pcaAdvancedToggle" class="more-controls-toggle" type="button" aria-expanded="false">More PCA controls</button>
+
+          <div class="ctl pca-advanced-control">
+            <label for="pcaSpecWindowSeconds">PCA Window</label>
+            <input id="pcaSpecWindowSeconds" type="range" min="2" max="30" value="10" step="1" />
+            <span id="pcaSpecWindowValue" class="value">10 s</span>
+          </div>
+
+          <div class="ctl">
+            <label for="pcaSpecMaxFreq">PCA Max Hz</label>
+            <input id="pcaSpecMaxFreq" type="range" min="1000" max="22000" value="12000" step="500" />
+            <span id="pcaSpecMaxFreqValue" class="value">12000</span>
+          </div>
+
+          <div id="pcaSpecZoomControl" class="ctl is-hidden">
+            <label for="pcaSpecZoom">PCA zoom</label>
+            <input id="pcaSpecZoom" type="range" min="1" max="50" value="1" step="0.1" />
+            <span id="pcaSpecZoomValue" class="value">1.0x</span>
+          </div>
+
+          <div class="ctl">
+            <label for="pcaSpecFftSize">PCA FFT</label>
+            <select id="pcaSpecFftSize">
+              <option value="128">128</option>
+              <option value="256">256</option>
+              <option value="512">512</option>
+              <option value="1024">1024</option>
+              <option value="2048" selected>2048</option>
+              <option value="4096">4096</option>
+              <option value="8192">8192</option>
+              <option value="16384">16384</option>
+              <option value="32768">32768</option>
+            </select>
+          </div>
+
+          <div class="ctl pca-advanced-control">
+            <label for="pcaSpecGain">PCA Gain</label>
+            <input id="pcaSpecGain" type="range" min="0.6" max="3.5" value="1.6" step="0.1" />
+            <span id="pcaSpecGainValue" class="value">1.6x</span>
+          </div>
+
+          <div class="ctl pca-advanced-control">
+            <label for="pcaSpecFloorDb">PCA Floor</label>
+            <input id="pcaSpecFloorDb" type="range" min="-120" max="-40" value="-95" step="1" />
+            <span id="pcaSpecFloorValue" class="value">-95 dB</span>
+          </div>
+
+          <div class="ctl">
+            <label for="pcaSpecTau">PCA Tau</label>
+            <input id="pcaSpecTau" type="range" min="0.01" max="30" value="0.30" step="0.01" />
+            <span id="pcaSpecTauValue" class="value">0.30 ms</span>
+          </div>
+
+          <div class="ctl">
+            <label for="pcaSpecDimension">Delay D</label>
+            <input id="pcaSpecDimension" type="range" min="3" max="12" value="3" step="1" />
+            <span id="pcaSpecDimensionValue" class="value">3</span>
+          </div>
+
+          <div class="ctl pca-advanced-control">
+            <label for="pcaSpecComponentCount">Keep PCs</label>
+            <input id="pcaSpecComponentCount" type="range" min="3" max="12" value="3" step="1" />
+            <span id="pcaSpecComponentCountValue" class="value">3</span>
+          </div>
+
+          <div class="ctl">
+            <label for="pcaSpecComponent">PCA component</label>
+            <select id="pcaSpecComponent">
+              <option value="0" selected>PC1</option>
+              <option value="1">PC2</option>
+              <option value="2">PC3</option>
+            </select>
+          </div>
+
+          <button id="playPcaAudioBtn" type="button" disabled>Play PCA</button>
+          <button id="pausePcaAudioBtn" type="button" disabled>Pause PCA</button>
+          <button id="stopPcaAudioBtn" type="button" disabled>Stop PCA</button>
+
+          <div class="ctl">
+            <label>PCA points</label>
+            <span id="pcaSpecPointCountValue" class="value">0</span>
+          </div>
+        </div>
+
+        <div class="phase-panel pca-spectrogram-panel">
+          <div id="pcaSpectrogramTitle" class="panel-title">PCA spectrogram: hidden</div>
+          <div class="canvas-wrap pca-spectrogram-wrap">
+            <canvas id="pcaSpectrogram" aria-label="Spectrogram of the selected PCA component from the full time-delay embedding"></canvas>
+            <canvas id="pcaSpectrogramAxes" aria-hidden="true"></canvas>
+            <div id="pcaSpecScrollBar" class="spectrogram-scrollbar is-hidden">
+              <input id="pcaSpecScroll" type="range" min="0" max="100" value="0" step="0.1" aria-label="Scroll through selected PCA component spectrogram" />
             </div>
           </div>
         </div>
       </section>
 
       <section class="card">
-        <div class="controls phase-controls">
-          <div class="ctl">
-            <label for="phaseTau">Tau</label>
-            <input id="phaseTau" type="range" min="0.01" max="80" value="0.30" step="0.01" />
-            <span id="phaseTauValue" class="value">0.30 ms</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phasePcaMode">PCA</label>
-            <input id="phasePcaMode" type="checkbox" checked />
-          </div>
-
-          <div id="phaseDimensionControl" class="ctl is-hidden">
-            <label for="phaseDimension">D</label>
-            <input id="phaseDimension" type="range" min="3" max="12" value="3" step="1" />
-            <span id="phaseDimensionValue" class="value">3</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseFrameStart">Frame start</label>
-            <input id="phaseFrameStart" type="range" min="0" max="99" value="99" step="0.01" />
-            <span id="phaseFrameStartValue" class="value">99%</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseFrameSize">Frame size</label>
-            <input id="phaseFrameSize" type="range" min="0.1" max="100" value="1" step="0.01" />
-            <span id="phaseFrameSizeValue" class="value">100 ms</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseAxisMode">Axis</label>
-            <select id="phaseAxisMode">
-              <option value="auto" selected>Auto</option>
-              <option value="fixed">Fixed</option>
-            </select>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseAutoAxisLimit">Min axis</label>
-            <input id="phaseAutoAxisLimit" type="range" min="0.01" max="5" value="0.25" step="0.01" />
-            <span id="phaseAutoAxisLimitValue" class="value">0.25</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseColorPointSize">Color size</label>
-            <input id="phaseColorPointSize" type="range" min="0.5" max="5" value="1.5" step="0.1" />
-            <span id="phaseColorPointSizeValue" class="value">1.5 px</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseColorGamma">Gamma</label>
-            <input id="phaseColorGamma" type="range" min="0.4" max="3" value="0.5" step="0.05" />
-            <span id="phaseColorGammaValue" class="value">0.50</span>
-          </div>
-
-          <div class="ctl">
-            <label for="phaseColorGlow">Glow</label>
-            <input id="phaseColorGlow" type="range" min="0" max="1" value="1" step="0.05" />
-            <span id="phaseColorGlowValue" class="value">1.00</span>
-          </div>
-
-          <div class="ctl">
-            <label>Phase points</label>
-            <span id="phasePointCountValue" class="value">0</span>
-          </div>
-
-        </div>
-
         <div id="phaseGrid" class="phase-grid">
           <div class="phase-panel">
             <div id="phaseTimeGlowTitle" class="panel-title">3D color PCA phase space</div>
@@ -492,6 +719,83 @@
             </div>
           </div>
         </div>
+
+        <div id="phaseControls" class="controls phase-controls phase-controls-bottom">
+          <div class="ctl">
+            <label for="phaseTau">Tau</label>
+            <input id="phaseTau" type="range" min="0.01" max="30" value="0.30" step="0.01" />
+            <span id="phaseTauValue" class="value">0.30 ms</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phasePcaMode">PCA</label>
+            <input id="phasePcaMode" type="checkbox" checked />
+          </div>
+
+          <button id="phaseAdvancedToggle" class="more-controls-toggle" type="button" aria-expanded="false">More phase controls</button>
+
+          <div id="phaseDimensionControl" class="ctl is-hidden">
+            <label for="phaseDimension">Delay D</label>
+            <input id="phaseDimension" type="range" min="3" max="12" value="3" step="1" />
+            <span id="phaseDimensionValue" class="value">3</span>
+          </div>
+
+          <div id="phasePcaComponentCountControl" class="ctl phase-advanced-control is-hidden">
+            <label for="phasePcaComponentCount">Keep PCs</label>
+            <input id="phasePcaComponentCount" type="range" min="3" max="12" value="3" step="1" />
+            <span id="phasePcaComponentCountValue" class="value">3</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseFrameStart">Frame start</label>
+            <input id="phaseFrameStart" type="range" min="0" max="99" value="99" step="0.01" />
+            <span id="phaseFrameStartValue" class="value">99%</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseFrameSize">Frame size</label>
+            <input id="phaseFrameSize" type="range" min="0.001" max="100" value="1" step="0.001" />
+            <span id="phaseFrameSizeValue" class="value">100 ms</span>
+          </div>
+
+          <div class="ctl">
+            <label for="phaseAxisMode">Axis</label>
+            <select id="phaseAxisMode">
+              <option value="auto" selected>Auto</option>
+              <option value="fixed">Fixed</option>
+            </select>
+          </div>
+
+          <div class="ctl phase-advanced-control">
+            <label for="phaseAutoAxisLimit">Min axis</label>
+            <input id="phaseAutoAxisLimit" type="range" min="0.01" max="5" value="0.25" step="0.01" />
+            <span id="phaseAutoAxisLimitValue" class="value">0.25</span>
+          </div>
+
+          <div class="ctl phase-advanced-control">
+            <label for="phaseColorPointSize">Color size</label>
+            <input id="phaseColorPointSize" type="range" min="0.5" max="5" value="1.5" step="0.1" />
+            <span id="phaseColorPointSizeValue" class="value">1.5 px</span>
+          </div>
+
+          <div class="ctl phase-advanced-control">
+            <label for="phaseColorGamma">Gamma</label>
+            <input id="phaseColorGamma" type="range" min="0.4" max="3" value="0.5" step="0.05" />
+            <span id="phaseColorGammaValue" class="value">0.50</span>
+          </div>
+
+          <div class="ctl phase-advanced-control">
+            <label for="phaseColorGlow">Glow</label>
+            <input id="phaseColorGlow" type="range" min="0" max="5" value="1" step="0.05" />
+            <span id="phaseColorGlowValue" class="value">1.00</span>
+          </div>
+
+          <div class="ctl">
+            <label>Phase points</label>
+            <span id="phasePointCountValue" class="value">0</span>
+          </div>
+
+        </div>
       </section>
     </div>
   </div>
@@ -502,6 +806,13 @@
     const axesCanvas = document.getElementById("axes");
     const axesCtx = axesCanvas.getContext("2d");
 
+    const mainControls = document.getElementById("mainControls");
+    const mainAdvancedToggle = document.getElementById("mainAdvancedToggle");
+    const phaseControls = document.getElementById("phaseControls");
+    const phaseAdvancedToggle = document.getElementById("phaseAdvancedToggle");
+    const pcaSpecControls = document.getElementById("pcaSpecControls");
+    const pcaAdvancedToggle = document.getElementById("pcaAdvancedToggle");
+
     const startBtn = document.getElementById("startBtn");
     const playFileBtn = document.getElementById("playFileBtn");
     const pauseBtn = document.getElementById("pauseBtn");
@@ -509,6 +820,39 @@
     const clearBtn = document.getElementById("clearBtn");
     const uploadBtn = document.getElementById("uploadBtn");
     const audioFileInput = document.getElementById("audioFileInput");
+    const togglePcaSpectrogramBtn = document.getElementById("togglePcaSpectrogramBtn");
+    const pcaSpectrogramSection = document.getElementById("pcaSpectrogramSection");
+    const redrawPcaSpectrogramBtn = document.getElementById("redrawPcaSpectrogramBtn");
+    const pcaSpectrogramCanvas = document.getElementById("pcaSpectrogram");
+    const pcaSpectrogramCtx = pcaSpectrogramCanvas.getContext("2d", { alpha: false });
+    const pcaSpectrogramAxesCanvas = document.getElementById("pcaSpectrogramAxes");
+    const pcaSpectrogramAxesCtx = pcaSpectrogramAxesCanvas.getContext("2d");
+    const pcaSpectrogramTitle = document.getElementById("pcaSpectrogramTitle");
+    const pcaSpecWindowSlider = document.getElementById("pcaSpecWindowSeconds");
+    const pcaSpecMaxFreqSlider = document.getElementById("pcaSpecMaxFreq");
+    const pcaSpecZoomControl = document.getElementById("pcaSpecZoomControl");
+    const pcaSpecZoomSlider = document.getElementById("pcaSpecZoom");
+    const pcaSpecZoomValue = document.getElementById("pcaSpecZoomValue");
+    const pcaSpecScrollBar = document.getElementById("pcaSpecScrollBar");
+    const pcaSpecScrollSlider = document.getElementById("pcaSpecScroll");
+    const pcaSpecFftSizeSelect = document.getElementById("pcaSpecFftSize");
+    const pcaSpecGainSlider = document.getElementById("pcaSpecGain");
+    const pcaSpecFloorSlider = document.getElementById("pcaSpecFloorDb");
+    const pcaSpecTauSlider = document.getElementById("pcaSpecTau");
+    const pcaSpecDimensionSlider = document.getElementById("pcaSpecDimension");
+    const pcaSpecComponentCountSlider = document.getElementById("pcaSpecComponentCount");
+    const pcaSpecComponentSelect = document.getElementById("pcaSpecComponent");
+    const playPcaAudioBtn = document.getElementById("playPcaAudioBtn");
+    const pausePcaAudioBtn = document.getElementById("pausePcaAudioBtn");
+    const stopPcaAudioBtn = document.getElementById("stopPcaAudioBtn");
+    const pcaSpecWindowValue = document.getElementById("pcaSpecWindowValue");
+    const pcaSpecMaxFreqValue = document.getElementById("pcaSpecMaxFreqValue");
+    const pcaSpecGainValue = document.getElementById("pcaSpecGainValue");
+    const pcaSpecFloorValue = document.getElementById("pcaSpecFloorValue");
+    const pcaSpecTauValue = document.getElementById("pcaSpecTauValue");
+    const pcaSpecDimensionValue = document.getElementById("pcaSpecDimensionValue");
+    const pcaSpecComponentCountValue = document.getElementById("pcaSpecComponentCountValue");
+    const pcaSpecPointCountValue = document.getElementById("pcaSpecPointCountValue");
     const windowSlider = document.getElementById("windowSeconds");
     const maxFreqSlider = document.getElementById("maxFreq");
     const topSpectrumWidthSlider = document.getElementById("topSpectrumWidth");
@@ -523,6 +867,21 @@
     const fftSizeSelect = document.getElementById("fftSize");
     const gainSlider = document.getElementById("gain");
     const floorSlider = document.getElementById("floorDb");
+    const spectrumControlsToggleBtn = document.getElementById("spectrumControlsToggle");
+    const spectrumControlsCloseBtn = document.getElementById("spectrumControlsClose");
+    const spectrumControlsPopover = document.getElementById("spectrumControlsPopover");
+    const spectrumHarmonicsCheckbox = document.getElementById("spectrumHarmonics");
+    const spectrumF0ModeSelect = document.getElementById("spectrumF0Mode");
+    const spectrumManualF0Slider = document.getElementById("spectrumManualF0");
+    const spectrumF0MinSlider = document.getElementById("spectrumF0Min");
+    const spectrumF0MaxSlider = document.getElementById("spectrumF0Max");
+    const spectrumSourceCountSelect = document.getElementById("spectrumSourceCount");
+    const spectrumSubharmonicsCheckbox = document.getElementById("spectrumSubharmonics");
+    const spectrumLockF0Checkbox = document.getElementById("spectrumLockF0");
+    const spectrumManualF0Value = document.getElementById("spectrumManualF0Value");
+    const spectrumF0MinValue = document.getElementById("spectrumF0MinValue");
+    const spectrumF0MaxValue = document.getElementById("spectrumF0MaxValue");
+    const spectrumF0Readout = document.getElementById("spectrumF0Readout");
     const phaseTauSlider = document.getElementById("phaseTau");
     const phaseFrameStartSlider = document.getElementById("phaseFrameStart");
     const phaseFrameSizeSlider = document.getElementById("phaseFrameSize");
@@ -534,6 +893,8 @@
     const phasePcaModeCheckbox = document.getElementById("phasePcaMode");
     const phaseDimensionControl = document.getElementById("phaseDimensionControl");
     const phaseDimensionSlider = document.getElementById("phaseDimension");
+    const phasePcaComponentCountControl = document.getElementById("phasePcaComponentCountControl");
+    const phasePcaComponentCountSlider = document.getElementById("phasePcaComponentCount");
     const windowValue = document.getElementById("windowValue");
     const maxFreqValue = document.getElementById("maxFreqValue");
     const topSpectrumWidthValue = document.getElementById("topSpectrumWidthValue");
@@ -548,6 +909,7 @@
     const phaseAutoAxisLimitValue = document.getElementById("phaseAutoAxisLimitValue");
     const phasePointCountValue = document.getElementById("phasePointCountValue");
     const phaseDimensionValue = document.getElementById("phaseDimensionValue");
+    const phasePcaComponentCountValue = document.getElementById("phasePcaComponentCountValue");
     const meterFill = document.getElementById("meterFill");
     const statusText = document.getElementById("status");
     const topAnalysisGrid = document.getElementById("topAnalysisGrid");
@@ -632,6 +994,24 @@
     let spectrumZoom = { minHz: 0, maxHz: null };
     let spectrumHover = null;
     let spectrumPan = null;
+    let spectrumF0Drag = null;
+    let lastSpectrumHarmonicAnalysis = null;
+    let lockedSpectrumHarmonicAnalysis = null;
+    let pcaSpectrogramVisible = false;
+    let pcaSpectrogramInitialized = false;
+    let pcaSpectrogramCache = null;
+    let pcaSpectrogramViewStartSeconds = 0;
+    let pcaSpectrogramCssWidth = 0;
+    let pcaSpectrogramCssHeight = 0;
+    let lastPcaSpectrogramAutoDrawTime = 0;
+    let pcaPlaybackContext = null;
+    let pcaPlaybackSource = null;
+    let pcaPlaybackStartedAt = 0;
+    let pcaPlaybackOffset = 0;
+    let pcaPlaybackDuration = 0;
+    let isPcaAudioPlaying = false;
+    const PCA_SPECTROGRAM_MAX_INPUT_SAMPLES = 262144;
+    const PCA_SPECTROGRAM_AUTO_UPDATE_MS = 1600;
     const SPECTRUM_SOURCE_SAMPLE_LIMIT = 16384;
     const SPECTRUM_MIN_FFT_SIZE = 65536;
     const SPECTRUM_MAX_FFT_SIZE = 131072;
@@ -652,6 +1032,7 @@
       axesCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       resizePhaseCanvases();
+      resizePcaSpectrogramCanvas();
 
       if (activeSource === "file" && waveformBuffer && waveformSampleCount) {
         drawStaticSpectrogram();
@@ -659,6 +1040,9 @@
         clearSpectrogram();
       }
       drawAxes();
+      if (pcaSpectrogramVisible) {
+        drawPcaSpectrogram();
+      }
     }
 
     function updateTopAnalysisSplit() {
@@ -691,12 +1075,32 @@
       ctx.fillRect(0, 0, canvasCssWidth, canvasCssHeight);
     }
 
+    function clearPcaSpectrogram() {
+      pcaSpectrogramCtx.fillStyle = "#05070a";
+      pcaSpectrogramCtx.fillRect(0, 0, pcaSpectrogramCssWidth, pcaSpectrogramCssHeight);
+    }
+
+    function resizePcaSpectrogramCanvas() {
+      const rect = pcaSpectrogramCanvas.getBoundingClientRect();
+      pcaSpectrogramCssWidth = Math.max(1, rect.width);
+      pcaSpectrogramCssHeight = Math.max(1, rect.height);
+      pcaSpectrogramCanvas.width = Math.round(pcaSpectrogramCssWidth * dpr);
+      pcaSpectrogramCanvas.height = Math.round(pcaSpectrogramCssHeight * dpr);
+      pcaSpectrogramAxesCanvas.width = pcaSpectrogramCanvas.width;
+      pcaSpectrogramAxesCanvas.height = pcaSpectrogramCanvas.height;
+      pcaSpectrogramCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      pcaSpectrogramAxesCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      clearPcaSpectrogram();
+      drawPcaSpectrogramAxes();
+    }
+
     function clearPhasePortrait(view) {
       view.ctx.fillStyle = "#05070a";
       view.ctx.fillRect(0, 0, view.width, view.height);
       if (view.mode === "spectrum") {
         view.spectra = null;
         view.spectrumScale = null;
+        view.harmonicAnalysis = null;
       }
     }
 
@@ -731,6 +1135,45 @@
       axesCtx.restore();
 
       drawPhaseWindowOverlay();
+    }
+
+    function pcaSpectrogramMaxHz() {
+      const requestedMaxHz = Number(pcaSpecMaxFreqSlider.value);
+      const nyquist = pcaSpectrogramCache && pcaSpectrogramCache.sampleRate ? pcaSpectrogramCache.sampleRate / 2 : requestedMaxHz;
+      return Math.max(1, Math.min(requestedMaxHz, nyquist));
+    }
+
+    function drawPcaSpectrogramAxes() {
+      pcaSpectrogramAxesCtx.clearRect(0, 0, pcaSpectrogramCssWidth, pcaSpectrogramCssHeight);
+      if (!pcaSpectrogramVisible) return;
+
+      const maxFreq = pcaSpectrogramMaxHz();
+
+      pcaSpectrogramAxesCtx.save();
+      pcaSpectrogramAxesCtx.lineWidth = 1;
+      pcaSpectrogramAxesCtx.font = "12px ui-sans-serif, system-ui, sans-serif";
+      pcaSpectrogramAxesCtx.fillStyle = "rgba(230, 233, 239, 0.72)";
+      pcaSpectrogramAxesCtx.strokeStyle = "rgba(154, 164, 178, 0.16)";
+
+      for (let i = 0; i <= 4; i += 1) {
+        const y = (pcaSpectrogramCssHeight - 1) * (i / 4);
+        const hz = Math.round(maxFreq * (1 - i / 4));
+        pcaSpectrogramAxesCtx.beginPath();
+        pcaSpectrogramAxesCtx.moveTo(0, y);
+        pcaSpectrogramAxesCtx.lineTo(pcaSpectrogramCssWidth, y);
+        pcaSpectrogramAxesCtx.stroke();
+        pcaSpectrogramAxesCtx.fillText(`${hz} Hz`, 8, Math.max(14, y - 5));
+      }
+
+      pcaSpectrogramAxesCtx.fillStyle = "rgba(154, 164, 178, 0.72)";
+      if (pcaSpectrogramCache && pcaSpectrogramCache.durationSeconds > 0) {
+        const view = pcaSpectrogramVisibleSampleRange();
+        const startSeconds = view.startSample / Math.max(1, pcaSpectrogramCache.sampleRate);
+        const endSeconds = view.endSample / Math.max(1, pcaSpectrogramCache.sampleRate);
+        pcaSpectrogramAxesCtx.fillText(`${formatSeconds(startSeconds)}-${formatSeconds(endSeconds)}`, Math.max(8, pcaSpectrogramCssWidth - 142), pcaSpectrogramCssHeight - 32);
+      }
+      pcaSpectrogramAxesCtx.fillText("time ->", pcaSpectrogramCssWidth - 68, pcaSpectrogramCssHeight - 12);
+      pcaSpectrogramAxesCtx.restore();
     }
 
     function drawPhaseWindowOverlay() {
@@ -850,6 +1293,7 @@
         view.axesCtx.fillText(label, x, view.height - 10);
       }
       view.axesCtx.fillText("power", 8, 16);
+      drawSpectrumHarmonics(view);
       drawSpectrumHover(view);
     }
 
@@ -1193,8 +1637,11 @@
           spectrogramViewStartSeconds = 0;
           lastPhasePointCount = 0;
           phaseViews.forEach(clearPhasePortrait);
+          pcaSpectrogramCache = null;
+          clearPcaSpectrogram();
           clearSpectrogram();
           drawAxes();
+          drawPcaSpectrogramAxes();
         }
 
         startBtn.disabled = true;
@@ -1303,6 +1750,10 @@
 
       shutdownMicrophone(true);
       drawSavedPhasePortraits();
+      if (pcaSpectrogramVisible) {
+        pcaSpectrogramCache = null;
+        drawPcaSpectrogram();
+      }
       statusText.textContent = "Recording paused. Drag or resize the white spectrogram window to update the phase plots from saved data.";
     }
 
@@ -1321,6 +1772,11 @@
       lastPhasePointCount = 0;
       updatePhaseTitles();
       phaseViews.forEach(clearPhasePortrait);
+      stopPcaSpectrogramAudio(true);
+      pcaSpectrogramCache = null;
+      clearPcaSpectrogram();
+      drawPcaSpectrogramAxes();
+      updatePcaSpectrogramLabels();
       startBtn.disabled = false;
       playFileBtn.disabled = true;
       pauseBtn.disabled = true;
@@ -1433,6 +1889,9 @@
       drawStaticSpectrogram();
       drawAxes();
       drawSavedPhasePortraits();
+      if (pcaSpectrogramVisible && !isFilePlaying) {
+        drawPcaSpectrogram();
+      }
     }
 
     function drawStaticSpectrogram() {
@@ -1497,6 +1956,512 @@
           ctx.fillRect(drawX, y, Math.ceil(columnWidth) + 0.5, 1.2);
         }
       }
+    }
+
+    function seedPcaSpectrogramControlsFromMainControls() {
+      pcaSpecWindowSlider.value = windowSlider.value;
+      pcaSpecMaxFreqSlider.value = maxFreqSlider.value;
+      pcaSpecFftSizeSelect.value = fftSizeSelect.value;
+      pcaSpecGainSlider.value = gainSlider.value;
+      pcaSpecFloorSlider.value = floorSlider.value;
+      pcaSpecTauSlider.value = phaseTauSlider.value;
+      pcaSpecDimensionSlider.value = phaseDimensionSlider.value;
+      pcaSpecComponentCountSlider.value = "3";
+      updatePcaComponentOptions();
+    }
+
+    function pcaSpectrogramDimension() {
+      return Math.max(3, Math.min(12, Number(pcaSpecDimensionSlider.value) || 3));
+    }
+
+    function pcaSpectrogramRetainedComponents() {
+      const dimension = pcaSpectrogramDimension();
+      return Math.max(3, Math.min(dimension, Number(pcaSpecComponentCountSlider.value) || 3));
+    }
+
+    function syncPcaSpectrogramComponentCount() {
+      const dimension = pcaSpectrogramDimension();
+      pcaSpecComponentCountSlider.max = String(dimension);
+      const retained = pcaSpectrogramRetainedComponents();
+      pcaSpecComponentCountSlider.value = String(retained);
+      return retained;
+    }
+
+    function pcaSpectrogramComponentIndex() {
+      const retained = pcaSpectrogramRetainedComponents();
+      return Math.max(0, Math.min(retained - 1, Number(pcaSpecComponentSelect.value) || 0));
+    }
+
+    function pcaSpectrogramComponentLabel(index = pcaSpectrogramComponentIndex()) {
+      return `PC${index + 1}`;
+    }
+
+    function updatePcaComponentOptions() {
+      const retained = syncPcaSpectrogramComponentCount();
+      const previous = pcaSpectrogramComponentIndex();
+      pcaSpecComponentSelect.innerHTML = "";
+
+      for (let component = 0; component < retained; component += 1) {
+        const option = document.createElement("option");
+        option.value = String(component);
+        option.textContent = `PC${component + 1}`;
+        pcaSpecComponentSelect.appendChild(option);
+      }
+
+      pcaSpecComponentSelect.value = String(Math.min(previous, retained - 1));
+    }
+
+    function pcaSpectrogramSignature() {
+      return [
+        waveformSampleCount,
+        waveformWriteIndex,
+        Math.round(currentSampleRate),
+        Number(pcaSpecTauSlider.value).toFixed(4),
+        pcaSpectrogramDimension(),
+        pcaSpectrogramRetainedComponents(),
+        pcaSpectrogramComponentIndex()
+      ].join(":");
+    }
+
+    function chronologicalWaveformSamplesForPcaSpectrogram() {
+      if (!waveformBuffer || waveformSampleCount < 16 || !currentSampleRate) return null;
+
+      const sourceStep = Math.max(1, Math.ceil(waveformSampleCount / PCA_SPECTROGRAM_MAX_INPUT_SAMPLES));
+      const sampleCount = Math.max(1, Math.floor((waveformSampleCount - 1) / sourceStep) + 1);
+      const samples = new Float32Array(sampleCount);
+
+      for (let i = 0; i < sampleCount; i += 1) {
+        const sourceIndex = Math.min(waveformSampleCount - 1, i * sourceStep);
+        const age = waveformSampleCount - 1 - sourceIndex;
+        samples[i] = waveformSampleByAge(age);
+      }
+
+      return {
+        samples,
+        sampleRate: currentSampleRate / sourceStep,
+        sourceStep
+      };
+    }
+
+    function topPrincipalComponentsFromCovariance(covariance, componentCount) {
+      let working = covariance.map((row) => row.slice());
+      const components = [];
+
+      for (let component = 0; component < componentCount; component += 1) {
+        const vector = dominantEigenvector(working);
+        const eigenvalue = Math.max(0, eigenvalueForVector(working, vector));
+        components.push({ vector, eigenvalue });
+        working = working.map((row, rowIndex) => row.map((value, colIndex) => value - eigenvalue * vector[rowIndex] * vector[colIndex]));
+      }
+
+      return components;
+    }
+
+    function buildPcaSeriesForSpectrogram(samples, sampleRate) {
+      const dimension = pcaSpectrogramDimension();
+      const retainedComponents = pcaSpectrogramRetainedComponents();
+      const componentIndex = pcaSpectrogramComponentIndex();
+      const tauMs = Math.max(0.01, Number(pcaSpecTauSlider.value) || 0.01);
+      let delaySamples = Math.max(1, Math.round(sampleRate * tauMs / 1000));
+      const availableForDelay = samples.length - 16;
+
+      if (availableForDelay <= dimension) return null;
+      if (delaySamples * (dimension - 1) >= availableForDelay) {
+        delaySamples = Math.max(1, Math.floor(availableForDelay / Math.max(1, dimension - 1)));
+      }
+
+      const embeddingCount = samples.length - delaySamples * (dimension - 1);
+      if (embeddingCount < 16) return null;
+
+      const means = new Array(dimension).fill(0);
+      for (let i = 0; i < embeddingCount; i += 1) {
+        for (let d = 0; d < dimension; d += 1) {
+          means[d] += samples[i + d * delaySamples];
+        }
+      }
+      for (let d = 0; d < dimension; d += 1) {
+        means[d] /= embeddingCount;
+      }
+
+      const covariance = Array.from({ length: dimension }, () => new Array(dimension).fill(0));
+      for (let i = 0; i < embeddingCount; i += 1) {
+        for (let row = 0; row < dimension; row += 1) {
+          const rowValue = samples[i + row * delaySamples] - means[row];
+          for (let col = row; col < dimension; col += 1) {
+            covariance[row][col] += rowValue * (samples[i + col * delaySamples] - means[col]);
+          }
+        }
+      }
+
+      const divisor = Math.max(1, embeddingCount - 1);
+      let totalVariance = 0;
+      for (let row = 0; row < dimension; row += 1) {
+        for (let col = row; col < dimension; col += 1) {
+          covariance[row][col] /= divisor;
+          covariance[col][row] = covariance[row][col];
+        }
+        totalVariance += Math.max(0, covariance[row][row]);
+      }
+
+      const components = topPrincipalComponentsFromCovariance(covariance, retainedComponents);
+      const selected = components[componentIndex];
+      if (!selected || !selected.vector) return null;
+
+      const series = new Float32Array(embeddingCount);
+      let maxAbs = 0;
+
+      for (let i = 0; i < embeddingCount; i += 1) {
+        let value = 0;
+        for (let d = 0; d < dimension; d += 1) {
+          value += (samples[i + d * delaySamples] - means[d]) * selected.vector[d];
+        }
+        series[i] = value;
+        maxAbs = Math.max(maxAbs, Math.abs(value));
+      }
+
+      return {
+        series,
+        sampleRate,
+        dimension,
+        retainedComponents,
+        componentIndex,
+        componentLabel: pcaSpectrogramComponentLabel(componentIndex),
+        tauMs,
+        delaySamples,
+        effectiveTauMs: delaySamples / Math.max(1, sampleRate) * 1000,
+        embeddingCount,
+        maxAbs,
+        eigenvalue: selected.eigenvalue,
+        variancePercent: totalVariance > 1e-12 ? selected.eigenvalue / totalVariance * 100 : 0
+      };
+    }
+
+    function rebuildPcaSpectrogramCache(force = false) {
+      if (!pcaSpectrogramVisible) return null;
+
+      const signature = pcaSpectrogramSignature();
+      if (!force && pcaSpectrogramCache && pcaSpectrogramCache.signature === signature) {
+        return pcaSpectrogramCache;
+      }
+
+      const source = chronologicalWaveformSamplesForPcaSpectrogram();
+      if (!source) {
+        pcaSpectrogramCache = null;
+        updatePcaSpectrogramLabels("No audio data yet");
+        return null;
+      }
+
+      const pcaResult = buildPcaSeriesForSpectrogram(source.samples, source.sampleRate);
+      if (!pcaResult) {
+        pcaSpectrogramCache = null;
+        updatePcaSpectrogramLabels(`Not enough data for ${pcaSpectrogramComponentLabel()} spectrogram`);
+        return null;
+      }
+
+      pcaSpectrogramCache = {
+        ...pcaResult,
+        signature,
+        sourceStep: source.sourceStep,
+        sourceSampleCount: waveformSampleCount,
+        durationSeconds: pcaResult.series.length / Math.max(1, pcaResult.sampleRate)
+      };
+      updatePcaSpectrogramViewportControls();
+      return pcaSpectrogramCache;
+    }
+
+    function pcaSpectrogramVisibleSeconds() {
+      if (activeSource === "file" && pcaSpectrogramCache && pcaSpectrogramCache.durationSeconds > 0) {
+        const zoom = Math.max(1, Number(pcaSpecZoomSlider.value) || 1);
+        return Math.max(0.02, pcaSpectrogramCache.durationSeconds / zoom);
+      }
+
+      return Number(pcaSpecWindowSlider.value);
+    }
+
+    function pcaSpectrogramVisibleSampleRange() {
+      if (!pcaSpectrogramCache || !pcaSpectrogramCache.series.length) {
+        return { startSample: 0, endSample: 0 };
+      }
+
+      const sampleRate = Math.max(1, pcaSpectrogramCache.sampleRate);
+      const durationSeconds = pcaSpectrogramCache.durationSeconds;
+      const visibleSeconds = Math.min(durationSeconds, pcaSpectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, durationSeconds - visibleSeconds);
+
+      if (activeSource === "file") {
+        pcaSpectrogramViewStartSeconds = clamp(pcaSpectrogramViewStartSeconds, 0, maxStartSeconds);
+      } else {
+        pcaSpectrogramViewStartSeconds = maxStartSeconds;
+      }
+
+      const startSample = clamp(Math.round(pcaSpectrogramViewStartSeconds * sampleRate), 0, pcaSpectrogramCache.series.length - 1);
+      const endSample = clamp(Math.round((pcaSpectrogramViewStartSeconds + visibleSeconds) * sampleRate), startSample, pcaSpectrogramCache.series.length - 1);
+      return { startSample, endSample };
+    }
+
+    function updatePcaSpectrogramViewportControls() {
+      const showFileControls = pcaSpectrogramVisible && activeSource === "file" && pcaSpectrogramCache && pcaSpectrogramCache.durationSeconds > 0;
+      pcaSpecZoomControl.classList.toggle("is-hidden", !showFileControls);
+      pcaSpecScrollBar.classList.toggle("is-hidden", !showFileControls);
+
+      if (!showFileControls) return;
+
+      const maxZoom = Math.max(1, Math.min(100, pcaSpectrogramCache.durationSeconds / 0.05));
+      pcaSpecZoomSlider.max = String(maxZoom);
+      pcaSpecZoomSlider.value = String(clamp(Number(pcaSpecZoomSlider.value) || 1, 1, maxZoom));
+      pcaSpecZoomValue.textContent = `${Number(pcaSpecZoomSlider.value).toFixed(1)}x`;
+
+      const visibleSeconds = Math.min(pcaSpectrogramCache.durationSeconds, pcaSpectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, pcaSpectrogramCache.durationSeconds - visibleSeconds);
+      pcaSpectrogramViewStartSeconds = clamp(pcaSpectrogramViewStartSeconds, 0, maxStartSeconds);
+      pcaSpecScrollSlider.disabled = maxStartSeconds <= 0;
+      pcaSpecScrollSlider.value = maxStartSeconds > 0 ? String(pcaSpectrogramViewStartSeconds / maxStartSeconds * 100) : "0";
+    }
+
+    function drawPcaSpectrogram() {
+      clearPcaSpectrogram();
+      if (!pcaSpectrogramVisible || !pcaSpectrogramCssWidth || !pcaSpectrogramCssHeight) {
+        drawPcaSpectrogramAxes();
+        return;
+      }
+
+      const cache = rebuildPcaSpectrogramCache();
+      if (!cache || cache.series.length < 8) {
+        drawPcaSpectrogramAxes();
+        return;
+      }
+
+      updatePcaSpectrogramViewportControls();
+
+      const fftSize = Number(pcaSpecFftSizeSelect.value);
+      const halfFft = Math.floor(fftSize / 2);
+      const real = new Float32Array(fftSize);
+      const imag = new Float32Array(fftSize);
+      const columns = Math.max(1, Math.min(Math.floor(pcaSpectrogramCssWidth), 900));
+      const columnWidth = pcaSpectrogramCssWidth / columns;
+      const imageHeight = Math.floor(pcaSpectrogramCssHeight);
+      const view = pcaSpectrogramVisibleSampleRange();
+      const windowSamples = Math.max(1, view.endSample - view.startSample + 1);
+      const maxFreq = pcaSpectrogramMaxHz();
+      const nyquist = cache.sampleRate / 2;
+      const maxBin = Math.min(halfFft - 1, Math.max(1, Math.floor(maxFreq / Math.max(1, nyquist) * halfFft)));
+      const gain = Number(pcaSpecGainSlider.value);
+      const floorDb = Number(pcaSpecFloorSlider.value);
+      const ceilingDb = -20;
+
+      for (let x = 0; x < columns; x += 1) {
+        real.fill(0);
+        imag.fill(0);
+
+        const ratio = columns > 1 ? x / (columns - 1) : 1;
+        const centerSample = Math.round(view.startSample + ratio * (windowSamples - 1));
+        const startSample = centerSample - halfFft;
+        let mean = 0;
+        let validCount = 0;
+
+        for (let i = 0; i < fftSize; i += 1) {
+          const sampleIndex = startSample + i;
+          if (sampleIndex >= 0 && sampleIndex < cache.series.length) {
+            const sample = cache.series[sampleIndex];
+            real[i] = sample;
+            mean += sample;
+            validCount += 1;
+          }
+        }
+
+        if (validCount < 8) continue;
+        mean /= validCount;
+
+        for (let i = 0; i < fftSize; i += 1) {
+          const windowValue = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / Math.max(1, fftSize - 1));
+          real[i] = (real[i] - mean) * windowValue;
+        }
+
+        fftInPlace(real, imag);
+
+        const drawX = x * columnWidth;
+        for (let y = 0; y < imageHeight; y += 1) {
+          const freqRatio = 1 - y / Math.max(1, imageHeight - 1);
+          const bin = Math.min(maxBin, Math.max(1, Math.floor(freqRatio * maxBin)));
+          const magnitude = Math.hypot(real[bin], imag[bin]) / fftSize;
+          const db = 20 * Math.log10(magnitude + 1e-9);
+          const normalized = clamp((db - floorDb) / Math.max(1, ceilingDb - floorDb), 0, 1);
+          pcaSpectrogramCtx.fillStyle = colorForValue(Math.min(1, normalized * gain));
+          pcaSpectrogramCtx.fillRect(drawX, y, Math.ceil(columnWidth) + 0.5, 1.2);
+        }
+      }
+
+      drawPcaSpectrogramAxes();
+      updatePcaSpectrogramLabels();
+    }
+
+    function setPcaSpectrogramVisible(visible) {
+      pcaSpectrogramVisible = visible;
+      pcaSpectrogramSection.classList.toggle("is-hidden", !visible);
+      togglePcaSpectrogramBtn.textContent = visible ? "Hide PCA Spectrogram" : "Show PCA Spectrogram";
+
+      if (visible) {
+        if (!pcaSpectrogramInitialized) {
+          seedPcaSpectrogramControlsFromMainControls();
+          pcaSpectrogramInitialized = true;
+        }
+        pcaSpectrogramCache = null;
+        resizePcaSpectrogramCanvas();
+        drawPcaSpectrogram();
+      } else {
+        stopPcaSpectrogramAudio(true);
+        clearPcaSpectrogram();
+        drawPcaSpectrogramAxes();
+      }
+      updatePcaSpectrogramLabels();
+      updatePcaPlaybackButtons();
+    }
+
+    function updatePcaPlaybackButtons() {
+      const canPlay = pcaSpectrogramVisible && Boolean(pcaSpectrogramCache && pcaSpectrogramCache.series && pcaSpectrogramCache.series.length > 8);
+      playPcaAudioBtn.disabled = !canPlay || isPcaAudioPlaying;
+      pausePcaAudioBtn.disabled = !canPlay || !isPcaAudioPlaying;
+      stopPcaAudioBtn.disabled = !canPlay && pcaPlaybackOffset <= 0;
+    }
+
+    function updatePcaSpectrogramLabels(extraLabel = "") {
+      updatePcaComponentOptions();
+      const componentLabel = pcaSpectrogramCache ? pcaSpectrogramCache.componentLabel : pcaSpectrogramComponentLabel();
+      pcaSpecWindowValue.textContent = `${pcaSpecWindowSlider.value} s`;
+      pcaSpecMaxFreqValue.textContent = pcaSpecMaxFreqSlider.value;
+      pcaSpecGainValue.textContent = `${Number(pcaSpecGainSlider.value).toFixed(1)}x`;
+      pcaSpecFloorValue.textContent = `${pcaSpecFloorSlider.value} dB`;
+      pcaSpecTauValue.textContent = formatTau(Number(pcaSpecTauSlider.value));
+      pcaSpecDimensionValue.textContent = pcaSpecDimensionSlider.value;
+      pcaSpecComponentCountValue.textContent = String(syncPcaSpectrogramComponentCount());
+      pcaSpecPointCountValue.textContent = pcaSpectrogramCache ? pcaSpectrogramCache.embeddingCount.toLocaleString() : "0";
+      pcaSpecZoomValue.textContent = `${Number(pcaSpecZoomSlider.value).toFixed(1)}x`;
+
+      if (!pcaSpectrogramVisible) {
+        pcaSpectrogramTitle.textContent = "PCA spectrogram: hidden";
+        updatePcaPlaybackButtons();
+        return;
+      }
+
+      if (extraLabel) {
+        pcaSpectrogramTitle.textContent = `${componentLabel} spectrogram: ${extraLabel}`;
+        updatePcaPlaybackButtons();
+        return;
+      }
+
+      if (!pcaSpectrogramCache) {
+        pcaSpectrogramTitle.textContent = `${componentLabel} spectrogram: waiting for audio data`;
+        updatePcaPlaybackButtons();
+        return;
+      }
+
+      const tauLabel = formatTau(pcaSpectrogramCache.effectiveTauMs);
+      const rateLabel = Math.round(pcaSpectrogramCache.sampleRate).toLocaleString();
+      const decimationLabel = pcaSpectrogramCache.sourceStep > 1 ? `, stride ${pcaSpectrogramCache.sourceStep}` : "";
+      const varianceLabel = Number.isFinite(pcaSpectrogramCache.variancePercent) ? `, variance ${pcaSpectrogramCache.variancePercent.toFixed(1)}%` : "";
+      pcaSpectrogramTitle.textContent = `${pcaSpectrogramCache.componentLabel} spectrogram: full data TDE → PCA, delay D=${pcaSpectrogramCache.dimension}, kept PCs=${pcaSpectrogramCache.retainedComponents}, tau ${tauLabel}, PCA rate ${rateLabel} Hz${decimationLabel}${varianceLabel}`;
+      updatePcaPlaybackButtons();
+    }
+
+    function stopPcaSpectrogramAudio(resetOffset = true) {
+      if (pcaPlaybackSource) {
+        pcaPlaybackSource.onended = null;
+        try {
+          pcaPlaybackSource.stop();
+        } catch (error) {
+          // The source may already have ended.
+        }
+        pcaPlaybackSource.disconnect();
+        pcaPlaybackSource = null;
+      }
+
+      if (pcaPlaybackContext) {
+        pcaPlaybackContext.close();
+        pcaPlaybackContext = null;
+      }
+
+      isPcaAudioPlaying = false;
+      if (resetOffset) {
+        pcaPlaybackOffset = 0;
+      }
+      updatePcaPlaybackButtons();
+    }
+
+    function pausePcaSpectrogramAudio() {
+      if (!isPcaAudioPlaying || !pcaPlaybackContext) return;
+
+      pcaPlaybackOffset = clamp(pcaPlaybackOffset + pcaPlaybackContext.currentTime - pcaPlaybackStartedAt, 0, Math.max(0, pcaPlaybackDuration));
+      stopPcaSpectrogramAudio(false);
+      statusText.textContent = `Paused ${pcaSpectrogramComponentLabel()} audio at ${formatSeconds(pcaPlaybackOffset)}.`;
+    }
+
+    function createPcaPlaybackBuffer(cache, contextSampleRate, startSample, endSample) {
+      const sourceRate = Math.max(1, cache.sampleRate);
+      const sourceLength = Math.max(1, endSample - startSample + 1);
+      const duration = sourceLength / sourceRate;
+      const outputLength = Math.max(1, Math.round(duration * contextSampleRate));
+      const samples = new Float32Array(outputLength);
+      let peak = 0;
+
+      for (let i = 0; i < outputLength; i += 1) {
+        const sourcePosition = startSample + i / Math.max(1, contextSampleRate) * sourceRate;
+        const leftIndex = clamp(Math.floor(sourcePosition), startSample, endSample);
+        const rightIndex = clamp(leftIndex + 1, startSample, endSample);
+        const fraction = sourcePosition - leftIndex;
+        const value = cache.series[leftIndex] * (1 - fraction) + cache.series[rightIndex] * fraction;
+        samples[i] = value;
+        peak = Math.max(peak, Math.abs(value));
+      }
+
+      const scale = peak > 1e-9 ? 0.88 / peak : 1;
+      const audioBuffer = pcaPlaybackContext.createBuffer(1, outputLength, contextSampleRate);
+      const channel = audioBuffer.getChannelData(0);
+      for (let i = 0; i < outputLength; i += 1) {
+        channel[i] = clamp(samples[i] * scale, -0.95, 0.95);
+      }
+
+      return audioBuffer;
+    }
+
+    async function playPcaSpectrogramAudio() {
+      if (!pcaSpectrogramVisible) return;
+      if (!pcaSpectrogramCache) {
+        drawPcaSpectrogram();
+      }
+      const cache = rebuildPcaSpectrogramCache();
+      if (!cache || cache.series.length < 8) {
+        statusText.textContent = "There is not enough PCA data to play yet.";
+        updatePcaPlaybackButtons();
+        return;
+      }
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        statusText.textContent = "This browser does not support the Web Audio API.";
+        return;
+      }
+
+      const range = pcaSpectrogramVisibleSampleRange();
+      stopPcaSpectrogramAudio(false);
+      pcaPlaybackContext = new AudioContextClass();
+      await pcaPlaybackContext.resume();
+      const buffer = createPcaPlaybackBuffer(cache, pcaPlaybackContext.sampleRate, range.startSample, range.endSample);
+      pcaPlaybackDuration = buffer.duration;
+      pcaPlaybackOffset = clamp(pcaPlaybackOffset, 0, Math.max(0, pcaPlaybackDuration - 0.001));
+      pcaPlaybackSource = pcaPlaybackContext.createBufferSource();
+      pcaPlaybackSource.buffer = buffer;
+      pcaPlaybackSource.connect(pcaPlaybackContext.destination);
+      pcaPlaybackStartedAt = pcaPlaybackContext.currentTime;
+      isPcaAudioPlaying = true;
+      updatePcaPlaybackButtons();
+      statusText.textContent = `Playing ${cache.componentLabel} audio from the visible PCA spectrogram window.`;
+
+      pcaPlaybackSource.onended = () => {
+        if (!isPcaAudioPlaying) return;
+        stopPcaSpectrogramAudio(true);
+        statusText.textContent = `${cache.componentLabel} audio playback finished.`;
+      };
+      pcaPlaybackSource.start(0, pcaPlaybackOffset);
     }
 
     function formatSeconds(value) {
@@ -1569,6 +2534,10 @@
         drawStaticSpectrogram();
         drawAxes();
         drawSavedPhasePortraits();
+        if (pcaSpectrogramVisible) {
+          pcaSpectrogramCache = null;
+          drawPcaSpectrogram();
+        }
 
         startBtn.disabled = false;
         playFileBtn.disabled = false;
@@ -1586,7 +2555,10 @@
         waveformSampleCount = 0;
         meterFill.style.width = "0%";
         clearSpectrogram();
+        pcaSpectrogramCache = null;
+        clearPcaSpectrogram();
         drawAxes();
+        drawPcaSpectrogramAxes();
         drawSavedPhasePortraits();
         startBtn.disabled = false;
         playFileBtn.disabled = true;
@@ -1612,7 +2584,8 @@
     }
 
     function minFrameSizePercent() {
-      return 1 / Math.max(0.001, spectrogramVisibleSeconds());
+      // Minimum phase-window duration is about 1 ms, so very short transients can be selected.
+      return 0.1 / Math.max(0.001, spectrogramVisibleSeconds());
     }
 
     function syncFrameControls() {
@@ -1654,6 +2627,12 @@
     }
 
     function formatPhaseDuration(ms) {
+      if (ms < 1) {
+        return `${ms.toFixed(2)} ms`;
+      }
+      if (ms < 10) {
+        return `${ms.toFixed(1)} ms`;
+      }
       if (ms < 1000) {
         return `${Math.round(ms)} ms`;
       }
@@ -1959,13 +2938,31 @@
       });
     }
 
+    function phaseEmbeddingDimension() {
+      return Math.max(3, Math.min(12, Number(phaseDimensionSlider.value) || 3));
+    }
+
+    function phaseRetainedPcaComponents() {
+      const dimension = phaseEmbeddingDimension();
+      return Math.max(3, Math.min(dimension, Number(phasePcaComponentCountSlider.value) || 3));
+    }
+
+    function syncPhasePcaComponentCount() {
+      const dimension = phaseEmbeddingDimension();
+      phasePcaComponentCountSlider.max = String(dimension);
+      const retained = phaseRetainedPcaComponents();
+      phasePcaComponentCountSlider.value = String(retained);
+      return retained;
+    }
+
     function getPhaseCoordinates(selectedFrame = syncFrameControls(), pointLimit = Infinity) {
       if (!currentSampleRate || !waveformBuffer || waveformSampleCount < 10) return;
 
       const usePca = phasePcaModeCheckbox.checked;
       const delayMs = Number(phaseTauSlider.value);
       const delaySamples = Math.min(waveformSampleCount - 2, Math.max(1, Math.round(currentSampleRate * delayMs / 1000)));
-      const dimension = usePca ? Number(phaseDimensionSlider.value) : 2;
+      const dimension = usePca ? phaseEmbeddingDimension() : 2;
+      const retainedComponents = usePca ? syncPhasePcaComponentCount() : 0;
       const maxDelaySamples = delaySamples * (dimension - 1);
       const frame = getPhaseFrame(maxDelaySamples, selectedFrame);
       if (!frame || frame.sampleCount < 8) return;
@@ -1993,7 +2990,7 @@
         }
       }
 
-      const projected = usePca ? projectPca(vectors, dimension, 3) : vectors;
+      const projected = usePca ? projectPca(vectors, dimension, retainedComponents) : vectors;
       const points = usePca ? projected.map((point) => [point[0], point[1]]) : projected;
       const points3D = usePca ? projected.map((point) => [point[0], point[1], point[2] || 0]) : null;
       let maxAbs = 0.001;
@@ -2040,6 +3037,19 @@
       return Math.max(1, Math.min(Number(maxFreqSlider.value), nyquist));
     }
 
+    function spectrumAnalysisMaxHz() {
+      const nyquist = currentSampleRate ? currentSampleRate / 2 : Number(maxFreqSlider.max || 22000);
+      return Math.max(1, Math.min(Number(maxFreqSlider.max || 22000), nyquist));
+    }
+
+    function frequencyInputValue(value) {
+      if (!Number.isFinite(value)) return "";
+      if (value >= 100) return String(Math.round(value));
+      if (value >= 10) return String(Number(value.toFixed(2)));
+      if (value >= 1) return String(Number(value.toFixed(3)));
+      return String(Number(value.toFixed(4)));
+    }
+
     function spectrumVisibleRange() {
       const fullMaxHz = spectrumFullMaxHz();
       let minHz = clamp(spectrumZoom.minHz || 0, 0, fullMaxHz);
@@ -2067,6 +3077,438 @@
       }
 
       return `${Math.round(value)} Hz`;
+    }
+
+    function formatCompactHz(value) {
+      if (!Number.isFinite(value) || value <= 0) return "—";
+      if (value >= 1000) {
+        return `${(value / 1000).toFixed(value >= 10000 ? 1 : 2).replace(/\.?0+$/, "")} kHz`;
+      }
+      if (value >= 100) return `${Math.round(value)} Hz`;
+      if (value >= 10) return `${value.toFixed(1).replace(/\.?0+$/, "")} Hz`;
+      if (value >= 1) return `${value.toFixed(2).replace(/\.?0+$/, "")} Hz`;
+      return `${value.toFixed(3).replace(/\.?0+$/, "")} Hz`;
+    }
+
+    function spectrumHarmonicsEnabled() {
+      return !!spectrumHarmonicsCheckbox && spectrumHarmonicsCheckbox.checked;
+    }
+
+    function spectrumF0Mode() {
+      return spectrumF0ModeSelect ? spectrumF0ModeSelect.value : "auto";
+    }
+
+    function spectrumF0SearchRange() {
+      const analysisMaxHz = spectrumAnalysisMaxHz();
+      const absoluteMinF0 = 0.01;
+      let minF0 = clamp(Number(spectrumF0MinSlider.value) || 1, absoluteMinF0, Math.max(absoluteMinF0, analysisMaxHz));
+      let maxF0 = clamp(Number(spectrumF0MaxSlider.value) || analysisMaxHz, absoluteMinF0, Math.max(absoluteMinF0, analysisMaxHz));
+      const minGap = 0.01;
+
+      if (maxF0 <= minF0 + minGap) {
+        if (minF0 + minGap <= analysisMaxHz) {
+          maxF0 = minF0 + minGap;
+        } else {
+          minF0 = Math.max(absoluteMinF0, maxF0 - minGap);
+        }
+      }
+
+      spectrumManualF0Slider.max = String(Math.max(analysisMaxHz, maxF0));
+      spectrumF0MinSlider.max = String(analysisMaxHz);
+      spectrumF0MaxSlider.max = String(analysisMaxHz);
+      spectrumF0MinSlider.value = frequencyInputValue(minF0);
+      spectrumF0MaxSlider.value = frequencyInputValue(maxF0);
+      return { minF0, maxF0 };
+    }
+
+    function spectrumSourceCount() {
+      return clamp(Number(spectrumSourceCountSelect.value) || 1, 1, 3);
+    }
+
+    function harmonicCombColor(index) {
+      const colors = [
+        [81, 196, 211],
+        [244, 184, 96],
+        [244, 82, 67]
+      ];
+      return colors[index % colors.length];
+    }
+
+    function harmonicLabel(index) {
+      return String.fromCharCode(65 + index);
+    }
+
+    function updateSpectrumHarmonicLabels() {
+      if (!spectrumManualF0Slider) return;
+
+      const range = spectrumF0SearchRange();
+      const analysisMaxHz = spectrumAnalysisMaxHz();
+      let manualF0 = clamp(Number(spectrumManualF0Slider.value) || 220, 0.01, Math.max(0.01, analysisMaxHz));
+      manualF0 = clamp(manualF0, range.minF0, range.maxF0);
+      spectrumManualF0Slider.value = frequencyInputValue(manualF0);
+      spectrumManualF0Value.textContent = formatCompactHz(manualF0);
+      spectrumF0MinValue.textContent = formatCompactHz(range.minF0);
+      spectrumF0MaxValue.textContent = formatCompactHz(range.maxF0);
+
+      const analysis = lastSpectrumHarmonicAnalysis;
+      if (!spectrumHarmonicsEnabled()) {
+        spectrumF0Readout.textContent = "Off";
+        return;
+      }
+      if (!analysis || !analysis.combs || !analysis.combs.length) {
+        spectrumF0Readout.textContent = "F0 —";
+        return;
+      }
+
+      const labels = analysis.combs.map((comb, index) => {
+        const confidence = Number.isFinite(comb.confidence) ? ` ${(comb.confidence * 100).toFixed(0)}%` : "";
+        return `${harmonicLabel(index)} ${formatCompactHz(comb.f0)}${confidence}`;
+      });
+      spectrumF0Readout.textContent = labels.join("  ");
+    }
+
+    function spectrumReferenceDb(spectra) {
+      let maxDb = -Infinity;
+      const fullMaxHz = spectrumAnalysisMaxHz();
+      spectra.forEach(({ spectrum }) => {
+        if (!spectrum) return;
+        for (let i = 0; i < spectrum.length; i += 1) {
+          const point = spectrum[i];
+          if (point.freq <= fullMaxHz) {
+            maxDb = Math.max(maxDb, point.db);
+          }
+        }
+      });
+      return Number.isFinite(maxDb) ? maxDb : -160;
+    }
+
+    function spectrumLocalDb(spectrum, frequency, toleranceHz) {
+      if (!spectrum || !spectrum.length || !Number.isFinite(frequency) || frequency <= 0) return -Infinity;
+      const binHz = spectrum.binHz || (spectrum.length > 1 ? spectrum[1].freq - spectrum[0].freq : frequency);
+      if (!binHz || binHz <= 0) return -Infinity;
+
+      const centerIndex = Math.round(frequency / binHz) - 1;
+      const radius = Math.max(1, Math.ceil(toleranceHz / binHz));
+      let bestDb = -Infinity;
+      const start = Math.max(0, centerIndex - radius);
+      const end = Math.min(spectrum.length - 1, centerIndex + radius);
+
+      for (let index = start; index <= end; index += 1) {
+        const point = spectrum[index];
+        if (Math.abs(point.freq - frequency) <= toleranceHz + binHz) {
+          bestDb = Math.max(bestDb, point.db);
+        }
+      }
+      return bestDb;
+    }
+
+    function harmonicRelationClose(a, b, tolerance) {
+      if (!a || !b) return false;
+      const ratio = Math.max(a, b) / Math.min(a, b);
+      const nearest = Math.round(ratio);
+      if (nearest < 1) return false;
+      return Math.abs(ratio - nearest) / Math.max(1, nearest) <= tolerance;
+    }
+
+    function candidateDistinctFromCombs(f0, combs) {
+      return combs.every((comb) => {
+        const relativeDiff = Math.abs(f0 - comb.f0) / Math.max(1, Math.min(f0, comb.f0));
+        if (relativeDiff < 0.035) return false;
+        if (harmonicRelationClose(f0, comb.f0, 0.018)) return false;
+        return true;
+      });
+    }
+
+    function scoreHarmonicCandidate(f0, spectra, referenceDb, existingCombs = []) {
+      const fullMaxHz = spectrumAnalysisMaxHz();
+      const maxHarmonic = Math.min(48, Math.floor(fullMaxHz / Math.max(0.01, f0)));
+      if (maxHarmonic < 2) return { score: 0, coverage: 0, harmonicCount: maxHarmonic };
+
+      let weightedScore = 0;
+      let weightSum = 0;
+      let coverageWeight = 0;
+      let strongEarlyHarmonics = 0;
+
+      for (let harmonic = 1; harmonic <= maxHarmonic; harmonic += 1) {
+        const targetFrequency = harmonic * f0;
+        const toleranceHz = clamp(targetFrequency * 0.006, 1.5, Math.max(4, f0 * 0.055));
+        let bestDb = -Infinity;
+
+        spectra.forEach(({ spectrum }) => {
+          bestDb = Math.max(bestDb, spectrumLocalDb(spectrum, targetFrequency, toleranceHz));
+        });
+
+        if (!Number.isFinite(bestDb)) continue;
+
+        const relativeDb = bestDb - referenceDb;
+        const normalizedPower = clamp((relativeDb + 58) / 58, 0, 1);
+        const harmonicWeight = harmonic === 1 ? 1.18 : 1 / Math.sqrt(harmonic);
+        weightedScore += normalizedPower * harmonicWeight;
+        weightSum += harmonicWeight;
+
+        if (relativeDb > -42) {
+          coverageWeight += harmonicWeight;
+          if (harmonic <= 5) strongEarlyHarmonics += 1;
+        }
+      }
+
+      if (weightSum <= 0) return { score: 0, coverage: 0, harmonicCount: maxHarmonic };
+
+      const coverage = coverageWeight / weightSum;
+      let score = weightedScore / weightSum + coverage * 0.15;
+      if (strongEarlyHarmonics < 2) score *= 0.68;
+
+      existingCombs.forEach((comb) => {
+        if (harmonicRelationClose(f0, comb.f0, 0.02)) {
+          score *= 0.55;
+        }
+      });
+
+      const minBiasF0 = Math.max(0.01, Number(spectrumF0MinSlider.value) || 1);
+      const lowFrequencyBias = 1 - 0.035 * Math.log2(Math.max(1, f0 / minBiasF0));
+      score *= clamp(lowFrequencyBias, 0.82, 1);
+
+      return { score, coverage, harmonicCount: maxHarmonic };
+    }
+
+    function findHarmonicCombs(spectra, requestedCount, minF0, maxF0, existingCombs = []) {
+      if (!spectra || !spectra.length || maxF0 <= minF0) return [];
+
+      const referenceDb = spectrumReferenceDb(spectra);
+      const candidateCount = 1200;
+      const stepHz = Math.max(0.05, (maxF0 - minF0) / candidateCount);
+      const candidates = [];
+      const tested = new Set();
+
+      function testCandidate(f0) {
+        if (!Number.isFinite(f0) || f0 < minF0 || f0 > maxF0) return;
+        const key = Math.round(f0 * 100) / 100;
+        if (tested.has(key)) return;
+        tested.add(key);
+        const scoreInfo = scoreHarmonicCandidate(f0, spectra, referenceDb, existingCombs);
+        if (scoreInfo.score > 0.08) {
+          candidates.push({
+            f0,
+            score: scoreInfo.score,
+            coverage: scoreInfo.coverage,
+            harmonicCount: scoreInfo.harmonicCount
+          });
+        }
+      }
+
+      for (let f0 = minF0; f0 <= maxF0; f0 += stepHz) {
+        testCandidate(f0);
+      }
+
+      if (maxF0 / Math.max(0.01, minF0) > 12) {
+        const logMin = Math.log(Math.max(0.01, minF0));
+        const logMax = Math.log(Math.max(minF0 + 0.01, maxF0));
+        for (let index = 0; index <= candidateCount; index += 1) {
+          const ratio = index / candidateCount;
+          testCandidate(Math.exp(logMin + (logMax - logMin) * ratio));
+        }
+      }
+
+      candidates.sort((a, b) => b.score - a.score);
+
+      const refined = [];
+      const topCandidates = candidates.slice(0, 18);
+      topCandidates.forEach((candidate) => {
+        const localWindow = Math.max(0.05, Math.min(stepHz, candidate.f0 * 0.025));
+        const fineStep = Math.max(0.01, localWindow / 8);
+        let best = candidate;
+        const start = Math.max(minF0, candidate.f0 - localWindow);
+        const end = Math.min(maxF0, candidate.f0 + localWindow);
+        for (let f0 = start; f0 <= end; f0 += fineStep) {
+          const scoreInfo = scoreHarmonicCandidate(f0, spectra, referenceDb, existingCombs);
+          if (scoreInfo.score > best.score) {
+            best = { f0, score: scoreInfo.score, coverage: scoreInfo.coverage, harmonicCount: scoreInfo.harmonicCount };
+          }
+        }
+        refined.push(best);
+      });
+
+      refined.sort((a, b) => b.score - a.score);
+
+      const selected = [...existingCombs];
+      const output = [];
+      for (const candidate of refined) {
+        if (candidate.score < 0.16) continue;
+        if (!candidateDistinctFromCombs(candidate.f0, selected)) continue;
+
+        const comb = {
+          f0: candidate.f0,
+          score: candidate.score,
+          confidence: clamp(candidate.score, 0, 1),
+          coverage: candidate.coverage,
+          harmonicCount: candidate.harmonicCount,
+          manual: false
+        };
+        output.push(comb);
+        selected.push(comb);
+        if (output.length >= requestedCount) break;
+      }
+
+      return output;
+    }
+
+    function makeManualHarmonicComb(spectra) {
+      const range = spectrumF0SearchRange();
+      const f0 = clamp(Number(spectrumManualF0Slider.value) || 220, range.minF0, range.maxF0);
+      spectrumManualF0Slider.value = frequencyInputValue(f0);
+      const referenceDb = spectrumReferenceDb(spectra);
+      const scoreInfo = scoreHarmonicCandidate(f0, spectra, referenceDb, []);
+      return {
+        f0,
+        score: scoreInfo.score,
+        confidence: clamp(scoreInfo.score, 0, 1),
+        coverage: scoreInfo.coverage,
+        harmonicCount: scoreInfo.harmonicCount,
+        manual: true
+      };
+    }
+
+    function analyzeSpectrumHarmonics(spectra) {
+      if (!spectrumHarmonicsEnabled() || !spectra || !spectra.length) {
+        lastSpectrumHarmonicAnalysis = null;
+        updateSpectrumHarmonicLabels();
+        return null;
+      }
+
+      const mode = spectrumF0Mode();
+      if (mode === "auto" && spectrumLockF0Checkbox.checked && lockedSpectrumHarmonicAnalysis) {
+        lastSpectrumHarmonicAnalysis = lockedSpectrumHarmonicAnalysis;
+        updateSpectrumHarmonicLabels();
+        return lockedSpectrumHarmonicAnalysis;
+      }
+
+      const range = spectrumF0SearchRange();
+      const sourceCount = spectrumSourceCount();
+      let combs = [];
+
+      if (mode === "manual") {
+        const manualComb = makeManualHarmonicComb(spectra);
+        combs.push(manualComb);
+        if (sourceCount > 1) {
+          const remaining = findHarmonicCombs(spectra, sourceCount - 1, range.minF0, range.maxF0, combs);
+          combs = combs.concat(remaining);
+        }
+      } else {
+        combs = findHarmonicCombs(spectra, sourceCount, range.minF0, range.maxF0);
+      }
+
+      const segmentF0s = mode === "auto"
+        ? spectra.map((entry) => {
+            const result = findHarmonicCombs([entry], 1, range.minF0, range.maxF0);
+            return result.length ? result[0] : null;
+          })
+        : [];
+
+      const analysis = {
+        combs,
+        segmentF0s,
+        mode,
+        locked: mode === "auto" && spectrumLockF0Checkbox.checked,
+        time: performance.now()
+      };
+
+      lastSpectrumHarmonicAnalysis = analysis;
+      if (mode === "auto" && spectrumLockF0Checkbox.checked) {
+        lockedSpectrumHarmonicAnalysis = analysis;
+      }
+      updateSpectrumHarmonicLabels();
+      return analysis;
+    }
+
+    function drawSpectrumHarmonics(view) {
+      if (!spectrumHarmonicsEnabled() || !view || !view.spectrumScale || !view.harmonicAnalysis || !view.harmonicAnalysis.combs.length) return;
+
+      const analysis = view.harmonicAnalysis;
+      const { minHz, maxHz } = view.spectrumScale;
+      const showSubharmonics = spectrumSubharmonicsCheckbox.checked;
+      const labelSpacingHz = Math.max(1, (maxHz - minHz) * 34 / Math.max(1, view.width));
+
+      view.axesCtx.save();
+      view.axesCtx.font = "11px ui-sans-serif, system-ui, sans-serif";
+      view.axesCtx.textBaseline = "alphabetic";
+
+      analysis.combs.forEach((comb, index) => {
+        const color = harmonicCombColor(index);
+        const colorText = `${color[0]}, ${color[1]}, ${color[2]}`;
+
+        if (showSubharmonics) {
+          for (let divisor = 2; divisor <= 4; divisor += 1) {
+            const frequency = comb.f0 / divisor;
+            if (frequency < minHz || frequency > maxHz) continue;
+            const x = (frequency - minHz) / Math.max(1, maxHz - minHz) * view.width;
+            view.axesCtx.strokeStyle = `rgba(${colorText}, 0.34)`;
+            view.axesCtx.fillStyle = `rgba(${colorText}, 0.62)`;
+            view.axesCtx.lineWidth = 1;
+            view.axesCtx.setLineDash([2, 5]);
+            view.axesCtx.beginPath();
+            view.axesCtx.moveTo(x, 18);
+            view.axesCtx.lineTo(x, view.height - 22);
+            view.axesCtx.stroke();
+            view.axesCtx.fillText(`1/${divisor}`, clamp(x + 3, 3, view.width - 24), view.height - 24 - index * 12);
+          }
+        }
+
+        const maxHarmonic = Math.min(160, Math.floor(maxHz / Math.max(0.01, comb.f0)));
+        for (let harmonic = 1; harmonic <= maxHarmonic; harmonic += 1) {
+          const frequency = harmonic * comb.f0;
+          if (frequency < minHz || frequency > maxHz) continue;
+          const x = (frequency - minHz) / Math.max(1, maxHz - minHz) * view.width;
+          const isFundamental = harmonic === 1;
+
+          view.axesCtx.strokeStyle = `rgba(${colorText}, ${isFundamental ? 0.92 : 0.48})`;
+          view.axesCtx.fillStyle = `rgba(${colorText}, ${isFundamental ? 0.95 : 0.66})`;
+          view.axesCtx.lineWidth = isFundamental ? 1.7 : 1;
+          view.axesCtx.setLineDash(isFundamental ? [] : [5, 4]);
+          view.axesCtx.beginPath();
+          view.axesCtx.moveTo(x, 18);
+          view.axesCtx.lineTo(x, view.height - 22);
+          view.axesCtx.stroke();
+
+          if (isFundamental || (harmonic <= 12 && comb.f0 > labelSpacingHz)) {
+            const label = isFundamental ? `${harmonicLabel(index)} F0` : `${harmonic}×`;
+            const y = isFundamental ? 32 + index * 14 : 46 + index * 14;
+            view.axesCtx.fillText(label, clamp(x + 4, 4, view.width - 38), y);
+          }
+        }
+      });
+
+      let summaryY = 18;
+      analysis.combs.forEach((comb, index) => {
+        const color = harmonicCombColor(index);
+        const colorText = `${color[0]}, ${color[1]}, ${color[2]}`;
+        const label = `${harmonicLabel(index)} ${formatCompactHz(comb.f0)}  ${(comb.confidence * 100).toFixed(0)}%${comb.manual ? " manual" : ""}${analysis.locked ? " locked" : ""}`;
+        const width = Math.min(view.width - 12, Math.max(104, label.length * 6.4));
+        view.axesCtx.setLineDash([]);
+        view.axesCtx.fillStyle = "rgba(5, 7, 10, 0.72)";
+        view.axesCtx.fillRect(6, summaryY - 13, width, 16);
+        view.axesCtx.strokeStyle = `rgba(${colorText}, 0.45)`;
+        view.axesCtx.strokeRect(6, summaryY - 13, width, 16);
+        view.axesCtx.fillStyle = `rgba(${colorText}, 0.95)`;
+        view.axesCtx.fillText(label, 10, summaryY - 2);
+        summaryY += 18;
+      });
+
+      view.axesCtx.restore();
+    }
+
+    function spectrumHarmonicTitleSuffix(view) {
+      if (!spectrumHarmonicsEnabled()) return "";
+      const analysis = view ? view.harmonicAnalysis : lastSpectrumHarmonicAnalysis;
+      if (!analysis || !analysis.combs || !analysis.combs.length) return " | F0 —";
+
+      const sourceLabel = analysis.combs
+        .map((comb, index) => `${harmonicLabel(index)} ${formatCompactHz(comb.f0)}`)
+        .join(", ");
+      const thirdLabels = analysis.segmentF0s && analysis.segmentF0s.length
+        ? analysis.segmentF0s.map((comb) => comb ? formatCompactHz(comb.f0) : "—").join("/")
+        : "";
+
+      return ` | F0 ${sourceLabel}${thirdLabels ? ` | thirds ${thirdLabels}` : ""}`;
     }
 
     function drawPhasePortrait(view, coordinates) {
@@ -2288,6 +3730,7 @@
 
       const binCount = fftSize / 2;
       const bins = [];
+      bins.binHz = currentSampleRate / fftSize;
       for (let bin = 1; bin < binCount; bin += 1) {
         const freq = bin * currentSampleRate / fftSize;
         const magnitude = Math.hypot(real[bin], imag[bin]) / fftSize;
@@ -2335,6 +3778,7 @@
 
       view.spectra = spectra;
       view.spectrumScale = { minHz, maxHz, minDb, maxDb };
+      view.harmonicAnalysis = analyzeSpectrumHarmonics(spectra);
 
       view.ctx.lineWidth = 1.4;
       view.ctx.lineJoin = "round";
@@ -2408,7 +3852,7 @@
     }
 
     function updateSpectrumHover(event) {
-      if (spectrumPan) return;
+      if (spectrumPan || spectrumF0Drag) return;
 
       const view = spectrumView();
       if (!view || !view.spectra || !view.spectrumScale) return;
@@ -2435,9 +3879,76 @@
       drawPhaseAxes(view);
     }
 
+    function spectrumPointerFrequency(event, view) {
+      const rect = view.axesCanvas.getBoundingClientRect();
+      const x = clamp(event.clientX - rect.left, 0, rect.width);
+      const range = spectrumVisibleRange();
+      return range.minHz + (x / Math.max(1, rect.width)) * (range.maxHz - range.minHz);
+    }
+
+    function setManualF0FromPointer(event) {
+      const view = spectrumView();
+      if (!view) return;
+
+      const range = spectrumF0SearchRange();
+      const frequency = clamp(spectrumPointerFrequency(event, view), range.minF0, range.maxF0);
+      spectrumManualF0Slider.value = frequencyInputValue(frequency);
+      spectrumF0ModeSelect.value = "manual";
+      lockedSpectrumHarmonicAnalysis = null;
+      updateSpectrumHarmonicLabels();
+      drawSavedPhasePortraits();
+    }
+
+    function beginManualF0Drag(event) {
+      const view = spectrumView();
+      if (!view || !spectrumHarmonicsEnabled() || !view.spectrumScale) return false;
+
+      const analysis = view.harmonicAnalysis || lastSpectrumHarmonicAnalysis;
+      const range = spectrumVisibleRange();
+      const rect = view.axesCanvas.getBoundingClientRect();
+      const x = clamp(event.clientX - rect.left, 0, rect.width);
+      let nearExistingLine = false;
+
+      if (analysis && analysis.combs && analysis.combs.length) {
+        const activeF0 = spectrumF0Mode() === "manual" ? Number(spectrumManualF0Slider.value) : analysis.combs[0].f0;
+        if (activeF0 >= range.minHz && activeF0 <= range.maxHz) {
+          const lineX = (activeF0 - range.minHz) / Math.max(1, range.maxHz - range.minHz) * rect.width;
+          nearExistingLine = Math.abs(x - lineX) <= 10;
+        }
+      }
+
+      if (spectrumF0Mode() !== "manual" && !event.shiftKey && !event.altKey) return false;
+      if (spectrumF0Mode() === "manual" && !nearExistingLine && !event.shiftKey && !event.altKey) return false;
+
+      event.preventDefault();
+      spectrumF0Drag = { pointerId: event.pointerId };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.style.cursor = "ew-resize";
+      setManualF0FromPointer(event);
+      return true;
+    }
+
+    function updateManualF0Drag(event) {
+      if (!spectrumF0Drag) return;
+      event.preventDefault();
+      setManualF0FromPointer(event);
+    }
+
+    function endManualF0Drag(event) {
+      if (!spectrumF0Drag) return;
+      spectrumF0Drag = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      event.currentTarget.style.cursor = "crosshair";
+      updateSpectrumHover(event);
+    }
+
     function beginSpectrumPan(event) {
       const view = spectrumView();
       if (!view) return;
+
+      if (beginManualF0Drag(event)) return;
 
       const range = spectrumVisibleRange();
       if (range.maxHz - range.minHz >= range.fullMaxHz - 1) return;
@@ -2454,6 +3965,7 @@
     }
 
     function updateSpectrumPan(event) {
+      if (spectrumF0Drag) return;
       if (!spectrumPan) return;
 
       const view = spectrumView();
@@ -2497,7 +4009,7 @@
     }
 
     function clearSpectrumHover() {
-      if (spectrumPan) return;
+      if (spectrumPan || spectrumF0Drag) return;
 
       spectrumHover = null;
       const view = spectrumView();
@@ -2549,12 +4061,17 @@
     function drawSavedPhasePortraits() {
       const coordinates = getPhaseCoordinates();
       lastPhasePointCount = coordinates ? coordinates.pointCount : 0;
+      if (!coordinates) {
+        lastSpectrumHarmonicAnalysis = null;
+        updateSpectrumHarmonicLabels();
+      }
       if (coordinates) {
         lastPhaseAxisMax = Math.max(coordinates.maxAbs, coordinates.maxAbs3D || 0.001);
       }
       phaseViews.forEach((view) => {
         clearPhasePortrait(view);
         drawPhasePortrait(view, coordinates);
+        drawPhaseAxes(view);
       });
       updatePhaseTitles();
     }
@@ -2567,6 +4084,11 @@
       analyser.getByteTimeDomainData(timeData);
       updateLevelMeter();
       drawSavedPhasePortraits();
+      if (pcaSpectrogramVisible && now - lastPcaSpectrogramAutoDrawTime > PCA_SPECTROGRAM_AUTO_UPDATE_MS) {
+        lastPcaSpectrogramAutoDrawTime = now;
+        pcaSpectrogramCache = null;
+        drawPcaSpectrogram();
+      }
 
       const windowSeconds = Number(windowSlider.value);
       scrollCarry += elapsed / 1000 * (canvasCssWidth / windowSeconds);
@@ -2588,6 +4110,10 @@
       const autoAxisLimitLabel = phaseAutoAxisLimit().toFixed(2);
 
       phaseDimensionControl.classList.toggle("is-hidden", !usePca);
+      phasePcaComponentCountControl.classList.toggle("is-hidden", !usePca);
+      if (usePca) {
+        syncPhasePcaComponentCount();
+      }
       updateTopAnalysisSplit();
       updateSpectrogramViewportControls();
 
@@ -2595,6 +4121,7 @@
       maxFreqValue.textContent = maxFreqSlider.value;
       gainValue.textContent = `${Number(gainSlider.value).toFixed(1)}x`;
       floorValue.textContent = `${floorSlider.value} dB`;
+      updateSpectrumHarmonicLabels();
       phaseTauValue.textContent = tauLabel;
       phaseFrameStartValue.textContent = `${formatPercent(selectedFrame.start)}%`;
       phaseFrameSizeValue.textContent = formatPhaseDuration(spectrogramVisibleSeconds() * selectedFrame.size * 10);
@@ -2603,6 +4130,8 @@
       phaseColorGlowValue.textContent = Number(phaseColorGlowSlider.value).toFixed(2);
       phaseAutoAxisLimitValue.textContent = autoAxisLimitLabel;
       phaseDimensionValue.textContent = phaseDimensionSlider.value;
+      phasePcaComponentCountValue.textContent = String(syncPhasePcaComponentCount());
+      updatePcaSpectrogramLabels();
       updatePhaseTitles();
     }
 
@@ -2610,7 +4139,7 @@
       const selectedFrame = syncFrameControls();
       const usePca = phasePcaModeCheckbox.checked;
       const tauLabel = formatTau(Number(phaseTauSlider.value));
-      const phaseModeLabel = usePca ? `PCA D=${phaseDimensionSlider.value}, tau ${tauLabel}` : `tau ${tauLabel}`;
+      const phaseModeLabel = usePca ? `PCA delay D=${phaseEmbeddingDimension()}, kept PCs=${phaseRetainedPcaComponents()}, tau ${tauLabel}` : `tau ${tauLabel}`;
       const formattedPointCount = lastPhasePointCount.toLocaleString();
       const frameLabel = `${formatPercent(selectedFrame.start)}-${formatPercent(selectedFrame.end)}%`;
 
@@ -2624,7 +4153,7 @@
         } else if (view.mode === "pcaLine") {
           view.title.textContent = `3D PCA line: ${phaseModeLabel}, frame ${frameLabel}`;
         } else if (view.mode === "spectrum") {
-          view.title.textContent = `Power spectrum: 3 frame thirds, frame ${frameLabel}`;
+          view.title.textContent = `Power spectrum: 3 frame thirds, frame ${frameLabel}${spectrumHarmonicTitleSuffix(view)}`;
         } else {
           view.title.textContent = `${view.name}: ${phaseModeLabel}, frame ${frameLabel}`;
         }
@@ -2641,6 +4170,20 @@
       }
     });
     audioFileInput.addEventListener("change", loadAudioFile);
+    togglePcaSpectrogramBtn.addEventListener("click", () => {
+      setPcaSpectrogramVisible(!pcaSpectrogramVisible);
+    });
+    redrawPcaSpectrogramBtn.addEventListener("click", () => {
+      stopPcaSpectrogramAudio(true);
+      pcaSpectrogramCache = null;
+      drawPcaSpectrogram();
+    });
+    playPcaAudioBtn.addEventListener("click", playPcaSpectrogramAudio);
+    pausePcaAudioBtn.addEventListener("click", pausePcaSpectrogramAudio);
+    stopPcaAudioBtn.addEventListener("click", () => {
+      stopPcaSpectrogramAudio(true);
+      statusText.textContent = `${pcaSpectrogramComponentLabel()} audio playback stopped.`;
+    });
     clearBtn.addEventListener("click", () => {
       if (activeSource === "file") {
         stopFilePlayback(false);
@@ -2664,10 +4207,16 @@
       }
       meterFill.style.width = "0%";
       lastPhasePointCount = 0;
+      stopPcaSpectrogramAudio(true);
+      pcaSpectrogramCache = null;
+      clearPcaSpectrogram();
       updateSpectrogramViewportControls();
+      updatePcaSpectrogramViewportControls();
+      updatePcaSpectrogramLabels();
       updatePhaseTitles();
       phaseViews.forEach(clearPhasePortrait);
       drawAxes();
+      drawPcaSpectrogramAxes();
     });
 
     axesCanvas.addEventListener("pointerdown", beginPhaseWindowDrag);
@@ -2695,15 +4244,75 @@
       axesViewCanvas.addEventListener("wheel", zoomPca3d, { passive: false });
     });
 
+    function bindAdvancedToggle(container, toggle, closedLabel, openLabel) {
+      if (!container || !toggle) return;
+
+      const setOpen = (open) => {
+        container.classList.toggle("show-advanced", open);
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        toggle.textContent = open ? openLabel : closedLabel;
+      };
+
+      toggle.addEventListener("click", () => setOpen(!container.classList.contains("show-advanced")));
+      setOpen(false);
+    }
+
+    bindAdvancedToggle(mainControls, mainAdvancedToggle, "More controls", "Hide controls");
+    bindAdvancedToggle(pcaSpecControls, pcaAdvancedToggle, "More PCA controls", "Hide PCA controls");
+    bindAdvancedToggle(phaseControls, phaseAdvancedToggle, "More phase controls", "Hide phase controls");
+
+    function setSpectrumControlsVisible(visible) {
+      if (!spectrumControlsPopover || !spectrumControlsToggleBtn) return;
+      spectrumControlsPopover.classList.toggle("is-hidden", !visible);
+      spectrumControlsToggleBtn.setAttribute("aria-expanded", visible ? "true" : "false");
+      spectrumControlsToggleBtn.textContent = visible ? "Hide controls" : "Controls";
+    }
+
+    if (spectrumControlsToggleBtn) {
+      spectrumControlsToggleBtn.addEventListener("click", () => {
+        const isVisible = !spectrumControlsPopover.classList.contains("is-hidden");
+        setSpectrumControlsVisible(!isVisible);
+      });
+    }
+
+    if (spectrumControlsCloseBtn) {
+      spectrumControlsCloseBtn.addEventListener("click", () => setSpectrumControlsVisible(false));
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setSpectrumControlsVisible(false);
+    });
+
     const spectrumAxesCanvas = spectrumView().axesCanvas;
     spectrumAxesCanvas.addEventListener("pointerdown", beginSpectrumPan);
+    spectrumAxesCanvas.addEventListener("pointermove", updateManualF0Drag);
     spectrumAxesCanvas.addEventListener("pointermove", updateSpectrumHover);
     spectrumAxesCanvas.addEventListener("pointermove", updateSpectrumPan);
+    spectrumAxesCanvas.addEventListener("pointerup", endManualF0Drag);
     spectrumAxesCanvas.addEventListener("pointerup", endSpectrumPan);
+    spectrumAxesCanvas.addEventListener("pointercancel", endManualF0Drag);
     spectrumAxesCanvas.addEventListener("pointercancel", endSpectrumPan);
     spectrumAxesCanvas.addEventListener("pointerleave", clearSpectrumHover);
     spectrumAxesCanvas.addEventListener("wheel", zoomSpectrum, { passive: false });
     spectrumAxesCanvas.addEventListener("dblclick", resetSpectrumZoom);
+
+    [spectrumHarmonicsCheckbox, spectrumF0ModeSelect, spectrumManualF0Slider, spectrumF0MinSlider, spectrumF0MaxSlider, spectrumSourceCountSelect, spectrumSubharmonicsCheckbox, spectrumLockF0Checkbox].forEach((input) => {
+      const eventName = input.tagName === "SELECT" || input.type === "checkbox" ? "change" : "input";
+      input.addEventListener(eventName, () => {
+        if (input === spectrumManualF0Slider) {
+          spectrumF0ModeSelect.value = "manual";
+          lockedSpectrumHarmonicAnalysis = null;
+        }
+        if (input === spectrumF0ModeSelect || input === spectrumF0MinSlider || input === spectrumF0MaxSlider || input === spectrumSourceCountSelect) {
+          lockedSpectrumHarmonicAnalysis = null;
+        }
+        if (input === spectrumLockF0Checkbox) {
+          lockedSpectrumHarmonicAnalysis = spectrumLockF0Checkbox.checked ? lastSpectrumHarmonicAnalysis : null;
+        }
+        updateSpectrumHarmonicLabels();
+        drawSavedPhasePortraits();
+      });
+    });
 
     fftSizeSelect.addEventListener("change", () => {
       if (audioContext) {
@@ -2761,11 +4370,64 @@
       }
     });
 
-    [windowSlider, maxFreqSlider, topSpectrumWidthSlider, gainSlider, floorSlider, phaseTauSlider, phasePcaModeCheckbox, phaseDimensionSlider, phaseFrameStartSlider, phaseFrameSizeSlider, phaseAutoAxisLimitSlider, phaseColorPointSizeSlider, phaseColorGammaSlider, phaseColorGlowSlider].forEach((input) => {
+    pcaSpecScrollSlider.addEventListener("input", () => {
+      if (!pcaSpectrogramCache) return;
+      stopPcaSpectrogramAudio(true);
+
+      const visibleSeconds = Math.min(pcaSpectrogramCache.durationSeconds, pcaSpectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, pcaSpectrogramCache.durationSeconds - visibleSeconds);
+      pcaSpectrogramViewStartSeconds = maxStartSeconds * (Number(pcaSpecScrollSlider.value) / 100);
+      drawPcaSpectrogram();
+    });
+
+    pcaSpecZoomSlider.addEventListener("input", () => {
+      if (!pcaSpectrogramCache) return;
+      stopPcaSpectrogramAudio(true);
+
+      const visibleSeconds = Math.min(pcaSpectrogramCache.durationSeconds, pcaSpectrogramVisibleSeconds());
+      const maxStartSeconds = Math.max(0, pcaSpectrogramCache.durationSeconds - visibleSeconds);
+      pcaSpectrogramViewStartSeconds = clamp(pcaSpectrogramViewStartSeconds, 0, maxStartSeconds);
+      updatePcaSpectrogramLabels();
+      drawPcaSpectrogram();
+    });
+
+    [pcaSpecWindowSlider, pcaSpecMaxFreqSlider, pcaSpecGainSlider, pcaSpecFloorSlider].forEach((input) => {
+      input.addEventListener("input", () => {
+        if (input === pcaSpecWindowSlider) {
+          stopPcaSpectrogramAudio(true);
+        }
+        updatePcaSpectrogramLabels();
+        if (pcaSpectrogramVisible) {
+          drawPcaSpectrogram();
+        }
+      });
+    });
+
+    [pcaSpecTauSlider, pcaSpecDimensionSlider, pcaSpecComponentCountSlider, pcaSpecComponentSelect].forEach((input) => {
+      const eventName = input === pcaSpecComponentSelect ? "change" : "input";
+      input.addEventListener(eventName, () => {
+        stopPcaSpectrogramAudio(true);
+        pcaSpectrogramCache = null;
+        updatePcaSpectrogramLabels();
+        if (pcaSpectrogramVisible) {
+          drawPcaSpectrogram();
+        }
+      });
+    });
+
+    pcaSpecFftSizeSelect.addEventListener("change", () => {
+      updatePcaSpectrogramLabels();
+      if (pcaSpectrogramVisible) {
+        drawPcaSpectrogram();
+      }
+    });
+
+    [windowSlider, maxFreqSlider, topSpectrumWidthSlider, gainSlider, floorSlider, phaseTauSlider, phasePcaModeCheckbox, phaseDimensionSlider, phasePcaComponentCountSlider, phaseFrameStartSlider, phaseFrameSizeSlider, phaseAutoAxisLimitSlider, phaseColorPointSizeSlider, phaseColorGammaSlider, phaseColorGlowSlider].forEach((input) => {
       input.addEventListener("input", () => {
         if (input === phasePcaModeCheckbox && phasePcaModeCheckbox.checked) {
           phaseTauSlider.value = "0.30";
           phaseDimensionSlider.value = "3";
+          phasePcaComponentCountSlider.value = "3";
         }
 
         updateLabels();
@@ -2790,13 +4452,13 @@
           drawAxes();
           phaseViews.forEach(drawPhaseAxes);
         }
-        if (input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider) {
+        if (input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phasePcaComponentCountSlider) {
           phaseViews.forEach(drawPhaseAxes);
         }
         if (input === windowSlider || input === phaseTauSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider) {
           drawAxes();
         }
-        if (input === windowSlider || input === maxFreqSlider || input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseAutoAxisLimitSlider || input === phaseColorPointSizeSlider || input === phaseColorGammaSlider || input === phaseColorGlowSlider) {
+        if (input === windowSlider || input === maxFreqSlider || input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phasePcaComponentCountSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseAutoAxisLimitSlider || input === phaseColorPointSizeSlider || input === phaseColorGammaSlider || input === phaseColorGlowSlider) {
           drawSavedPhasePortraits();
         }
       });
