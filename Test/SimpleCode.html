@@ -281,80 +281,6 @@
     }
 
 
-    .surface-section {
-      overflow: hidden;
-    }
-
-    .surface-header {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: flex-start;
-      justify-content: space-between;
-    }
-
-    .surface-title {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .surface-main-controls {
-      justify-content: flex-start;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid #1e2430;
-    }
-
-    .surface-controls {
-      margin-top: 10px;
-    }
-
-    .surface-viewport-wrap {
-      margin-top: 14px;
-      width: 100%;
-      max-width: 100%;
-      margin-left: auto;
-      margin-right: auto;
-      border: 1px solid rgba(184, 176, 154, 0.58);
-      border-radius: 12px;
-      overflow: hidden;
-      background: #f4f0e6;
-      box-shadow: 0 18px 45px rgba(63, 54, 39, 0.18), inset 0 0 70px rgba(124, 107, 82, 0.10);
-    }
-
-    .surface-viewport-wrap.surface-dark-style {
-      border-color: #1e2430;
-      background: #05070a;
-      box-shadow: none;
-    }
-
-    .surface-viewport {
-      position: relative;
-      width: 100%;
-      height: 580px;
-      min-height: 320px;
-      background: radial-gradient(circle at 42% 28%, #fffdf6 0%, #f4ead9 48%, #d9c9ad 100%);
-    }
-
-    .surface-viewport-wrap.surface-dark-style .surface-viewport {
-      background: #05070a;
-    }
-
-    #surfaceViewport canvas {
-      position: static;
-      inset: auto;
-      display: block;
-      width: 100% !important;
-      height: 100% !important;
-      cursor: grab;
-    }
-
-    #surfaceViewport canvas:active {
-      cursor: grabbing;
-    }
-
-
     @media (max-width: 760px) {
       .wrap {
         width: min(100vw - 20px, 1180px);
@@ -386,25 +312,12 @@
         min-height: 280px;
       }
 
-      .surface-viewport {
-        min-height: 300px;
-      }
-
       .phase-grid {
         grid-template-columns: 1fr;
       }
 
     }
   </style>
-
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
-      }
-    }
-  </script>
 </head>
 <body>
   <div class="wrap">
@@ -600,144 +513,6 @@
 
         </div>
       </section>
-
-      <section id="surfaceSection" class="card stage surface-section">
-        <div class="surface-header">
-          <div>
-            <h2 class="surface-title">3D PCA surface and STL export</h2>
-            <p id="surfaceStatus" class="note">Surface is not plotted yet. Select a spectrogram window above, then click Plot 3D surface.</p>
-          </div>
-
-
-        </div>
-
-        <div id="surfaceViewportWrap" class="surface-viewport-wrap is-hidden">
-          <div id="surfaceViewport" class="surface-viewport" aria-label="Interactive 3D surface generated from selected PCA phase data"></div>
-        </div>
-
-        <div class="controls surface-main-controls">
-            <button id="plotSurfaceBtn" type="button">Plot 3D surface</button>
-            <button id="surfaceOptionsToggle" class="more-controls-toggle" type="button" aria-expanded="false">Surface options</button>
-            <button id="exportSurfaceStlBtn" type="button" disabled>Download STL</button>
-            <button id="clearSurfaceBtn" type="button" disabled>Clear surface</button>
-          </div>
-
-        <div id="surfaceControls" class="controls surface-controls is-hidden">
-          <div class="ctl">
-            <label for="surfacePointLimit">Surface points</label>
-            <input id="surfacePointLimit" type="range" min="50" max="5000" value="1200" step="50" />
-            <span id="surfacePointLimitValue" class="value">1200</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceRadius">Tube radius</label>
-            <input id="surfaceRadius" type="range" min="0.005" max="0.30" value="0.05" step="0.005" />
-            <span id="surfaceRadiusValue" class="value">0.050</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceSmoothness">Tube smoothness</label>
-            <input id="surfaceSmoothness" type="range" min="6" max="32" value="18" step="1" />
-            <span id="surfaceSmoothnessValue" class="value">18</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceInterpolation">Curve interpolation</label>
-            <input id="surfaceInterpolation" type="range" min="1" max="20" value="7" step="1" />
-            <span id="surfaceInterpolationValue" class="value">7x</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfacePalette">Surface palette</label>
-            <select id="surfacePalette">
-              <option value="mineral">Mineral pearl</option>
-              <option value="iceCopper">Ice and copper</option>
-              <option value="oceanGold" selected>Ocean gold</option>
-              <option value="pca">PCA blue-green-yellow</option>
-              <option value="singlePearl">Single pearl</option>
-            </select>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceViewHeight">Panel height</label>
-            <input id="surfaceViewHeight" type="range" min="320" max="1200" value="580" step="20" />
-            <span id="surfaceViewHeightValue" class="value">580 px</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceViewWidth">Panel width</label>
-            <input id="surfaceViewWidth" type="range" min="60" max="100" value="60" step="5" />
-            <span id="surfaceViewWidthValue" class="value">60%</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceStyle">Style</label>
-            <select id="surfaceStyle">
-              <option value="poster" selected>Poster light</option>
-              <option value="dark">Dark lab</option>
-            </select>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceTrajectoryColors">Trajectory colors</label>
-            <input id="surfaceTrajectoryColors" type="checkbox" checked />
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceShowSpheres">Animate spheres</label>
-            <input id="surfaceShowSpheres" type="checkbox" />
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceSphereCount">No. of spheres</label>
-            <input id="surfaceSphereCount" type="range" min="1" max="20" value="5" step="1" />
-            <span id="surfaceSphereCountValue" class="value">5</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceSphereRadius">Sphere radius</label>
-            <input id="surfaceSphereRadius" type="range" min="0.01" max="0.30" value="0.07" step="0.005" />
-            <span id="surfaceSphereRadiusValue" class="value">0.070</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceSphereSpeed">Sphere speed</label>
-            <input id="surfaceSphereSpeed" type="range" min="0" max="5" value="1" step="0.05" />
-            <span id="surfaceSphereSpeedValue" class="value">1.00x</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceScale">Scale</label>
-            <input id="surfaceScale" type="range" min="0.5" max="4" value="1.8" step="0.1" />
-            <span id="surfaceScaleValue" class="value">1.8</span>
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceClosed">Close tube</label>
-            <input id="surfaceClosed" type="checkbox" />
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceCapEnds">Cap ends</label>
-            <input id="surfaceCapEnds" type="checkbox" checked />
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceShowLine">Show curve</label>
-            <input id="surfaceShowLine" type="checkbox" checked />
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceShowHelpers">Grid / axes</label>
-            <input id="surfaceShowHelpers" type="checkbox" />
-          </div>
-
-          <div class="ctl">
-            <label for="surfaceAutoRotate">Auto rotate</label>
-            <input id="surfaceAutoRotate" type="checkbox" checked />
-          </div>
-        </div>
-      </section>
     </div>
   </div>
 
@@ -802,44 +577,6 @@
     const meterFill = document.getElementById("meterFill");
     const statusText = document.getElementById("status");
     const topAnalysisGrid = document.getElementById("topAnalysisGrid");
-    const surfaceStatus = document.getElementById("surfaceStatus");
-    const surfaceControls = document.getElementById("surfaceControls");
-    const surfaceOptionsToggle = document.getElementById("surfaceOptionsToggle");
-    const plotSurfaceBtn = document.getElementById("plotSurfaceBtn");
-    const exportSurfaceStlBtn = document.getElementById("exportSurfaceStlBtn");
-    const clearSurfaceBtn = document.getElementById("clearSurfaceBtn");
-    const surfaceViewportWrap = document.getElementById("surfaceViewportWrap");
-    const surfaceViewport = document.getElementById("surfaceViewport");
-    const surfacePointLimitSlider = document.getElementById("surfacePointLimit");
-    const surfaceRadiusSlider = document.getElementById("surfaceRadius");
-    const surfaceSmoothnessSlider = document.getElementById("surfaceSmoothness");
-    const surfaceInterpolationSlider = document.getElementById("surfaceInterpolation");
-    const surfacePaletteSelect = document.getElementById("surfacePalette");
-    const surfaceViewHeightSlider = document.getElementById("surfaceViewHeight");
-    const surfaceViewWidthSlider = document.getElementById("surfaceViewWidth");
-    const surfaceStyleSelect = document.getElementById("surfaceStyle");
-    const surfaceTrajectoryColorsCheckbox = document.getElementById("surfaceTrajectoryColors");
-    const surfaceShowSpheresCheckbox = document.getElementById("surfaceShowSpheres");
-    const surfaceSphereCountSlider = document.getElementById("surfaceSphereCount");
-    const surfaceSphereRadiusSlider = document.getElementById("surfaceSphereRadius");
-    const surfaceSphereSpeedSlider = document.getElementById("surfaceSphereSpeed");
-    const surfaceScaleSlider = document.getElementById("surfaceScale");
-    const surfaceClosedCheckbox = document.getElementById("surfaceClosed");
-    const surfaceCapEndsCheckbox = document.getElementById("surfaceCapEnds");
-    const surfaceShowLineCheckbox = document.getElementById("surfaceShowLine");
-    const surfaceShowHelpersCheckbox = document.getElementById("surfaceShowHelpers");
-    const surfaceAutoRotateCheckbox = document.getElementById("surfaceAutoRotate");
-    const surfacePointLimitValue = document.getElementById("surfacePointLimitValue");
-    const surfaceRadiusValue = document.getElementById("surfaceRadiusValue");
-    const surfaceSmoothnessValue = document.getElementById("surfaceSmoothnessValue");
-    const surfaceInterpolationValue = document.getElementById("surfaceInterpolationValue");
-    const surfaceSphereCountValue = document.getElementById("surfaceSphereCountValue");
-    const surfaceSphereRadiusValue = document.getElementById("surfaceSphereRadiusValue");
-    const surfaceSphereSpeedValue = document.getElementById("surfaceSphereSpeedValue");
-    const surfaceViewHeightValue = document.getElementById("surfaceViewHeightValue");
-    const surfaceViewWidthValue = document.getElementById("surfaceViewWidthValue");
-    const surfaceScaleValue = document.getElementById("surfaceScaleValue");
-
     const phaseViews = [
       {
         name: "3D color PCA phase space",
@@ -911,31 +648,6 @@
     let fileDurationSeconds = 0;
     let spectrogramViewStartSeconds = 0;
 
-    let surfaceModulesPromise = null;
-    let surfaceModules = null;
-    let surfaceScene = null;
-    let surfaceCamera = null;
-    let surfaceRenderer = null;
-    let surfaceOrbitControls = null;
-    let surfaceGroup = null;
-    let surfaceMesh = null;
-    let surfaceLine = null;
-    let surfaceSphereGroup = null;
-    let surfaceAnimatedSpheres = [];
-    let surfaceCurve = null;
-    let surfaceAnimationClockStart = 0;
-    let surfaceGrid = null;
-    let surfaceAxes = null;
-    let surfaceGround = null;
-    let surfaceAmbientLight = null;
-    let surfaceKeyLight = null;
-    let surfaceFillLight = null;
-    let surfaceAnimationId = 0;
-    let surfaceLastSourceSignature = "";
-    let surfaceAutoUpdateTimer = 0;
-    let surfaceBuildInProgress = false;
-    let surfaceQueuedAutoUpdate = false;
-
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
       dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -949,7 +661,6 @@
       axesCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       resizePhaseCanvases();
-      resizeSurfaceRenderer();
 
       if (activeSource === "file" && waveformBuffer && waveformSampleCount) {
         drawStaticSpectrogram();
@@ -1432,9 +1143,11 @@
           spectrogramViewStartSeconds = 0;
           lastPhasePointCount = 0;
           phaseViews.forEach(clearPhasePortrait);
-          clearSurfaceGeometry();
+          pcaSpectrogramCache = null;
+          clearPcaSpectrogram();
           clearSpectrogram();
           drawAxes();
+          drawPcaSpectrogramAxes();
         }
 
         startBtn.disabled = true;
@@ -1561,7 +1274,6 @@
       lastPhasePointCount = 0;
       updatePhaseTitles();
       phaseViews.forEach(clearPhasePortrait);
-      clearSurfaceGeometry();
       startBtn.disabled = false;
       playFileBtn.disabled = true;
       pauseBtn.disabled = true;
@@ -1803,10 +1515,8 @@
         timeData = null;
         lastPhasePointCount = 0;
         scrollCarry = 0;
-        clearSurfaceGeometry();
 
-        updateLabels();
-        drawStaticSpectrogram();
+        updateLabels();        drawStaticSpectrogram();
         drawAxes();
         drawSavedPhasePortraits();
         startBtn.disabled = false;
@@ -1825,7 +1535,6 @@
         waveformSampleCount = 0;
         meterFill.style.width = "0%";
         clearSpectrogram();
-        clearSurfaceGeometry();
         drawAxes();
         drawSavedPhasePortraits();
         startBtn.disabled = false;
@@ -1938,7 +1647,6 @@
       updateLabels();
       drawAxes();
       drawSavedPhasePortraits();
-      markSurfaceStale();
     }
 
     function spectrogramPointerPercent(event) {
@@ -2425,716 +2133,6 @@
       view.ctx.restore();
     }
 
-
-
-    function updateSurfaceViewportSize() {
-      const heightPx = clamp(Number(surfaceViewHeightSlider.value) || 640, 320, 1200);
-      const widthPercent = clamp(Number(surfaceViewWidthSlider.value) || 100, 60, 100);
-      surfaceViewHeightSlider.value = String(heightPx);
-      surfaceViewWidthSlider.value = String(widthPercent);
-      surfaceViewport.style.height = `${heightPx}px`;
-      surfaceViewportWrap.style.width = `${widthPercent}%`;
-      resizeSurfaceRenderer();
-    }
-
-    function updateSurfaceControlLabels() {
-      surfacePointLimitValue.textContent = Number(surfacePointLimitSlider.value).toLocaleString();
-      surfaceRadiusValue.textContent = Number(surfaceRadiusSlider.value).toFixed(3);
-      surfaceSmoothnessValue.textContent = surfaceSmoothnessSlider.value;
-      surfaceInterpolationValue.textContent = `${surfaceInterpolationSlider.value}x`;
-      surfaceSphereCountValue.textContent = surfaceSphereCountSlider.value;
-      surfaceSphereRadiusValue.textContent = Number(surfaceSphereRadiusSlider.value).toFixed(3);
-      surfaceSphereSpeedValue.textContent = `${Number(surfaceSphereSpeedSlider.value).toFixed(2)}x`;
-      surfaceViewHeightValue.textContent = `${surfaceViewHeightSlider.value} px`;
-      surfaceViewWidthValue.textContent = `${surfaceViewWidthSlider.value}%`;
-      surfaceScaleValue.textContent = Number(surfaceScaleSlider.value).toFixed(1);
-      updateSurfaceViewportSize();
-    }
-
-    function setSurfaceOptionsVisible(visible) {
-      surfaceControls.classList.toggle("is-hidden", !visible);
-      surfaceOptionsToggle.setAttribute("aria-expanded", visible ? "true" : "false");
-      surfaceOptionsToggle.textContent = visible ? "Hide surface options" : "Surface options";
-    }
-
-    function surfaceSourceSignature() {
-      const selectedFrame = syncFrameControls();
-      return [
-        waveformSampleCount,
-        waveformWriteIndex,
-        Math.round(currentSampleRate || 0),
-        phasePcaModeCheckbox.checked ? "pca" : "delay",
-        Number(phaseTauSlider.value).toFixed(3),
-        phaseDimensionSlider.value,
-        phasePcaComponentCountSlider.value,
-        selectedFrame.start,
-        selectedFrame.size,
-        activeSource,
-        activeSource === "file" ? spectrogramViewStartSeconds.toFixed(4) : "live"
-      ].join(":");
-    }
-
-    function markSurfaceStale() {
-      if (!surfaceMesh) return;
-      const signature = surfaceSourceSignature();
-      if (signature === surfaceLastSourceSignature) return;
-      surfaceStatus.textContent = "The 3D surface is from an earlier selected window. Click Update 3D surface to rebuild it from the current selection.";
-      plotSurfaceBtn.textContent = "Update 3D surface";
-    }
-
-    async function loadSurfaceModules() {
-      if (!surfaceModulesPromise) {
-        surfaceModulesPromise = Promise.all([
-          import("three"),
-          import("three/addons/controls/OrbitControls.js"),
-          import("three/addons/exporters/STLExporter.js")
-        ]).then(([THREE, controlsModule, exporterModule]) => ({
-          THREE,
-          OrbitControls: controlsModule.OrbitControls,
-          STLExporter: exporterModule.STLExporter
-        }));
-      }
-
-      surfaceModules = await surfaceModulesPromise;
-      return surfaceModules;
-    }
-
-    function surfaceUsesPosterStyle() {
-      return !surfaceStyleSelect || surfaceStyleSelect.value === "poster";
-    }
-
-    function applySurfaceSceneStyle(THREE) {
-      if (!THREE || !surfaceScene) return;
-
-      const poster = surfaceUsesPosterStyle();
-      surfaceViewportWrap.classList.toggle("surface-dark-style", !poster);
-      surfaceScene.background = poster ? null : new THREE.Color(0x05070a);
-      if (surfaceRenderer) {
-        surfaceRenderer.setClearColor(poster ? 0x000000 : 0x05070a, poster ? 0 : 1);
-      }
-
-      if (surfaceAmbientLight) {
-        surfaceAmbientLight.intensity = poster ? 0.72 : 0.48;
-      }
-      if (surfaceKeyLight) {
-        surfaceKeyLight.color.setHex(0xffffff);
-        surfaceKeyLight.intensity = poster ? 1.05 : 1.15;
-        surfaceKeyLight.position.set(poster ? 3.2 : 4, poster ? 5.5 : 6, poster ? 4.5 : 5);
-      }
-      if (surfaceFillLight) {
-        surfaceFillLight.color.setHex(poster ? 0xf2cfa8 : 0x51c4d3);
-        surfaceFillLight.intensity = poster ? 0.75 : 1.6;
-        surfaceFillLight.position.set(-4, 3, 3);
-      }
-      if (surfaceGrid) {
-        surfaceGrid.visible = surfaceShowHelpersCheckbox.checked;
-        const materials = Array.isArray(surfaceGrid.material) ? surfaceGrid.material : [surfaceGrid.material];
-        materials.forEach((material, index) => {
-          if (material.color) material.color.setHex(poster ? (index === 0 ? 0xb7ad99 : 0xd7cfbd) : (index === 0 ? 0x334155 : 0x111827));
-          material.transparent = true;
-          material.opacity = poster ? 0.34 : 0.55;
-        });
-      }
-      if (surfaceAxes) {
-        surfaceAxes.visible = surfaceShowHelpersCheckbox.checked;
-        if (surfaceAxes.material) {
-          surfaceAxes.material.transparent = true;
-          surfaceAxes.material.opacity = poster ? 0.35 : 0.72;
-        }
-      }
-      if (surfaceGround) {
-        surfaceGround.visible = poster;
-      }
-    }
-
-    function surfaceTrajectoryColorsEnabled() {
-      return !surfaceTrajectoryColorsCheckbox || surfaceTrajectoryColorsCheckbox.checked;
-    }
-
-    function surfacePaletteName() {
-      return surfacePaletteSelect ? surfacePaletteSelect.value : "mineral";
-    }
-
-    function surfacePaletteStops(THREE) {
-      const palette = surfacePaletteName();
-      if (palette === "pca") {
-        return [
-          { t: 0.00, color: new THREE.Color(0x38bdf8) },
-          { t: 0.50, color: new THREE.Color(0x34d399) },
-          { t: 1.00, color: new THREE.Color(0xfbbf24) }
-        ];
-      }
-      if (palette === "iceCopper") {
-        return [
-          { t: 0.00, color: new THREE.Color(0xe8efe9) },
-          { t: 0.34, color: new THREE.Color(0xb7d4d8) },
-          { t: 0.68, color: new THREE.Color(0xd8bc8c) },
-          { t: 1.00, color: new THREE.Color(0x8e6f59) }
-        ];
-      }
-      if (palette === "oceanGold") {
-        return [
-          { t: 0.00, color: new THREE.Color(0x2f8ca3) },
-          { t: 0.45, color: new THREE.Color(0xa8d5d0) },
-          { t: 1.00, color: new THREE.Color(0xe8c16c) }
-        ];
-      }
-      if (palette === "singlePearl") {
-        return [
-          { t: 0.00, color: new THREE.Color(0xded8c5) },
-          { t: 1.00, color: new THREE.Color(0xded8c5) }
-        ];
-      }
-      return [
-        { t: 0.00, color: new THREE.Color(0xd8d2bf) },
-        { t: 0.32, color: new THREE.Color(0xc6d8d8) },
-        { t: 0.68, color: new THREE.Color(0x9fb8c6) },
-        { t: 1.00, color: new THREE.Color(0xd1b176) }
-      ];
-    }
-
-    function surfaceSolidColor(THREE) {
-      const palette = surfacePaletteName();
-      if (palette === "pca") return new THREE.Color(0x51c4d3);
-      if (palette === "iceCopper") return new THREE.Color(0xc6d4cf);
-      if (palette === "oceanGold") return new THREE.Color(0x8fcac6);
-      if (palette === "singlePearl") return new THREE.Color(0xded8c5);
-      return new THREE.Color(0xc6d8d8);
-    }
-
-    function surfaceLineFallbackColor() {
-      const palette = surfacePaletteName();
-      if (palette === "pca") return surfaceUsesPosterStyle() ? 0x2f8ca3 : 0xfacc15;
-      if (palette === "iceCopper") return surfaceUsesPosterStyle() ? 0xa56f45 : 0xffc38a;
-      if (palette === "oceanGold") return surfaceUsesPosterStyle() ? 0xd39b42 : 0xfbbf24;
-      return surfaceUsesPosterStyle() ? 0x887a5f : 0xded8c5;
-    }
-
-    function surfaceTrajectoryColor(THREE, t) {
-      const stops = surfacePaletteStops(THREE);
-      const value = clamp(t, 0, 1);
-      for (let index = 1; index < stops.length; index += 1) {
-        if (value <= stops[index].t) {
-          const previous = stops[index - 1];
-          const next = stops[index];
-          const local = (value - previous.t) / Math.max(1e-9, next.t - previous.t);
-          return previous.color.clone().lerp(next.color, local);
-        }
-      }
-      return stops[stops.length - 1].color.clone();
-    }
-
-    function applyTrajectoryColorsToTubeGeometry(geometry, THREE, tubularSegments, radialSegments) {
-      if (!geometry || !geometry.attributes || !geometry.attributes.position) return;
-      const vertexCount = geometry.attributes.position.count;
-      const colors = new Float32Array(vertexCount * 3);
-      const ringStride = Math.max(1, radialSegments + 1);
-
-      for (let vertex = 0; vertex < vertexCount; vertex += 1) {
-        const segmentIndex = Math.floor(vertex / ringStride);
-        const t = clamp(segmentIndex / Math.max(1, tubularSegments), 0, 1);
-        const color = surfaceTrajectoryColor(THREE, t);
-        colors[vertex * 3] = color.r;
-        colors[vertex * 3 + 1] = color.g;
-        colors[vertex * 3 + 2] = color.b;
-      }
-
-      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    }
-
-    function applyTrajectoryColorsToLineGeometry(geometry, THREE) {
-      if (!geometry || !geometry.attributes || !geometry.attributes.position) return;
-      const vertexCount = geometry.attributes.position.count;
-      const colors = new Float32Array(vertexCount * 3);
-
-      for (let vertex = 0; vertex < vertexCount; vertex += 1) {
-        const t = vertexCount > 1 ? vertex / (vertexCount - 1) : 0;
-        const color = surfaceTrajectoryColor(THREE, t);
-        colors[vertex * 3] = color.r;
-        colors[vertex * 3 + 1] = color.g;
-        colors[vertex * 3 + 2] = color.b;
-      }
-
-      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    }
-
-    function surfaceTubeMaterial(THREE, useTrajectoryColors = surfaceTrajectoryColorsEnabled(), colorOverride = null) {
-      const materialColor = colorOverride || (useTrajectoryColors ? 0xffffff : surfaceSolidColor(THREE));
-
-      if (surfaceUsesPosterStyle()) {
-        return new THREE.MeshPhysicalMaterial({
-          color: materialColor,
-          vertexColors: useTrajectoryColors && !colorOverride,
-          metalness: 0.08,
-          roughness: 0.24,
-          clearcoat: 0.72,
-          clearcoatRoughness: 0.32,
-          side: THREE.DoubleSide
-        });
-      }
-
-      return new THREE.MeshStandardMaterial({
-        color: materialColor,
-        vertexColors: useTrajectoryColors && !colorOverride,
-        metalness: 0.22,
-        roughness: 0.38,
-        side: THREE.DoubleSide
-      });
-    }
-
-    function clearSurfaceSphereGroup() {
-      if (surfaceGroup && surfaceSphereGroup) {
-        surfaceGroup.remove(surfaceSphereGroup);
-        disposeThreeObject(surfaceSphereGroup);
-      }
-      surfaceSphereGroup = null;
-      surfaceAnimatedSpheres = [];
-    }
-
-    function buildSurfaceSphereGroup(THREE, curve, tubeRadius) {
-      clearSurfaceSphereGroup();
-      surfaceCurve = curve || null;
-      surfaceAnimationClockStart = performance.now();
-
-      if (!surfaceGroup || !surfaceCurve || !surfaceShowSpheresCheckbox.checked) return;
-
-      const sphereCount = Math.max(1, Number(surfaceSphereCountSlider.value) || 5);
-      const sphereRadius = Math.max(0.005, Number(surfaceSphereRadiusSlider.value) || Math.max(0.04, tubeRadius * 1.35));
-      const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 24, 18);
-      surfaceSphereGroup = new THREE.Group();
-      surfaceAnimatedSpheres = [];
-
-      for (let index = 0; index < sphereCount; index += 1) {
-        const t = sphereCount > 1 ? index / sphereCount : 0;
-        const color = surfaceTrajectoryColor(THREE, t);
-        const material = surfaceUsesPosterStyle()
-          ? new THREE.MeshPhysicalMaterial({
-              color,
-              metalness: 0.06,
-              roughness: 0.18,
-              clearcoat: 0.85,
-              clearcoatRoughness: 0.22
-            })
-          : new THREE.MeshStandardMaterial({
-              color,
-              metalness: 0.24,
-              roughness: 0.32,
-              emissive: color.clone().multiplyScalar(0.08)
-            });
-        const sphere = new THREE.Mesh(sphereGeometry.clone(), material);
-        sphere.castShadow = true;
-        sphere.receiveShadow = true;
-        sphere.userData.offset = t;
-        surfaceSphereGroup.add(sphere);
-        surfaceAnimatedSpheres.push(sphere);
-      }
-
-      surfaceSphereGroup.visible = true;
-      surfaceGroup.add(surfaceSphereGroup);
-      updateSurfaceSphereAnimation(performance.now());
-    }
-
-    function updateSurfaceSphereAnimation(now = performance.now()) {
-      if (!surfaceCurve || !surfaceAnimatedSpheres.length) return;
-
-      const elapsed = Math.max(0, now - surfaceAnimationClockStart);
-      const speed = Math.max(0, Number(surfaceSphereSpeedSlider.value) || 0);
-      const cycleDurationMs = 6200;
-      const baseT = speed <= 0 ? 0 : ((elapsed * speed) % cycleDurationMs) / cycleDurationMs;
-
-      surfaceAnimatedSpheres.forEach((sphere) => {
-        const t = (baseT + (sphere.userData.offset || 0)) % 1;
-        const point = surfaceCurve.getPointAt(t);
-        sphere.position.copy(point);
-      });
-    }
-
-    async function ensureSurfaceScene() {
-      const modules = await loadSurfaceModules();
-      const { THREE, OrbitControls } = modules;
-
-      if (surfaceScene) {
-        applySurfaceSceneStyle(THREE);
-        resizeSurfaceRenderer();
-        startSurfaceAnimation();
-        return modules;
-      }
-
-      surfaceScene = new THREE.Scene();
-      surfaceScene.background = surfaceUsesPosterStyle() ? null : new THREE.Color(0x05070a);
-
-      surfaceCamera = new THREE.PerspectiveCamera(55, 1, 0.01, 1000);
-      surfaceCamera.position.set(4, 3, 5);
-
-      surfaceRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      surfaceRenderer.setPixelRatio(Math.max(1, window.devicePixelRatio || 1));
-      surfaceRenderer.shadowMap.enabled = true;
-      surfaceRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      surfaceViewport.appendChild(surfaceRenderer.domElement);
-
-      surfaceOrbitControls = new OrbitControls(surfaceCamera, surfaceRenderer.domElement);
-      surfaceOrbitControls.enableDamping = true;
-      surfaceOrbitControls.dampingFactor = 0.08;
-
-      surfaceAmbientLight = new THREE.AmbientLight(0xffffff, 0.72);
-      surfaceScene.add(surfaceAmbientLight);
-
-      surfaceKeyLight = new THREE.DirectionalLight(0xffffff, 1.05);
-      surfaceKeyLight.position.set(3.2, 5.5, 4.5);
-      surfaceKeyLight.castShadow = true;
-      surfaceKeyLight.shadow.mapSize.width = 1024;
-      surfaceKeyLight.shadow.mapSize.height = 1024;
-      surfaceScene.add(surfaceKeyLight);
-
-      surfaceFillLight = new THREE.PointLight(0xf2cfa8, 0.75, 40);
-      surfaceFillLight.position.set(-4, 3, 3);
-      surfaceScene.add(surfaceFillLight);
-
-      surfaceGround = new THREE.Mesh(
-        new THREE.PlaneGeometry(10, 10),
-        new THREE.ShadowMaterial({ color: 0x8b806f, opacity: 0.18 })
-      );
-      surfaceGround.rotation.x = -Math.PI / 2;
-      surfaceGround.position.y = -2.45;
-      surfaceGround.receiveShadow = true;
-      surfaceScene.add(surfaceGround);
-
-      surfaceGrid = new THREE.GridHelper(8, 16, 0xb7ad99, 0xd7cfbd);
-      surfaceGrid.position.y = -2.4;
-      surfaceScene.add(surfaceGrid);
-
-      surfaceAxes = new THREE.AxesHelper(2.3);
-      surfaceScene.add(surfaceAxes);
-      applySurfaceSceneStyle(THREE);
-
-      resizeSurfaceRenderer();
-      startSurfaceAnimation();
-      return modules;
-    }
-
-    function resizeSurfaceRenderer() {
-      if (!surfaceRenderer || !surfaceCamera || !surfaceViewport || surfaceViewportWrap.classList.contains("is-hidden")) return;
-
-      const rect = surfaceViewport.getBoundingClientRect();
-      const width = Math.max(1, Math.floor(rect.width));
-      const height = Math.max(1, Math.floor(rect.height));
-      surfaceRenderer.setSize(width, height, false);
-      surfaceCamera.aspect = width / Math.max(1, height);
-      surfaceCamera.updateProjectionMatrix();
-    }
-
-    function startSurfaceAnimation() {
-      if (surfaceAnimationId || !surfaceRenderer || !surfaceScene || !surfaceCamera) return;
-
-      const animateSurface = () => {
-        surfaceAnimationId = requestAnimationFrame(animateSurface);
-        if (surfaceOrbitControls) {
-          surfaceOrbitControls.update();
-        }
-        updateSurfaceSphereAnimation(performance.now());
-        if (surfaceGroup && surfaceAutoRotateCheckbox.checked) {
-          surfaceGroup.rotation.y += 0.002;
-        }
-        surfaceRenderer.render(surfaceScene, surfaceCamera);
-      };
-
-      surfaceAnimationId = requestAnimationFrame(animateSurface);
-    }
-
-    function disposeThreeObject(object) {
-      if (!object) return;
-      object.traverse((child) => {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((material) => material.dispose && material.dispose());
-          } else if (child.material.dispose) {
-            child.material.dispose();
-          }
-        }
-      });
-    }
-
-    function clearSurfaceGeometry() {
-      if (surfaceAutoUpdateTimer) {
-        clearTimeout(surfaceAutoUpdateTimer);
-        surfaceAutoUpdateTimer = 0;
-      }
-      surfaceQueuedAutoUpdate = false;
-      if (surfaceScene && surfaceGroup) {
-        surfaceScene.remove(surfaceGroup);
-        disposeThreeObject(surfaceGroup);
-      }
-      surfaceGroup = null;
-      surfaceMesh = null;
-      surfaceLine = null;
-      surfaceSphereGroup = null;
-      surfaceAnimatedSpheres = [];
-      surfaceCurve = null;
-      surfaceLastSourceSignature = "";
-      exportSurfaceStlBtn.disabled = true;
-      clearSurfaceBtn.disabled = true;
-      plotSurfaceBtn.disabled = false;
-      plotSurfaceBtn.textContent = "Plot 3D surface";
-      surfaceViewportWrap.classList.add("is-hidden");
-      surfaceStatus.textContent = "Surface is not plotted yet. Select a spectrogram window above, then click Plot 3D surface.";
-    }
-
-    function selectedSurfacePoints() {
-      const pointLimit = Math.max(8, Number(surfacePointLimitSlider.value) || 1200);
-      const coordinates = getPhaseCoordinates(syncFrameControls(), pointLimit);
-      if (!coordinates || !coordinates.points || coordinates.points.length < 2) return null;
-
-      let sourcePoints;
-      let sourceLabel;
-      if (coordinates.points3D && phasePcaModeCheckbox.checked) {
-        sourcePoints = coordinates.points3D;
-        sourceLabel = "PCA PC1/PC2/PC3";
-      } else {
-        const count = coordinates.points.length;
-        sourcePoints = coordinates.points.map(([x, y], index) => {
-          const t = count > 1 ? index / (count - 1) : 0.5;
-          return [x, y, (t - 0.5) * 2 * coordinates.maxAbs];
-        });
-        sourceLabel = "delay plot with time as Z";
-      }
-
-      const cleanPoints = sourcePoints.filter((point) => point.every((value) => Number.isFinite(value)));
-      if (cleanPoints.length < 2) return null;
-
-      return {
-        points: cleanPoints,
-        sourceLabel,
-        originalPointCount: coordinates.pointCount
-      };
-    }
-
-    function normalizeSurfacePoints(points, THREE) {
-      const center = points.reduce((sum, point) => {
-        sum[0] += point[0];
-        sum[1] += point[1];
-        sum[2] += point[2];
-        return sum;
-      }, [0, 0, 0]);
-
-      center[0] /= points.length;
-      center[1] /= points.length;
-      center[2] /= points.length;
-
-      let maxAbs = 1e-9;
-      points.forEach((point) => {
-        maxAbs = Math.max(
-          maxAbs,
-          Math.abs(point[0] - center[0]),
-          Math.abs(point[1] - center[1]),
-          Math.abs(point[2] - center[2])
-        );
-      });
-
-      const scale = Number(surfaceScaleSlider.value) || 1.8;
-      return points.map((point) => new THREE.Vector3(
-        (point[0] - center[0]) / maxAbs * scale,
-        (point[1] - center[1]) / maxAbs * scale,
-        (point[2] - center[2]) / maxAbs * scale
-      ));
-    }
-
-    function fitSurfaceCamera(points, THREE) {
-      if (!points.length || !surfaceCamera || !surfaceOrbitControls) return;
-
-      const box = new THREE.Box3().setFromPoints(points);
-      const center = box.getCenter(new THREE.Vector3());
-      const sizeVector = box.getSize(new THREE.Vector3());
-      const size = Math.max(1, sizeVector.length());
-
-      surfaceCamera.near = Math.max(0.001, size / 200);
-      surfaceCamera.far = Math.max(100, size * 100);
-      surfaceCamera.position.set(center.x + size * 0.85, center.y + size * 0.65, center.z + size * 1.05);
-      surfaceCamera.lookAt(center);
-      surfaceCamera.updateProjectionMatrix();
-
-      surfaceOrbitControls.target.copy(center);
-      surfaceOrbitControls.update();
-    }
-
-    async function plotSelectedSurface(options = {}) {
-      updateSurfaceControlLabels();
-
-      if (surfaceBuildInProgress) {
-        surfaceQueuedAutoUpdate = true;
-        return;
-      }
-      surfaceBuildInProgress = true;
-      surfaceAutoUpdateTimer = 0;
-
-      const preserveCamera = Boolean(options.preserveCamera);
-      const savedCameraState = preserveCamera && surfaceCamera && surfaceOrbitControls ? {
-        position: surfaceCamera.position.clone(),
-        quaternion: surfaceCamera.quaternion.clone(),
-        target: surfaceOrbitControls.target.clone(),
-        zoom: surfaceCamera.zoom
-      } : null;
-
-      if (!waveformBuffer || waveformSampleCount < 10) {
-        surfaceStatus.textContent = "No audio data is available yet. Start the mic, pause a recording, or upload an audio file first.";
-        surfaceBuildInProgress = false;
-        return;
-      }
-
-      const selected = selectedSurfacePoints();
-      if (!selected || selected.points.length < 2) {
-        surfaceStatus.textContent = "Not enough selected points to build a 3D surface. Increase the frame size or record/load more audio.";
-        surfaceBuildInProgress = false;
-        return;
-      }
-
-      plotSurfaceBtn.disabled = true;
-      plotSurfaceBtn.textContent = "Building surface...";
-      surfaceViewportWrap.classList.remove("is-hidden");
-      surfaceStatus.textContent = "Building 3D surface from the current selected phase window...";
-
-      try {
-        const { THREE } = await ensureSurfaceScene();
-        resizeSurfaceRenderer();
-
-        if (surfaceGroup) {
-          surfaceScene.remove(surfaceGroup);
-          disposeThreeObject(surfaceGroup);
-        }
-
-        const rawPoints = normalizeSurfacePoints(selected.points, THREE);
-        const closedCurve = surfaceClosedCheckbox.checked && rawPoints.length > 2;
-        const points = rawPoints;
-        const tubeRadius = Math.max(0.001, Number(surfaceRadiusSlider.value) || 0.045);
-        const radialSegments = Math.max(3, Number(surfaceSmoothnessSlider.value) || 18);
-        const interpolationFactor = Math.max(1, Number(surfaceInterpolationSlider.value) || 7);
-        const tubularSegments = Math.min(
-          60000,
-          Math.max(12, Math.round(Math.max(2, points.length - (closedCurve ? 0 : 1)) * interpolationFactor))
-        );
-
-        const curve = new THREE.CatmullRomCurve3(points, closedCurve, "centripetal", 0.35);
-        surfaceCurve = curve;
-        surfaceAnimationClockStart = performance.now();
-        const tubeGeometry = new THREE.TubeGeometry(curve, tubularSegments, tubeRadius, radialSegments, closedCurve);
-        tubeGeometry.computeVertexNormals();
-        if (surfaceTrajectoryColorsEnabled()) {
-          applyTrajectoryColorsToTubeGeometry(tubeGeometry, THREE, tubularSegments, radialSegments);
-        }
-
-        const tubeMaterial = surfaceTubeMaterial(THREE);
-
-        surfaceGroup = new THREE.Group();
-        surfaceMesh = new THREE.Mesh(tubeGeometry, tubeMaterial);
-        surfaceMesh.castShadow = true;
-        surfaceMesh.receiveShadow = true;
-        surfaceGroup.add(surfaceMesh);
-
-        if (!closedCurve && surfaceCapEndsCheckbox.checked) {
-          const capGeometry = new THREE.SphereGeometry(tubeRadius, radialSegments, Math.max(8, radialSegments));
-          const startColor = surfaceTrajectoryColorsEnabled() ? surfaceTrajectoryColor(THREE, 0) : null;
-          const endColor = surfaceTrajectoryColorsEnabled() ? surfaceTrajectoryColor(THREE, 1) : null;
-          const startCap = new THREE.Mesh(capGeometry, surfaceTubeMaterial(THREE, false, startColor));
-          const endCap = new THREE.Mesh(capGeometry.clone(), surfaceTubeMaterial(THREE, false, endColor));
-          startCap.position.copy(points[0]);
-          endCap.position.copy(points[points.length - 1]);
-          startCap.castShadow = true;
-          endCap.castShadow = true;
-          surfaceGroup.add(startCap);
-          surfaceGroup.add(endCap);
-        }
-
-        const linePoints = curve.getPoints(Math.min(10000, tubularSegments));
-        const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-        if (surfaceTrajectoryColorsEnabled()) {
-          applyTrajectoryColorsToLineGeometry(lineGeometry, THREE);
-        }
-        const lineMaterial = new THREE.LineBasicMaterial({
-          color: surfaceTrajectoryColorsEnabled() ? 0xffffff : surfaceLineFallbackColor(),
-          vertexColors: surfaceTrajectoryColorsEnabled(),
-          transparent: true,
-          opacity: surfaceTrajectoryColorsEnabled() ? 0.96 : (surfaceUsesPosterStyle() ? 0.42 : 0.92)
-        });
-        surfaceLine = closedCurve ? new THREE.LineLoop(lineGeometry, lineMaterial) : new THREE.Line(lineGeometry, lineMaterial);
-        surfaceLine.visible = surfaceShowLineCheckbox.checked;
-        surfaceGroup.add(surfaceLine);
-
-        buildSurfaceSphereGroup(THREE, curve, tubeRadius);
-
-        surfaceScene.add(surfaceGroup);
-        if (savedCameraState) {
-          surfaceCamera.position.copy(savedCameraState.position);
-          surfaceCamera.quaternion.copy(savedCameraState.quaternion);
-          surfaceCamera.zoom = savedCameraState.zoom;
-          surfaceCamera.updateProjectionMatrix();
-          surfaceOrbitControls.target.copy(savedCameraState.target);
-          surfaceOrbitControls.update();
-        } else {
-          fitSurfaceCamera(points, THREE);
-        }
-        applySurfaceSceneStyle(THREE);
-
-        const triangleCount = tubeGeometry.index ? Math.round(tubeGeometry.index.count / 3) : Math.round(tubeGeometry.attributes.position.count / 3);
-        surfaceLastSourceSignature = surfaceSourceSignature();
-        exportSurfaceStlBtn.disabled = false;
-        clearSurfaceBtn.disabled = false;
-        plotSurfaceBtn.textContent = "Update 3D surface";
-        const colorLabel = surfaceTrajectoryColorsEnabled() ? "trajectory-colored" : "single-color";
-        const sphereLabel = surfaceShowSpheresCheckbox.checked ? `, animated spheres ${Number(surfaceSphereCountSlider.value)}` : "";
-        surfaceStatus.textContent = `${options.autoUpdate ? "Surface updated" : "Surface plotted"} from ${selected.points.length.toLocaleString()} selected ${selected.sourceLabel} points, with ${interpolationFactor}x curve interpolation. Tube mesh: ${triangleCount.toLocaleString()} triangles, ${colorLabel}${sphereLabel}. STL export is ready.`;
-      } catch (error) {
-        surfaceStatus.textContent = `Could not build the 3D surface: ${error.message}`;
-      } finally {
-        surfaceBuildInProgress = false;
-        plotSurfaceBtn.disabled = false;
-        if (surfaceQueuedAutoUpdate) {
-          surfaceQueuedAutoUpdate = false;
-          scheduleSurfaceAutoUpdate(60);
-        }
-      }
-    }
-
-    function scheduleSurfaceAutoUpdate(delayMs = 120) {
-      if (!surfaceMesh) return;
-      if (surfaceAutoUpdateTimer) {
-        clearTimeout(surfaceAutoUpdateTimer);
-      }
-      surfaceStatus.textContent = "Updating 3D surface from the changed surface controls...";
-      plotSurfaceBtn.textContent = "Updating...";
-      surfaceAutoUpdateTimer = window.setTimeout(() => {
-        surfaceAutoUpdateTimer = 0;
-        plotSelectedSurface({ preserveCamera: true, autoUpdate: true });
-      }, delayMs);
-    }
-
-    async function exportSurfaceStl() {
-      if (!surfaceGroup || !surfaceMesh) {
-        surfaceStatus.textContent = "Plot the 3D surface first, then download the STL.";
-        return;
-      }
-
-      try {
-        const { STLExporter } = await loadSurfaceModules();
-        const exporter = new STLExporter();
-        const stlData = exporter.parse(surfaceGroup, { binary: true });
-        const blob = new Blob([stlData], { type: "application/octet-stream" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        link.href = url;
-        link.download = `selected_pca_phase_surface_${timestamp}.stl`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        surfaceStatus.textContent = "STL downloaded from the current 3D surface.";
-      } catch (error) {
-        surfaceStatus.textContent = `STL export failed: ${error.message}`;
-      }
-    }
-
     function fftInPlace(real, imag) {
       const n = real.length;
       let j = 0;
@@ -3247,7 +2245,6 @@
       phaseAutoAxisLimitValue.textContent = autoAxisLimitLabel;
       phaseDimensionValue.textContent = phaseDimensionSlider.value;
       phasePcaComponentCountValue.textContent = String(syncPhasePcaComponentCount());
-      updateSurfaceControlLabels();
       updatePhaseTitles();
     }
 
@@ -3306,8 +2303,11 @@
       }
       meterFill.style.width = "0%";
       lastPhasePointCount = 0;
-      clearSurfaceGeometry();
+      stopPcaSpectrogramAudio(true);
+      pcaSpectrogramCache = null;
+      clearPcaSpectrogram();
       updateSpectrogramViewportControls();
+      updatePcaSpectrogramViewportControls();
       updatePhaseTitles();
       phaseViews.forEach(clearPhasePortrait);
       drawAxes();
@@ -3353,44 +2353,6 @@
 
     bindAdvancedToggle(mainControls, mainAdvancedToggle, "More controls", "Hide controls");
     bindAdvancedToggle(phaseControls, phaseAdvancedToggle, "More phase controls", "Hide phase controls");
-
-
-    setSurfaceOptionsVisible(false);
-    surfaceOptionsToggle.addEventListener("click", () => {
-      setSurfaceOptionsVisible(surfaceControls.classList.contains("is-hidden"));
-    });
-    plotSurfaceBtn.addEventListener("click", plotSelectedSurface);
-    exportSurfaceStlBtn.addEventListener("click", exportSurfaceStl);
-    clearSurfaceBtn.addEventListener("click", clearSurfaceGeometry);
-
-    [surfacePointLimitSlider, surfaceRadiusSlider, surfaceSmoothnessSlider, surfaceInterpolationSlider, surfacePaletteSelect, surfaceViewHeightSlider, surfaceViewWidthSlider, surfaceStyleSelect, surfaceTrajectoryColorsCheckbox, surfaceShowSpheresCheckbox, surfaceSphereCountSlider, surfaceSphereRadiusSlider, surfaceSphereSpeedSlider, surfaceScaleSlider, surfaceClosedCheckbox, surfaceCapEndsCheckbox, surfaceShowLineCheckbox, surfaceShowHelpersCheckbox, surfaceAutoRotateCheckbox].forEach((input) => {
-      const eventName = input.tagName === "SELECT" || input.type === "checkbox" ? "change" : "input";
-      input.addEventListener(eventName, () => {
-        updateSurfaceControlLabels();
-
-        if (input === surfaceShowLineCheckbox && surfaceLine) {
-          surfaceLine.visible = surfaceShowLineCheckbox.checked;
-        }
-        if (input === surfaceViewHeightSlider || input === surfaceViewWidthSlider) {
-          updateSurfaceViewportSize();
-          return;
-        }
-        if (input === surfaceSphereSpeedSlider) {
-          return;
-        }
-        if (input === surfaceShowHelpersCheckbox || input === surfaceStyleSelect) {
-          if (surfaceModules && surfaceModules.THREE) {
-            applySurfaceSceneStyle(surfaceModules.THREE);
-          }
-        }
-        if (input === surfaceAutoRotateCheckbox || input === surfaceShowLineCheckbox || input === surfaceShowHelpersCheckbox) {
-          return;
-        }
-        if (surfaceMesh) {
-          scheduleSurfaceAutoUpdate(input.type === "checkbox" || input.tagName === "SELECT" ? 60 : 120);
-        }
-      });
-    });
 
 
 
@@ -3482,7 +2444,6 @@
         }
         if (input === windowSlider || input === maxFreqSlider || input === phaseTauSlider || input === phasePcaModeCheckbox || input === phaseDimensionSlider || input === phasePcaComponentCountSlider || input === phaseFrameStartSlider || input === phaseFrameSizeSlider || input === phaseAutoAxisLimitSlider || input === phaseColorPointSizeSlider || input === phaseColorGammaSlider || input === phaseColorGlowSlider) {
           drawSavedPhasePortraits();
-          markSurfaceStale();
         }
       });
     });
