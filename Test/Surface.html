@@ -240,7 +240,7 @@
 
     .phase-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
     }
 
@@ -306,6 +306,30 @@
       overflow: hidden;
     }
 
+    .surface-scatter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .surface-scatter-grid > .surface-section {
+      min-width: 0;
+      height: 100%;
+    }
+
+    #surfaceStatus,
+    #scatterStatus,
+    #timeScatterStatus {
+      display: none !important;
+    }
+
+    #phaseControls.phase-controls-top {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
     .surface-header {
       display: flex;
       flex-wrap: wrap;
@@ -322,9 +346,69 @@
 
     .surface-main-controls {
       justify-content: flex-start;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid #1e2430;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+      gap: 8px;
+    }
+
+    .surface-header .surface-main-controls button {
+      min-height: 32px;
+      padding: 5px 10px;
+      font-size: 13px;
+      border-radius: 7px;
+    }
+
+    .phase-controls-card {
+      padding: 6px 8px;
+    }
+
+    #phaseControls.phase-controls-top {
+      gap: 6px;
+      align-items: center;
+    }
+
+    #phaseControls.phase-controls-top .ctl {
+      min-height: 30px;
+      padding: 4px 7px;
+      gap: 6px;
+      border-radius: 6px;
+    }
+
+    #phaseControls.phase-controls-top .ctl label,
+    #phaseControls.phase-controls-top .value {
+      font-size: 11px;
+    }
+
+    #phaseControls.phase-controls-top input[type="range"] {
+      width: 112px;
+    }
+
+    #phaseControls.phase-controls-top input[type="number"] {
+      width: 88px;
+      min-height: 24px;
+      padding: 1px 6px;
+      font-size: 12px;
+    }
+
+    #phaseControls.phase-controls-top button,
+    #phaseControls.phase-controls-top .more-controls-toggle,
+    #phaseControls.phase-controls-top .selection-apply-button {
+      min-height: 30px;
+      padding: 4px 9px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
+    #phaseControls.phase-controls-top .selection-range-value {
+      min-width: 176px;
+    }
+
+    .surface-header .surface-main-controls {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+      flex: 0 0 auto;
     }
 
     .surface-controls {
@@ -353,7 +437,7 @@
     .surface-viewport {
       position: relative;
       width: 100%;
-      height: 580px;
+      height: 320px;
       min-height: 320px;
       background: radial-gradient(circle at 42% 28%, #fffdf6 0%, #f4ead9 48%, #d9c9ad 100%);
     }
@@ -363,7 +447,8 @@
     }
 
     #surfaceViewport canvas,
-    #scatterViewport canvas {
+    #scatterViewport canvas,
+    #timeScatterViewport canvas {
       position: static;
       inset: auto;
       display: block;
@@ -373,7 +458,8 @@
     }
 
     #surfaceViewport canvas:active,
-    #scatterViewport canvas:active {
+    #scatterViewport canvas:active,
+    #timeScatterViewport canvas:active {
       cursor: grabbing;
     }
 
@@ -411,6 +497,10 @@
 
       .surface-viewport {
         min-height: 300px;
+      }
+
+      .surface-scatter-grid {
+        grid-template-columns: 1fr;
       }
 
       .phase-grid {
@@ -529,13 +619,6 @@
             </div>
           </div>
 
-          <div class="phase-panel">
-            <div id="phaseTimeZTitle" class="panel-title">PC1/PC2 time-Z phase space</div>
-            <div class="canvas-wrap phase-wrap">
-              <canvas id="phaseTimeZ" aria-label="3D phase portrait with PC1 and PC2 on XY and time on Z"></canvas>
-              <canvas id="phaseTimeZAxes" aria-hidden="true"></canvas>
-            </div>
-          </div>
 
           <div class="phase-panel">
             <div id="phasePcaLineTitle" class="panel-title">3D PCA continuous line</div>
@@ -620,19 +703,19 @@
             <span id="phaseAutoAxisLimitValue" class="value">0.25</span>
           </div>
 
-          <div class="ctl phase-advanced-control">
+          <div class="ctl phase-advanced-control is-hidden">
             <label for="phaseColorPointSize">Color size</label>
             <input id="phaseColorPointSize" type="range" min="0.5" max="5" value="1.5" step="0.1" />
             <span id="phaseColorPointSizeValue" class="value">1.5 px</span>
           </div>
 
-          <div class="ctl phase-advanced-control">
+          <div class="ctl phase-advanced-control is-hidden">
             <label for="phaseColorGamma">Gamma</label>
             <input id="phaseColorGamma" type="range" min="0.4" max="3" value="0.5" step="0.05" />
             <span id="phaseColorGammaValue" class="value">0.50</span>
           </div>
 
-          <div class="ctl phase-advanced-control">
+          <div class="ctl phase-advanced-control is-hidden">
             <label for="phaseColorGlow">Glow</label>
             <input id="phaseColorGlow" type="range" min="0" max="5" value="1" step="0.05" />
             <span id="phaseColorGlowValue" class="value">1.00</span>
@@ -650,25 +733,23 @@
         <div class="surface-header">
           <div>
             <h2 class="surface-title">3D PCA surface and STL export</h2>
-            <p id="surfaceStatus" class="note">Surface is not plotted yet. Select a spectrogram window above, then click Plot 3D surface.</p>
+            <p id="surfaceStatus" class="note is-hidden"></p>
           </div>
 
-
-        </div>
-
-        <div id="surfaceViewportWrap" class="surface-viewport-wrap is-hidden">
-          <div id="surfaceViewport" class="surface-viewport" aria-label="Interactive 3D surface generated from selected PCA phase data"></div>
-        </div>
-
         <div class="controls surface-main-controls">
-            <button id="plotSurfaceBtn" type="button">Plot 3D surface</button>
+            <button id="plotSurfaceBtn" type="button" class="is-hidden">Plot 3D surface</button>
             <button id="surfaceOptionsToggle" class="more-controls-toggle" type="button" aria-expanded="false">Surface options</button>
             <button id="exportSurfaceStlBtn" type="button" disabled>Download STL</button>
             <button id="clearSurfaceBtn" type="button" disabled>Clear surface</button>
           </div>
 
-        <div id="surfaceControls" class="controls surface-controls is-hidden">
-          <div class="ctl">
+                </div>
+
+        <div id="surfaceViewportWrap" class="surface-viewport-wrap is-hidden">
+          <div id="surfaceViewport" class="surface-viewport" aria-label="Interactive 3D surface generated from selected PCA phase data"></div>
+        </div>
+<div id="surfaceControls" class="controls surface-controls is-hidden">
+          <div class="ctl is-hidden">
             <label for="surfacePointLimit">Surface points</label>
             <input id="surfacePointLimit" type="range" min="50" max="5000" value="1200" step="50" />
             <span id="surfacePointLimitValue" class="value">1200</span>
@@ -676,8 +757,8 @@
 
           <div class="ctl">
             <label for="surfaceRadius">Tube radius</label>
-            <input id="surfaceRadius" type="range" min="0.005" max="0.30" value="0.05" step="0.005" />
-            <span id="surfaceRadiusValue" class="value">0.050</span>
+            <input id="surfaceRadius" type="range" min="0.005" max="0.30" value="0.005" step="0.005" />
+            <span id="surfaceRadiusValue" class="value">0.005</span>
           </div>
 
           <div class="ctl">
@@ -688,8 +769,8 @@
 
           <div class="ctl">
             <label for="surfaceInterpolation">Curve interpolation</label>
-            <input id="surfaceInterpolation" type="range" min="1" max="20" value="7" step="1" />
-            <span id="surfaceInterpolationValue" class="value">7x</span>
+            <input id="surfaceInterpolation" type="range" min="0" max="20" value="0" step="1" />
+            <span id="surfaceInterpolationValue" class="value">0x</span>
           </div>
 
           <div class="ctl">
@@ -716,14 +797,14 @@
 
           <div class="ctl">
             <label for="surfaceViewHeight">Panel height</label>
-            <input id="surfaceViewHeight" type="range" min="320" max="1200" value="580" step="20" />
-            <span id="surfaceViewHeightValue" class="value">580 px</span>
+            <input id="surfaceViewHeight" type="range" min="320" max="1200" value="320" step="20" />
+            <span id="surfaceViewHeightValue" class="value">320 px</span>
           </div>
 
           <div class="ctl">
             <label for="surfaceViewWidth">Panel width</label>
-            <input id="surfaceViewWidth" type="range" min="60" max="100" value="60" step="5" />
-            <span id="surfaceViewWidthValue" class="value">60%</span>
+            <input id="surfaceViewWidth" type="range" min="60" max="100" value="100" step="5" />
+            <span id="surfaceViewWidthValue" class="value">100%</span>
           </div>
 
           <div class="ctl">
@@ -790,7 +871,7 @@
 
           <div class="ctl">
             <label for="surfaceAutoRotate">Auto rotate</label>
-            <input id="surfaceAutoRotate" type="checkbox" checked />
+            <input id="surfaceAutoRotate" type="checkbox" />
           </div>
         </div>
       </section>
@@ -799,22 +880,22 @@
         <div class="surface-header">
           <div>
             <h2 class="surface-title">3D PCA scatter spheres (exact points)</h2>
-            <p id="scatterStatus" class="note">Scatter is not plotted yet. Select a spectrogram window above, then click Plot 3D scatter.</p>
+            <p id="scatterStatus" class="note is-hidden"></p>
           </div>
-        </div>
-
-        <div id="scatterViewportWrap" class="surface-viewport-wrap is-hidden">
-          <div id="scatterViewport" class="surface-viewport" aria-label="Interactive 3D scatter plot generated from selected PCA phase data"></div>
-        </div>
 
         <div class="controls surface-main-controls">
-          <button id="plotScatterBtn" type="button">Plot 3D scatter</button>
+          <button id="plotScatterBtn" type="button" class="is-hidden">Plot 3D scatter</button>
           <button id="scatterOptionsToggle" class="more-controls-toggle" type="button" aria-expanded="false">Scatter options</button>
           <button id="clearScatterBtn" type="button" disabled>Clear scatter</button>
         </div>
 
-        <div id="scatterControls" class="controls surface-controls is-hidden">
-          <div class="ctl">
+                </div>
+
+        <div id="scatterViewportWrap" class="surface-viewport-wrap is-hidden">
+          <div id="scatterViewport" class="surface-viewport" aria-label="Interactive 3D scatter plot generated from selected PCA phase data"></div>
+        </div>
+<div id="scatterControls" class="controls surface-controls is-hidden">
+          <div class="ctl is-hidden">
             <label for="scatterPointLimit">Scatter points</label>
             <input id="scatterPointLimit" type="range" min="8" max="3000" value="3000" step="1" />
             <span id="scatterPointLimitValue" class="value">3000</span>
@@ -856,14 +937,14 @@
 
           <div class="ctl">
             <label for="scatterViewHeight">Panel height</label>
-            <input id="scatterViewHeight" type="range" min="320" max="1200" value="520" step="20" />
-            <span id="scatterViewHeightValue" class="value">520 px</span>
+            <input id="scatterViewHeight" type="range" min="320" max="1200" value="320" step="20" />
+            <span id="scatterViewHeightValue" class="value">320 px</span>
           </div>
 
           <div class="ctl">
             <label for="scatterViewWidth">Panel width</label>
-            <input id="scatterViewWidth" type="range" min="60" max="100" value="60" step="5" />
-            <span id="scatterViewWidthValue" class="value">60%</span>
+            <input id="scatterViewWidth" type="range" min="60" max="100" value="100" step="5" />
+            <span id="scatterViewWidthValue" class="value">100%</span>
           </div>
 
           <div class="ctl">
@@ -892,7 +973,102 @@
 
           <div class="ctl">
             <label for="scatterAutoRotate">Auto rotate</label>
-            <input id="scatterAutoRotate" type="checkbox" checked />
+            <input id="scatterAutoRotate" type="checkbox" />
+          </div>
+        </div>
+      </section>
+
+      <section id="timeScatterSection" class="card stage surface-section">
+        <div class="surface-header">
+          <div>
+            <h2 class="surface-title">3D PCA scatter spheres (PC1, PC2, time)</h2>
+            <p id="timeScatterStatus" class="note is-hidden"></p>
+          </div>
+          <div class="controls surface-main-controls">
+            <button id="plotTimeScatterBtn" type="button" class="is-hidden">Plot PC1/PC2/time scatter</button>
+            <button id="timeScatterOptionsToggle" class="more-controls-toggle" type="button" aria-expanded="false">Time scatter options</button>
+            <button id="clearTimeScatterBtn" type="button" disabled>Clear time scatter</button>
+          </div>
+        </div>
+
+        <div id="timeScatterViewportWrap" class="surface-viewport-wrap is-hidden">
+          <div id="timeScatterViewport" class="surface-viewport" aria-label="Interactive 3D scatter plot generated from selected PC1, PC2, and time data"></div>
+        </div>
+
+        <div id="timeScatterControls" class="controls surface-controls is-hidden">
+          <div class="ctl">
+            <label for="timeScatterSphereRadius">Sphere radius</label>
+            <input id="timeScatterSphereRadius" type="range" min="0.01" max="0.20" value="0.035" step="0.0025" />
+            <span id="timeScatterSphereRadiusValue" class="value">0.035</span>
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterSphereDetail">Sphere smoothness</label>
+            <input id="timeScatterSphereDetail" type="range" min="6" max="20" value="10" step="1" />
+            <span id="timeScatterSphereDetailValue" class="value">10</span>
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterPalette">Time scatter palette</label>
+            <select id="timeScatterPalette">
+              <option value="mineral">Mineral pearl</option>
+              <option value="iceCopper">Ice and copper</option>
+              <option value="oceanGold" selected>Ocean gold</option>
+              <option value="pca">PCA blue-green-yellow</option>
+              <option value="singlePearl">Single pearl</option>
+              <option value="sunsetEmber">Sunset ember</option>
+              <option value="forestMoss">Forest moss</option>
+              <option value="lavenderRose">Lavender rose</option>
+              <option value="slateMono">Slate monochrome</option>
+              <option value="coralReef">Coral reef</option>
+              <option value="aurora">Aurora</option>
+              <option value="rubyIvory">Ruby ivory</option>
+              <option value="midnightCyan">Midnight cyan</option>
+              <option value="desertSage">Desert sage</option>
+              <option value="plumGold">Plum gold</option>
+              <option value="glacierMint">Glacier mint</option>
+            </select>
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterViewHeight">Panel height</label>
+            <input id="timeScatterViewHeight" type="range" min="320" max="1200" value="420" step="20" />
+            <span id="timeScatterViewHeightValue" class="value">420 px</span>
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterViewWidth">Panel width</label>
+            <input id="timeScatterViewWidth" type="range" min="60" max="100" value="100" step="5" />
+            <span id="timeScatterViewWidthValue" class="value">100%</span>
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterStyle">Style</label>
+            <select id="timeScatterStyle">
+              <option value="poster" selected>Poster light</option>
+              <option value="dark">Dark lab</option>
+            </select>
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterTrajectoryColors">Trajectory colors</label>
+            <input id="timeScatterTrajectoryColors" type="checkbox" checked />
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterScale">Scale</label>
+            <input id="timeScatterScale" type="range" min="0.5" max="4" value="1.8" step="0.1" />
+            <span id="timeScatterScaleValue" class="value">1.8</span>
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterShowHelpers">Grid / axes</label>
+            <input id="timeScatterShowHelpers" type="checkbox" />
+          </div>
+
+          <div class="ctl">
+            <label for="timeScatterAutoRotate">Auto rotate</label>
+            <input id="timeScatterAutoRotate" type="checkbox" />
           </div>
         </div>
       </section>
@@ -965,6 +1141,9 @@
     const meterFill = document.getElementById("meterFill");
     const statusText = document.getElementById("status");
     const topAnalysisGrid = document.getElementById("topAnalysisGrid");
+    const phaseGrid = document.getElementById("phaseGrid");
+    const surfaceSection = document.getElementById("surfaceSection");
+    const scatterSection = document.getElementById("scatterSection");
     const surfaceStatus = document.getElementById("surfaceStatus");
     const surfaceControls = document.getElementById("surfaceControls");
     const surfaceOptionsToggle = document.getElementById("surfaceOptionsToggle");
@@ -1028,6 +1207,29 @@
     const scatterViewWidthValue = document.getElementById("scatterViewWidthValue");
     const scatterScaleValue = document.getElementById("scatterScaleValue");
 
+    const timeScatterStatus = document.getElementById("timeScatterStatus");
+    const timeScatterControls = document.getElementById("timeScatterControls");
+    const timeScatterOptionsToggle = document.getElementById("timeScatterOptionsToggle");
+    const plotTimeScatterBtn = document.getElementById("plotTimeScatterBtn");
+    const clearTimeScatterBtn = document.getElementById("clearTimeScatterBtn");
+    const timeScatterViewportWrap = document.getElementById("timeScatterViewportWrap");
+    const timeScatterViewport = document.getElementById("timeScatterViewport");
+    const timeScatterSphereRadiusSlider = document.getElementById("timeScatterSphereRadius");
+    const timeScatterSphereDetailSlider = document.getElementById("timeScatterSphereDetail");
+    const timeScatterPaletteSelect = document.getElementById("timeScatterPalette");
+    const timeScatterViewHeightSlider = document.getElementById("timeScatterViewHeight");
+    const timeScatterViewWidthSlider = document.getElementById("timeScatterViewWidth");
+    const timeScatterStyleSelect = document.getElementById("timeScatterStyle");
+    const timeScatterTrajectoryColorsCheckbox = document.getElementById("timeScatterTrajectoryColors");
+    const timeScatterScaleSlider = document.getElementById("timeScatterScale");
+    const timeScatterShowHelpersCheckbox = document.getElementById("timeScatterShowHelpers");
+    const timeScatterAutoRotateCheckbox = document.getElementById("timeScatterAutoRotate");
+    const timeScatterSphereRadiusValue = document.getElementById("timeScatterSphereRadiusValue");
+    const timeScatterSphereDetailValue = document.getElementById("timeScatterSphereDetailValue");
+    const timeScatterViewHeightValue = document.getElementById("timeScatterViewHeightValue");
+    const timeScatterViewWidthValue = document.getElementById("timeScatterViewWidthValue");
+    const timeScatterScaleValue = document.getElementById("timeScatterScaleValue");
+
     const phaseViews = [
       {
         name: "3D color PCA phase space",
@@ -1036,14 +1238,6 @@
         axesCanvas: document.getElementById("phaseTimeGlowAxes"),
         title: document.getElementById("phaseTimeGlowTitle"),
         rgb: [94, 234, 212]
-      },
-      {
-        name: "PC1/PC2 time-Z phase space",
-        mode: "timeZ",
-        canvas: document.getElementById("phaseTimeZ"),
-        axesCanvas: document.getElementById("phaseTimeZAxes"),
-        title: document.getElementById("phaseTimeZTitle"),
-        rgb: [125, 211, 252]
       },
       {
         name: "3D PCA continuous line",
@@ -1144,6 +1338,26 @@
     let scatterBuildInProgress = false;
     let scatterQueuedAutoUpdate = false;
 
+    let timeScatterScene = null;
+    let timeScatterCamera = null;
+    let timeScatterRenderer = null;
+    let timeScatterOrbitControls = null;
+    let timeScatterGroup = null;
+    let timeScatterPointsMesh = null;
+    let timeScatterGrid = null;
+    let timeScatterAxes = null;
+    let timeScatterGround = null;
+    let timeScatterAmbientLight = null;
+    let timeScatterKeyLight = null;
+    let timeScatterFillLight = null;
+    let timeScatterAnimationId = 0;
+    let timeScatterLastSourceSignature = "";
+    let timeScatterAutoUpdateTimer = 0;
+    let timeScatterBuildInProgress = false;
+    let timeScatterQueuedAutoUpdate = false;
+    let lastLive3dAutoUpdateTime = 0;
+    const LIVE_3D_AUTO_UPDATE_MS = 900;
+
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
       dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -1159,6 +1373,7 @@
       resizePhaseCanvases();
       resizeSurfaceRenderer();
       resizeScatterRenderer();
+      resizeTimeScatterRenderer();
 
       if (activeSource === "file" && waveformBuffer && waveformSampleCount) {
         drawStaticSpectrogram();
@@ -1677,6 +1892,7 @@
         statusText.textContent = `Microphone running. Sample rate: ${audioContext.sampleRate} Hz.`;
         drawAxes();
         lastDrawTime = performance.now();
+        lastLive3dAutoUpdateTime = 0;
         scrollCarry = 0;
         animationId = requestAnimationFrame(drawSpectrogram);
       } catch (error) {
@@ -2834,11 +3050,11 @@
 
     function markSurfaceStale() {
       markScatterStale();
-      if (!surfaceMesh) return;
+      markTimeScatterStale();
       const signature = surfaceSourceSignature();
-      if (signature === surfaceLastSourceSignature) return;
-      surfaceStatus.textContent = "The 3D surface is from an earlier selected window. Click Update 3D surface to rebuild it from the current selection.";
-      plotSurfaceBtn.textContent = "Update 3D surface";
+      if (surfaceMesh && signature === surfaceLastSourceSignature) return;
+      surfaceStatus.textContent = surfaceMesh ? "Selection changed. Updating the 3D surface automatically..." : "Selection changed. Building the 3D surface automatically...";
+      scheduleSurfaceAutoUpdate(180);
     }
 
     async function loadSurfaceModules() {
@@ -3370,12 +3586,11 @@
       plotSurfaceBtn.disabled = false;
       plotSurfaceBtn.textContent = "Plot 3D surface";
       surfaceViewportWrap.classList.add("is-hidden");
-      surfaceStatus.textContent = "Surface is not plotted yet. Select a spectrogram window above, then click Plot 3D surface.";
+      surfaceStatus.textContent = "Surface cleared. It will build automatically when the selection or surface controls change.";
     }
 
     function selectedSurfacePoints() {
-      const pointLimit = Math.max(8, Number(surfacePointLimitSlider.value) || 1200);
-      const coordinates = getPhaseCoordinates(syncFrameControls(), pointLimit);
+      const coordinates = getPhaseCoordinates(syncFrameControls(), Infinity);
       if (!coordinates || !coordinates.points || coordinates.points.length < 2) return null;
 
       let sourcePoints;
@@ -3500,10 +3715,10 @@
         const points = rawPoints;
         const tubeRadius = Math.max(0.001, Number(surfaceRadiusSlider.value) || 0.045);
         const radialSegments = Math.max(3, Number(surfaceSmoothnessSlider.value) || 18);
-        const interpolationFactor = Math.max(1, Number(surfaceInterpolationSlider.value) || 7);
+        const interpolationFactor = Math.max(0, Number(surfaceInterpolationSlider.value) || 0);
         const tubularSegments = Math.min(
           60000,
-          Math.max(12, Math.round(Math.max(2, points.length - (closedCurve ? 0 : 1)) * interpolationFactor))
+          Math.max(12, Math.round(Math.max(2, points.length - (closedCurve ? 0 : 1)) * (interpolationFactor + 1)))
         );
 
         const curve = new THREE.CatmullRomCurve3(points, closedCurve, "centripetal", 0.35);
@@ -3571,10 +3786,10 @@
         surfaceLastSourceSignature = surfaceSourceSignature();
         exportSurfaceStlBtn.disabled = false;
         clearSurfaceBtn.disabled = false;
-        plotSurfaceBtn.textContent = "Update 3D surface";
+        plotSurfaceBtn.textContent = "Rebuild 3D surface";
         const colorLabel = surfaceTrajectoryColorsEnabled() ? "trajectory-colored" : "single-color";
         const sphereLabel = surfaceShowSpheresCheckbox.checked ? `, compact animated sphere queue ${Number(surfaceSphereCountSlider.value)}` : "";
-        surfaceStatus.textContent = `${options.autoUpdate ? "Surface updated" : "Surface plotted"} from ${selected.points.length.toLocaleString()} selected ${selected.sourceLabel} points, with ${interpolationFactor}x curve interpolation. Tube mesh: ${triangleCount.toLocaleString()} triangles, ${colorLabel}${sphereLabel}. STL export is ready.`;
+        surfaceStatus.textContent = `${options.autoUpdate ? "Surface updated" : "Surface ready"} from ${selected.points.length.toLocaleString()} selected ${selected.sourceLabel} points. STL export is ready.`;
       } catch (error) {
         surfaceStatus.textContent = `Could not build the 3D surface: ${error.message}`;
       } finally {
@@ -3588,12 +3803,11 @@
     }
 
     function scheduleSurfaceAutoUpdate(delayMs = 120) {
-      if (!surfaceMesh) return;
       if (surfaceAutoUpdateTimer) {
         clearTimeout(surfaceAutoUpdateTimer);
       }
       surfaceStatus.textContent = "Updating 3D surface from the changed surface controls...";
-      plotSurfaceBtn.textContent = "Updating...";
+      if (plotSurfaceBtn) plotSurfaceBtn.textContent = "Updating...";
       surfaceAutoUpdateTimer = window.setTimeout(() => {
         surfaceAutoUpdateTimer = 0;
         plotSelectedSurface({ preserveCamera: true, autoUpdate: true });
@@ -3602,7 +3816,7 @@
 
     async function exportSurfaceStl() {
       if (!surfaceGroup || !surfaceMesh) {
-        surfaceStatus.textContent = "Plot the 3D surface first, then download the STL.";
+        surfaceStatus.textContent = "The surface is not ready yet. It will build automatically from the current selection, then STL export will be available.";
         return;
       }
 
@@ -3697,11 +3911,10 @@
     }
 
     function markScatterStale() {
-      if (!scatterGroup) return;
       const signature = scatterSourceSignature();
-      if (signature === scatterLastSourceSignature) return;
-      scatterStatus.textContent = "The 3D scatter is from an earlier selected window. Click Update 3D scatter to rebuild it from the current selection.";
-      plotScatterBtn.textContent = "Update 3D scatter";
+      if (scatterGroup && signature === scatterLastSourceSignature) return;
+      scatterStatus.textContent = scatterGroup ? "Selection changed. Updating the 3D scatter automatically..." : "Selection changed. Building the 3D scatter automatically...";
+      scheduleScatterAutoUpdate(180);
     }
 
     function scatterUsesPosterStyle() {
@@ -3936,12 +4149,11 @@
       plotScatterBtn.disabled = false;
       plotScatterBtn.textContent = "Plot 3D scatter";
       scatterViewportWrap.classList.add("is-hidden");
-      scatterStatus.textContent = "Scatter is not plotted yet. Select a spectrogram window above, then click Plot 3D scatter.";
+      scatterStatus.textContent = "Scatter cleared. It will build automatically when the selection or scatter controls change.";
     }
 
     function selectedScatterPoints() {
-      const pointLimit = Math.max(8, Number(scatterPointLimitSlider.value) || 3000);
-      const coordinates = getPhaseCoordinates(syncFrameControls(), pointLimit);
+      const coordinates = getPhaseCoordinates(syncFrameControls(), Infinity);
       if (!coordinates || !coordinates.points || coordinates.points.length < 2) return null;
 
       let sourcePoints;
@@ -4218,7 +4430,7 @@
 
         scatterLastSourceSignature = scatterSourceSignature();
         clearScatterBtn.disabled = false;
-        plotScatterBtn.textContent = "Update 3D scatter";
+        plotScatterBtn.textContent = "Rebuild 3D scatter";
         const colorLabel = scatterTrajectoryColorsEnabled() ? "trajectory-colored" : "single-color";
         scatterStatus.textContent = `${options.autoUpdate ? "Scatter updated" : "Scatter plotted"} from ${selected.points.length.toLocaleString()} exact ${selected.sourceLabel} points as ${colorLabel} spheres (no interpolation, no line, no animation).`;
       } catch (error) {
@@ -4234,15 +4446,596 @@
     }
 
     function scheduleScatterAutoUpdate(delayMs = 120) {
-      if (!scatterPointsMesh) return;
       if (scatterAutoUpdateTimer) {
         clearTimeout(scatterAutoUpdateTimer);
       }
       scatterStatus.textContent = "Updating 3D scatter from the changed scatter controls...";
-      plotScatterBtn.textContent = "Updating...";
+      if (plotScatterBtn) plotScatterBtn.textContent = "Updating...";
       scatterAutoUpdateTimer = window.setTimeout(() => {
         scatterAutoUpdateTimer = 0;
         plotSelectedScatter({ preserveCamera: true, autoUpdate: true });
+      }, delayMs);
+    }
+
+    function updateTimeScatterViewportSize() {
+      const heightPx = clamp(Number(timeScatterViewHeightSlider.value) || 520, 320, 1200);
+      const widthPercent = clamp(Number(timeScatterViewWidthSlider.value) || 100, 60, 100);
+      timeScatterViewHeightSlider.value = String(heightPx);
+      timeScatterViewWidthSlider.value = String(widthPercent);
+      timeScatterViewport.style.height = `${heightPx}px`;
+      timeScatterViewportWrap.style.width = `${widthPercent}%`;
+      resizeTimeScatterRenderer();
+    }
+
+    function updateTimeScatterControlLabels() {
+      timeScatterSphereRadiusValue.textContent = Number(timeScatterSphereRadiusSlider.value).toFixed(3);
+      timeScatterSphereDetailValue.textContent = timeScatterSphereDetailSlider.value;
+      timeScatterViewHeightValue.textContent = `${timeScatterViewHeightSlider.value} px`;
+      timeScatterViewWidthValue.textContent = `${timeScatterViewWidthSlider.value}%`;
+      timeScatterScaleValue.textContent = Number(timeScatterScaleSlider.value).toFixed(1);
+      updateTimeScatterViewportSize();
+    }
+
+    function setTimeScatterOptionsVisible(visible) {
+      timeScatterControls.classList.toggle("is-hidden", !visible);
+      timeScatterOptionsToggle.setAttribute("aria-expanded", visible ? "true" : "false");
+      timeScatterOptionsToggle.textContent = visible ? "Hide timeScatter options" : "TimeScatter options";
+    }
+
+    function timeScatterSourceSignature() {
+      const selectedFrame = syncFrameControls();
+      return [
+        waveformSampleCount,
+        waveformWriteIndex,
+        Math.round(currentSampleRate || 0),
+        phasePcaModeCheckbox.checked ? "pca" : "delay",
+        Number(phaseTauSlider.value).toFixed(3),
+        phaseDimensionSlider.value,
+        phasePcaComponentCountSlider.value,
+        selectedFrame.start,
+        selectedFrame.size,
+        activeSource,
+        activeSource === "file" ? spectrogramViewStartSeconds.toFixed(4) : "live"
+      ].join(":");
+    }
+
+    function markTimeScatterStale() {
+      const signature = timeScatterSourceSignature();
+      if (timeScatterGroup && signature === timeScatterLastSourceSignature) return;
+      timeScatterStatus.textContent = timeScatterGroup ? "Selection changed. Updating the PC1/PC2/time scatter automatically..." : "Selection changed. Building the PC1/PC2/time scatter automatically...";
+      scheduleTimeScatterAutoUpdate(180);
+    }
+
+    function timeScatterUsesPosterStyle() {
+      return !timeScatterStyleSelect || timeScatterStyleSelect.value === "poster";
+    }
+
+    function applyTimeScatterSceneStyle(THREE) {
+      if (!THREE || !timeScatterScene) return;
+
+      const poster = timeScatterUsesPosterStyle();
+      timeScatterViewportWrap.classList.toggle("surface-dark-style", !poster);
+      timeScatterScene.background = poster ? null : new THREE.Color(0x05070a);
+      if (timeScatterRenderer) {
+        timeScatterRenderer.setClearColor(poster ? 0x000000 : 0x05070a, poster ? 0 : 1);
+      }
+
+      if (timeScatterAmbientLight) {
+        timeScatterAmbientLight.intensity = poster ? 0.72 : 0.48;
+      }
+      if (timeScatterKeyLight) {
+        timeScatterKeyLight.color.setHex(0xffffff);
+        timeScatterKeyLight.intensity = poster ? 1.05 : 1.15;
+        timeScatterKeyLight.position.set(poster ? 3.2 : 4, poster ? 5.5 : 6, poster ? 4.5 : 5);
+      }
+      if (timeScatterFillLight) {
+        timeScatterFillLight.color.setHex(poster ? 0xf2cfa8 : 0x51c4d3);
+        timeScatterFillLight.intensity = poster ? 0.75 : 1.6;
+        timeScatterFillLight.position.set(-4, 3, 3);
+      }
+      if (timeScatterGrid) {
+        timeScatterGrid.visible = timeScatterShowHelpersCheckbox.checked;
+        const materials = Array.isArray(timeScatterGrid.material) ? timeScatterGrid.material : [timeScatterGrid.material];
+        materials.forEach((material) => {
+          material.transparent = true;
+          material.opacity = poster ? 0.26 : 0.18;
+          material.needsUpdate = true;
+        });
+      }
+      if (timeScatterAxes) {
+        timeScatterAxes.visible = timeScatterShowHelpersCheckbox.checked;
+        if (timeScatterAxes.material) {
+          timeScatterAxes.material.transparent = true;
+          timeScatterAxes.material.opacity = poster ? 0.35 : 0.72;
+        }
+      }
+      if (timeScatterGround) {
+        timeScatterGround.visible = poster;
+      }
+    }
+
+    function timeScatterTrajectoryColorsEnabled() {
+      return !timeScatterTrajectoryColorsCheckbox || timeScatterTrajectoryColorsCheckbox.checked;
+    }
+
+    function timeScatterPaletteName() {
+      return timeScatterPaletteSelect ? timeScatterPaletteSelect.value : "oceanGold";
+    }
+
+    function timeScatterPaletteStops(THREE) {
+      const palette = timeScatterPaletteName();
+      if (palette === "pca") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x38bdf8) },
+          { t: 0.50, color: new THREE.Color(0x34d399) },
+          { t: 1.00, color: new THREE.Color(0xfbbf24) }
+        ];
+      }
+      if (palette === "iceCopper") {
+        return [
+          { t: 0.00, color: new THREE.Color(0xe8efe9) },
+          { t: 0.34, color: new THREE.Color(0xb7d4d8) },
+          { t: 0.68, color: new THREE.Color(0xd8bc8c) },
+          { t: 1.00, color: new THREE.Color(0x8e6f59) }
+        ];
+      }
+      if (palette === "oceanGold") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x2f8ca3) },
+          { t: 0.45, color: new THREE.Color(0xa8d5d0) },
+          { t: 1.00, color: new THREE.Color(0xe8c16c) }
+        ];
+      }
+      if (palette === "singlePearl") {
+        return [
+          { t: 0.00, color: new THREE.Color(0xded8c5) },
+          { t: 1.00, color: new THREE.Color(0xded8c5) }
+        ];
+      }
+      if (palette === "sunsetEmber") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x5b2a86) },
+          { t: 0.38, color: new THREE.Color(0xbc5090) },
+          { t: 0.72, color: new THREE.Color(0xff8c42) },
+          { t: 1.00, color: new THREE.Color(0xffd166) }
+        ];
+      }
+      if (palette === "forestMoss") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x203a2e) },
+          { t: 0.34, color: new THREE.Color(0x3f6f52) },
+          { t: 0.72, color: new THREE.Color(0x82a46c) },
+          { t: 1.00, color: new THREE.Color(0xd8c99b) }
+        ];
+      }
+      if (palette === "lavenderRose") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x6d597a) },
+          { t: 0.35, color: new THREE.Color(0xb56576) },
+          { t: 0.70, color: new THREE.Color(0xe56b6f) },
+          { t: 1.00, color: new THREE.Color(0xffcad4) }
+        ];
+      }
+      if (palette === "slateMono") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x24313f) },
+          { t: 0.45, color: new THREE.Color(0x597081) },
+          { t: 1.00, color: new THREE.Color(0xd7dee6) }
+        ];
+      }
+      if (palette === "coralReef") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x006d77) },
+          { t: 0.32, color: new THREE.Color(0x00afb9) },
+          { t: 0.68, color: new THREE.Color(0xf28482) },
+          { t: 1.00, color: new THREE.Color(0xf6bd60) }
+        ];
+      }
+      if (palette === "aurora") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x2b2d42) },
+          { t: 0.33, color: new THREE.Color(0x4361ee) },
+          { t: 0.66, color: new THREE.Color(0x4cc9f0) },
+          { t: 1.00, color: new THREE.Color(0x80ffdb) }
+        ];
+      }
+      if (palette === "rubyIvory") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x5a0f2d) },
+          { t: 0.40, color: new THREE.Color(0xa4133c) },
+          { t: 0.75, color: new THREE.Color(0xff758f) },
+          { t: 1.00, color: new THREE.Color(0xfff1e6) }
+        ];
+      }
+      if (palette === "midnightCyan") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x0b132b) },
+          { t: 0.42, color: new THREE.Color(0x1c2541) },
+          { t: 0.72, color: new THREE.Color(0x3a506b) },
+          { t: 1.00, color: new THREE.Color(0x5bc0be) }
+        ];
+      }
+      if (palette === "desertSage") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x7f5539) },
+          { t: 0.34, color: new THREE.Color(0xb08968) },
+          { t: 0.68, color: new THREE.Color(0xa3b18a) },
+          { t: 1.00, color: new THREE.Color(0xddd2b4) }
+        ];
+      }
+      if (palette === "plumGold") {
+        return [
+          { t: 0.00, color: new THREE.Color(0x3c1642) },
+          { t: 0.34, color: new THREE.Color(0x6b2d5c) },
+          { t: 0.68, color: new THREE.Color(0xbf9b30) },
+          { t: 1.00, color: new THREE.Color(0xf7e8a4) }
+        ];
+      }
+      if (palette === "glacierMint") {
+        return [
+          { t: 0.00, color: new THREE.Color(0xdff3f4) },
+          { t: 0.36, color: new THREE.Color(0xa9d6d5) },
+          { t: 0.72, color: new THREE.Color(0x5eaaa8) },
+          { t: 1.00, color: new THREE.Color(0x2f6f72) }
+        ];
+      }
+      return [
+        { t: 0.00, color: new THREE.Color(0xd8d2bf) },
+        { t: 0.32, color: new THREE.Color(0xc6d8d8) },
+        { t: 0.68, color: new THREE.Color(0x9fb8c6) },
+        { t: 1.00, color: new THREE.Color(0xd1b176) }
+      ];
+    }
+
+    function timeScatterSolidColor(THREE) {
+      const palette = timeScatterPaletteName();
+      if (palette === "pca") return new THREE.Color(0x51c4d3);
+      if (palette === "iceCopper") return new THREE.Color(0xc6d4cf);
+      if (palette === "oceanGold") return new THREE.Color(0x8fcac6);
+      if (palette === "singlePearl") return new THREE.Color(0xded8c5);
+      if (palette === "sunsetEmber") return new THREE.Color(0xff8c42);
+      if (palette === "forestMoss") return new THREE.Color(0x5c845d);
+      if (palette === "lavenderRose") return new THREE.Color(0xd98a98);
+      if (palette === "slateMono") return new THREE.Color(0x7f94a3);
+      if (palette === "coralReef") return new THREE.Color(0x47a4a7);
+      if (palette === "aurora") return new THREE.Color(0x59c8ea);
+      if (palette === "rubyIvory") return new THREE.Color(0xd94f6d);
+      if (palette === "midnightCyan") return new THREE.Color(0x3d6f84);
+      if (palette === "desertSage") return new THREE.Color(0xb09a79);
+      if (palette === "plumGold") return new THREE.Color(0xb89537);
+      if (palette === "glacierMint") return new THREE.Color(0x86c7c4);
+      return new THREE.Color(0xc6d8d8);
+    }
+
+    function timeScatterTrajectoryColor(THREE, t) {
+      const stops = timeScatterPaletteStops(THREE);
+      const value = clamp(t, 0, 1);
+      for (let index = 1; index < stops.length; index += 1) {
+        if (value <= stops[index].t) {
+          const previous = stops[index - 1];
+          const next = stops[index];
+          const local = (value - previous.t) / Math.max(1e-9, next.t - previous.t);
+          return previous.color.clone().lerp(next.color, local);
+        }
+      }
+      return stops[stops.length - 1].color.clone();
+    }
+
+    function clearTimeScatterGeometry() {
+      if (timeScatterAutoUpdateTimer) {
+        clearTimeout(timeScatterAutoUpdateTimer);
+        timeScatterAutoUpdateTimer = 0;
+      }
+      timeScatterQueuedAutoUpdate = false;
+      if (timeScatterScene && timeScatterGroup) {
+        timeScatterScene.remove(timeScatterGroup);
+        disposeThreeObject(timeScatterGroup);
+      }
+      timeScatterGroup = null;
+      timeScatterPointsMesh = null;
+      timeScatterLastSourceSignature = "";
+      clearTimeScatterBtn.disabled = true;
+      plotTimeScatterBtn.disabled = false;
+      plotTimeScatterBtn.textContent = "Plot PC1/PC2/time scatter";
+      timeScatterViewportWrap.classList.add("is-hidden");
+      timeScatterStatus.textContent = "TimeScatter cleared. It will build automatically when the selection or timeScatter controls change.";
+    }
+
+    function selectedTimeScatterPoints() {
+      const coordinates = getPhaseCoordinates(syncFrameControls(), Infinity);
+      if (!coordinates || !coordinates.points || coordinates.points.length < 2) return null;
+
+      const count = coordinates.points.length;
+      const timeAxisMax = phaseAxisMax(coordinates.maxAbs);
+      const sourcePoints = coordinates.points.map(([x, y], index) => {
+        const timeRatio = count > 1 ? index / (count - 1) : 0.5;
+        return [x, y, (timeRatio - 0.5) * 2 * timeAxisMax];
+      });
+
+      const cleanPoints = sourcePoints.filter((point) => point.every((value) => Number.isFinite(value)));
+      if (cleanPoints.length < 2) return null;
+
+      return {
+        points: cleanPoints,
+        sourceLabel: phasePcaModeCheckbox.checked ? "PC1/PC2/time" : "delay x/y/time",
+        originalPointCount: coordinates.pointCount
+      };
+    }
+
+    function normalizeTimeScatterPoints(points, THREE) {
+      const center = points.reduce((sum, point) => {
+        sum[0] += point[0];
+        sum[1] += point[1];
+        sum[2] += point[2];
+        return sum;
+      }, [0, 0, 0]);
+
+      center[0] /= points.length;
+      center[1] /= points.length;
+      center[2] /= points.length;
+
+      let maxAbs = 1e-9;
+      points.forEach((point) => {
+        maxAbs = Math.max(
+          maxAbs,
+          Math.abs(point[0] - center[0]),
+          Math.abs(point[1] - center[1]),
+          Math.abs(point[2] - center[2])
+        );
+      });
+
+      const scale = Number(timeScatterScaleSlider.value) || 1.8;
+      return points.map((point) => new THREE.Vector3(
+        (point[0] - center[0]) / maxAbs * scale,
+        (point[1] - center[1]) / maxAbs * scale,
+        (point[2] - center[2]) / maxAbs * scale
+      ));
+    }
+
+    function fitTimeScatterCamera(points, THREE) {
+      if (!points.length || !timeScatterCamera || !timeScatterOrbitControls) return;
+
+      const box = new THREE.Box3().setFromPoints(points);
+      const center = box.getCenter(new THREE.Vector3());
+      const sizeVector = box.getSize(new THREE.Vector3());
+      const size = Math.max(1, sizeVector.length());
+
+      timeScatterCamera.near = Math.max(0.001, size / 200);
+      timeScatterCamera.far = Math.max(100, size * 100);
+      timeScatterCamera.position.set(center.x + size * 0.85, center.y + size * 0.65, center.z + size * 1.05);
+      timeScatterCamera.lookAt(center);
+      timeScatterCamera.updateProjectionMatrix();
+
+      timeScatterOrbitControls.target.copy(center);
+      timeScatterOrbitControls.update();
+    }
+
+    async function ensureTimeScatterScene() {
+      const modules = await loadSurfaceModules();
+      const { THREE, OrbitControls } = modules;
+
+      if (timeScatterScene) {
+        applyTimeScatterSceneStyle(THREE);
+        resizeTimeScatterRenderer();
+        startTimeScatterAnimation();
+        return modules;
+      }
+
+      timeScatterScene = new THREE.Scene();
+      timeScatterScene.background = timeScatterUsesPosterStyle() ? null : new THREE.Color(0x05070a);
+
+      timeScatterCamera = new THREE.PerspectiveCamera(55, 1, 0.01, 1000);
+      timeScatterCamera.position.set(4, 3, 5);
+
+      timeScatterRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      timeScatterRenderer.setPixelRatio(Math.max(1, window.devicePixelRatio || 1));
+      timeScatterRenderer.shadowMap.enabled = true;
+      timeScatterRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      timeScatterViewport.appendChild(timeScatterRenderer.domElement);
+
+      timeScatterOrbitControls = new OrbitControls(timeScatterCamera, timeScatterRenderer.domElement);
+      timeScatterOrbitControls.enableDamping = true;
+      timeScatterOrbitControls.dampingFactor = 0.08;
+
+      timeScatterAmbientLight = new THREE.AmbientLight(0xffffff, 0.72);
+      timeScatterScene.add(timeScatterAmbientLight);
+
+      timeScatterKeyLight = new THREE.DirectionalLight(0xffffff, 1.05);
+      timeScatterKeyLight.position.set(3.2, 5.5, 4.5);
+      timeScatterKeyLight.castShadow = true;
+      timeScatterKeyLight.shadow.mapSize.width = 1024;
+      timeScatterKeyLight.shadow.mapSize.height = 1024;
+      timeScatterScene.add(timeScatterKeyLight);
+
+      timeScatterFillLight = new THREE.PointLight(0xf2cfa8, 0.75, 40);
+      timeScatterFillLight.position.set(-4, 3, 3);
+      timeScatterScene.add(timeScatterFillLight);
+
+      timeScatterGround = new THREE.Mesh(
+        new THREE.PlaneGeometry(10, 10),
+        new THREE.ShadowMaterial({ color: 0x8b806f, opacity: 0.18 })
+      );
+      timeScatterGround.rotation.x = -Math.PI / 2;
+      timeScatterGround.position.y = -2.45;
+      timeScatterGround.receiveShadow = true;
+      timeScatterScene.add(timeScatterGround);
+
+      timeScatterGrid = new THREE.GridHelper(8, 16, 0xb7ad99, 0xd7cfbd);
+      timeScatterGrid.position.y = -2.4;
+      timeScatterScene.add(timeScatterGrid);
+
+      timeScatterAxes = new THREE.AxesHelper(2.3);
+      timeScatterScene.add(timeScatterAxes);
+
+      applyTimeScatterSceneStyle(THREE);
+      resizeTimeScatterRenderer();
+      startTimeScatterAnimation();
+      return modules;
+    }
+
+    function resizeTimeScatterRenderer() {
+      if (!timeScatterRenderer || !timeScatterCamera || !timeScatterViewport || timeScatterViewportWrap.classList.contains("is-hidden")) return;
+
+      const rect = timeScatterViewport.getBoundingClientRect();
+      const width = Math.max(1, Math.floor(rect.width));
+      const height = Math.max(1, Math.floor(rect.height));
+      timeScatterRenderer.setSize(width, height, false);
+      timeScatterCamera.aspect = width / Math.max(1, height);
+      timeScatterCamera.updateProjectionMatrix();
+    }
+
+    function startTimeScatterAnimation() {
+      if (timeScatterAnimationId || !timeScatterRenderer || !timeScatterScene || !timeScatterCamera) return;
+
+      const animateTimeScatter = () => {
+        timeScatterAnimationId = requestAnimationFrame(animateTimeScatter);
+        if (timeScatterOrbitControls) {
+          timeScatterOrbitControls.update();
+        }
+        if (timeScatterGroup && timeScatterAutoRotateCheckbox.checked) {
+          timeScatterGroup.rotation.y += 0.002;
+        }
+        timeScatterRenderer.render(timeScatterScene, timeScatterCamera);
+      };
+
+      timeScatterAnimationId = requestAnimationFrame(animateTimeScatter);
+    }
+
+    function buildTimeScatterSphereCloud(THREE, points) {
+      const sphereRadius = Math.max(0.003, Number(timeScatterSphereRadiusSlider.value) || 0.035);
+      const detail = Math.max(4, Number(timeScatterSphereDetailSlider.value) || 10);
+      const sphereGeometry = new THREE.SphereGeometry(sphereRadius, detail, Math.max(4, detail));
+      const useTrajectoryColors = timeScatterTrajectoryColorsEnabled();
+      const baseColor = useTrajectoryColors ? 0xffffff : timeScatterSolidColor(THREE);
+      const material = timeScatterUsesPosterStyle()
+        ? new THREE.MeshPhysicalMaterial({
+            color: baseColor,
+            metalness: 0.06,
+            roughness: 0.18,
+            clearcoat: 0.84,
+            clearcoatRoughness: 0.22
+          })
+        : new THREE.MeshStandardMaterial({
+            color: baseColor,
+            metalness: 0.22,
+            roughness: 0.34,
+            emissive: useTrajectoryColors ? new THREE.Color(0x000000) : timeScatterSolidColor(THREE).clone().multiplyScalar(0.08)
+          });
+
+      const cloud = new THREE.InstancedMesh(sphereGeometry, material, points.length);
+      cloud.castShadow = true;
+      cloud.receiveShadow = true;
+      const dummy = new THREE.Object3D();
+
+      for (let index = 0; index < points.length; index += 1) {
+        dummy.position.copy(points[index]);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.setScalar(1);
+        dummy.updateMatrix();
+        cloud.setMatrixAt(index, dummy.matrix);
+
+        const t = points.length > 1 ? index / (points.length - 1) : 0;
+        const color = useTrajectoryColors ? timeScatterTrajectoryColor(THREE, t) : timeScatterSolidColor(THREE);
+        cloud.setColorAt(index, color);
+      }
+
+      cloud.instanceMatrix.needsUpdate = true;
+      if (cloud.instanceColor) {
+        cloud.instanceColor.needsUpdate = true;
+      }
+
+      return cloud;
+    }
+
+    async function plotSelectedTimeScatter(options = {}) {
+      updateTimeScatterControlLabels();
+
+      if (timeScatterBuildInProgress) {
+        timeScatterQueuedAutoUpdate = true;
+        return;
+      }
+      timeScatterBuildInProgress = true;
+      timeScatterAutoUpdateTimer = 0;
+
+      const preserveCamera = Boolean(options.preserveCamera);
+      const savedCameraState = preserveCamera && timeScatterCamera && timeScatterOrbitControls ? {
+        position: timeScatterCamera.position.clone(),
+        quaternion: timeScatterCamera.quaternion.clone(),
+        target: timeScatterOrbitControls.target.clone(),
+        zoom: timeScatterCamera.zoom
+      } : null;
+
+      if (!waveformBuffer || waveformSampleCount < 10) {
+        timeScatterStatus.textContent = "No audio data is available yet. Start the mic, pause a recording, or upload an audio file first.";
+        timeScatterBuildInProgress = false;
+        return;
+      }
+
+      const selected = selectedTimeScatterPoints();
+      if (!selected || selected.points.length < 2) {
+        timeScatterStatus.textContent = "Not enough selected points to build the PC1/PC2/time scatter. Increase the frame size or record/load more audio.";
+        timeScatterBuildInProgress = false;
+        return;
+      }
+
+      plotTimeScatterBtn.disabled = true;
+      plotTimeScatterBtn.textContent = "Building timeScatter...";
+      timeScatterViewportWrap.classList.remove("is-hidden");
+      timeScatterStatus.textContent = "Building exact-point PC1/PC2/time scatter from the current selected phase window...";
+
+      try {
+        const { THREE } = await ensureTimeScatterScene();
+        resizeTimeScatterRenderer();
+
+        if (timeScatterGroup) {
+          timeScatterScene.remove(timeScatterGroup);
+          disposeThreeObject(timeScatterGroup);
+        }
+
+        const points = normalizeTimeScatterPoints(selected.points, THREE);
+        timeScatterGroup = new THREE.Group();
+        timeScatterPointsMesh = buildTimeScatterSphereCloud(THREE, points);
+        timeScatterGroup.add(timeScatterPointsMesh);
+        timeScatterScene.add(timeScatterGroup);
+
+        if (savedCameraState) {
+          timeScatterCamera.position.copy(savedCameraState.position);
+          timeScatterCamera.quaternion.copy(savedCameraState.quaternion);
+          timeScatterCamera.zoom = savedCameraState.zoom;
+          timeScatterCamera.updateProjectionMatrix();
+          timeScatterOrbitControls.target.copy(savedCameraState.target);
+          timeScatterOrbitControls.update();
+        } else {
+          fitTimeScatterCamera(points, THREE);
+        }
+        applyTimeScatterSceneStyle(THREE);
+
+        timeScatterLastSourceSignature = timeScatterSourceSignature();
+        clearTimeScatterBtn.disabled = false;
+        plotTimeScatterBtn.textContent = "Rebuild PC1/PC2/time scatter";
+        const colorLabel = timeScatterTrajectoryColorsEnabled() ? "trajectory-colored" : "single-color";
+        timeScatterStatus.textContent = `${options.autoUpdate ? "TimeScatter updated" : "TimeScatter plotted"} from ${selected.points.length.toLocaleString()} exact ${selected.sourceLabel} points as ${colorLabel} spheres (no interpolation, no line, no animation).`;
+      } catch (error) {
+        timeScatterStatus.textContent = `Could not build the PC1/PC2/time scatter: ${error.message}`;
+      } finally {
+        timeScatterBuildInProgress = false;
+        plotTimeScatterBtn.disabled = false;
+        if (timeScatterQueuedAutoUpdate) {
+          timeScatterQueuedAutoUpdate = false;
+          scheduleTimeScatterAutoUpdate(60);
+        }
+      }
+    }
+
+    function scheduleTimeScatterAutoUpdate(delayMs = 120) {
+      if (timeScatterAutoUpdateTimer) {
+        clearTimeout(timeScatterAutoUpdateTimer);
+      }
+      timeScatterStatus.textContent = "Updating PC1/PC2/time scatter from the changed time scatter controls...";
+      if (plotTimeScatterBtn) plotTimeScatterBtn.textContent = "Updating...";
+      timeScatterAutoUpdateTimer = window.setTimeout(() => {
+        timeScatterAutoUpdateTimer = 0;
+        plotSelectedTimeScatter({ preserveCamera: true, autoUpdate: true });
       }, delayMs);
     }
 
@@ -4297,6 +5090,13 @@
       }
     }
 
+    function maybeAutoUpdateLive3d(now) {
+      if (activeSource !== "mic" || !waveformBuffer || waveformSampleCount < 64) return;
+      if (now - lastLive3dAutoUpdateTime < LIVE_3D_AUTO_UPDATE_MS) return;
+      lastLive3dAutoUpdateTime = now;
+      markSurfaceStale();
+    }
+
     function drawSavedPhasePortraits() {
       const coordinates = getPhaseCoordinates();
       lastPhasePointCount = coordinates ? coordinates.pointCount : 0;      if (coordinates) {
@@ -4318,6 +5118,7 @@
       analyser.getByteTimeDomainData(timeData);
       updateLevelMeter();
       drawSavedPhasePortraits();
+      maybeAutoUpdateLive3d(now);
 
       const windowSeconds = Number(windowSlider.value);
       scrollCarry += elapsed / 1000 * (canvasCssWidth / windowSeconds);
@@ -4361,6 +5162,7 @@
       phasePcaComponentCountValue.textContent = String(syncPhasePcaComponentCount());
       updateSurfaceControlLabels();
       updateScatterControlLabels();
+      updateTimeScatterControlLabels();
       updatePhaseTitles();
     }
 
@@ -4377,8 +5179,6 @@
       phaseViews.forEach((view) => {
         if (view.mode === "timeGlow") {
           view.title.textContent = `3D color PCA: ${phaseModeLabel}, frame ${frameLabel}`;
-        } else if (view.mode === "timeZ") {
-          view.title.textContent = `PC1/PC2 + time Z: ${phaseModeLabel}, frame ${frameLabel}`;
         } else if (view.mode === "pcaLine") {
           view.title.textContent = `3D PCA line: ${phaseModeLabel}, frame ${frameLabel}`;        } else {
           view.title.textContent = `${view.name}: ${phaseModeLabel}, frame ${frameLabel}`;
@@ -4510,9 +5310,7 @@
         if (input === surfaceAutoRotateCheckbox || input === surfaceShowLineCheckbox || input === surfaceShowHelpersCheckbox) {
           return;
         }
-        if (surfaceMesh) {
-          scheduleSurfaceAutoUpdate(input.type === "checkbox" || input.tagName === "SELECT" ? 60 : 120);
-        }
+        scheduleSurfaceAutoUpdate(input.type === "checkbox" || input.tagName === "SELECT" ? 60 : 120);
       });
     });
 
@@ -4540,12 +5338,39 @@
         if (input === scatterAutoRotateCheckbox || input === scatterShowHelpersCheckbox) {
           return;
         }
-        if (scatterPointsMesh) {
-          scheduleScatterAutoUpdate(input.type === "checkbox" || input.tagName === "SELECT" ? 60 : 120);
-        }
+        scheduleScatterAutoUpdate(input.type === "checkbox" || input.tagName === "SELECT" ? 60 : 120);
       });
     });
 
+
+
+    setTimeScatterOptionsVisible(false);
+    timeScatterOptionsToggle.addEventListener("click", () => {
+      setTimeScatterOptionsVisible(timeScatterControls.classList.contains("is-hidden"));
+    });
+    plotTimeScatterBtn.addEventListener("click", plotSelectedTimeScatter);
+    clearTimeScatterBtn.addEventListener("click", clearTimeScatterGeometry);
+
+    [timeScatterSphereRadiusSlider, timeScatterSphereDetailSlider, timeScatterPaletteSelect, timeScatterViewHeightSlider, timeScatterViewWidthSlider, timeScatterStyleSelect, timeScatterTrajectoryColorsCheckbox, timeScatterScaleSlider, timeScatterShowHelpersCheckbox, timeScatterAutoRotateCheckbox].forEach((input) => {
+      const eventName = input.tagName === "SELECT" || input.type === "checkbox" ? "change" : "input";
+      input.addEventListener(eventName, () => {
+        updateTimeScatterControlLabels();
+
+        if (input === timeScatterViewHeightSlider || input === timeScatterViewWidthSlider) {
+          updateTimeScatterViewportSize();
+          return;
+        }
+        if (input === timeScatterShowHelpersCheckbox || input === timeScatterStyleSelect) {
+          if (surfaceModules && surfaceModules.THREE) {
+            applyTimeScatterSceneStyle(surfaceModules.THREE);
+          }
+        }
+        if (input === timeScatterAutoRotateCheckbox || input === timeScatterShowHelpersCheckbox) {
+          return;
+        }
+        scheduleTimeScatterAutoUpdate(input.type === "checkbox" || input.tagName === "SELECT" ? 60 : 120);
+      });
+    });
 
 
     fftSizeSelect.addEventListener("change", () => {
@@ -4643,8 +5468,32 @@
 
     window.addEventListener("resize", resizeCanvas);
 
+    if (phaseGrid) {
+      phaseGrid.classList.add("is-hidden");
+    }
+    const phaseSection = phaseGrid ? phaseGrid.closest("section.card") : null;
+    if (phaseSection && phaseControls) {
+      const phaseControlsCard = document.createElement("section");
+      phaseControlsCard.className = "card phase-controls-card";
+      phaseControls.classList.add("phase-controls-top");
+      phaseControlsCard.appendChild(phaseControls);
+      const spectrogramSection = topAnalysisGrid ? topAnalysisGrid.closest("section.card") : null;
+      phaseSection.parentNode.insertBefore(phaseControlsCard, spectrogramSection || phaseSection);
+      phaseSection.classList.add("is-hidden");
+    }
+    if (phaseSection && surfaceSection && scatterSection) {
+      const surfaceScatterGrid = document.createElement("div");
+      surfaceScatterGrid.className = "surface-scatter-grid";
+      phaseSection.parentNode.insertBefore(surfaceScatterGrid, phaseSection);
+      surfaceScatterGrid.appendChild(surfaceSection);
+      surfaceScatterGrid.appendChild(scatterSection);
+    }
+
     updateLabels();
     resizeCanvas();
+    setTimeout(() => {
+      markSurfaceStale();
+    }, 0);
   </script>
 </body>
 </html>
