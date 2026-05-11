@@ -201,6 +201,36 @@
       background: #05070a;
     }
 
+    .plot-selection-watermark {
+      position: absolute;
+      top: 8px;
+      left: 10px;
+      z-index: 25;
+      max-width: calc(100% - 58px);
+      padding: 3px 6px;
+      border-radius: 7px;
+      pointer-events: none;
+      user-select: none;
+      color: rgba(230, 233, 239, 0.34);
+      background: rgba(5, 7, 10, 0.12);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+      font: 600 11px/1.35 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      letter-spacing: 0.01em;
+      white-space: normal;
+    }
+
+    .surface-viewport-wrap .plot-selection-watermark {
+      color: rgba(32, 44, 52, 0.35);
+      background: rgba(255, 255, 255, 0.12);
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.16);
+    }
+
+    .surface-viewport-wrap.surface-dark-style .plot-selection-watermark {
+      color: rgba(230, 233, 239, 0.34);
+      background: rgba(5, 7, 10, 0.16);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+
     .spectrogram-wrap {
       height: min(42vh, 430px);
       min-height: 300px;
@@ -675,6 +705,7 @@
           <div class="canvas-wrap spectrogram-wrap">
             <canvas id="spectrogram" aria-label="Live scrolling microphone spectrogram"></canvas>
             <canvas id="axes" aria-hidden="true"></canvas>
+            <div id="spectrogramSelectionOverlay" class="plot-selection-watermark" data-selection-overlay></div>
             <div id="spectrogramScrollBar" class="spectrogram-scrollbar is-hidden">
               <input id="spectrogramScroll" type="range" min="0" max="100" value="0" step="0.1" aria-label="Scroll through uploaded audio spectrogram" />
             </div>
@@ -689,6 +720,7 @@
             <div class="canvas-wrap phase-wrap">
               <canvas id="phaseTimeGlow" aria-label="3D time-colored PCA phase portrait scatter plot"></canvas>
               <canvas id="phaseTimeGlowAxes" aria-hidden="true"></canvas>
+              <div id="phaseTimeGlowSelectionOverlay" class="plot-selection-watermark" data-selection-overlay></div>
             </div>
           </div>
 
@@ -698,6 +730,7 @@
             <div class="canvas-wrap phase-wrap">
               <canvas id="phasePcaLine" aria-label="3D time-colored PCA phase portrait continuous line plot"></canvas>
               <canvas id="phasePcaLineAxes" aria-hidden="true"></canvas>
+              <div id="phasePcaLineSelectionOverlay" class="plot-selection-watermark" data-selection-overlay></div>
             </div>
           </div>
         </div>
@@ -840,6 +873,7 @@
 
         <div id="surfaceViewportWrap" class="surface-viewport-wrap is-hidden">
           <button id="downloadSurfaceImageBtn" class="plot-download-btn" type="button" title="Download image" aria-label="Download surface image">↓</button>
+          <div id="surfaceSelectionOverlay" class="plot-selection-watermark" data-selection-overlay></div>
           <div id="surfaceViewport" class="surface-viewport" aria-label="Interactive 3D surface generated from selected PCA phase data"></div>
         </div>
 <div id="surfaceControls" class="controls surface-controls is-hidden">
@@ -987,6 +1021,7 @@
 
         <div id="scatterViewportWrap" class="surface-viewport-wrap is-hidden">
           <button id="downloadScatterImageBtn" class="plot-download-btn" type="button" title="Download image" aria-label="Download scatter image">↓</button>
+          <div id="scatterSelectionOverlay" class="plot-selection-watermark" data-selection-overlay></div>
           <div id="scatterViewport" class="surface-viewport" aria-label="Interactive 3D scatter plot generated from selected PCA phase data"></div>
         </div>
 <div id="scatterControls" class="controls surface-controls is-hidden">
@@ -1088,6 +1123,7 @@
 
         <div id="timeScatterViewportWrap" class="surface-viewport-wrap is-hidden">
           <button id="downloadTimeScatterImageBtn" class="plot-download-btn" type="button" title="Download image" aria-label="Download PC1 PC2 time image">↓</button>
+          <div id="timeScatterSelectionOverlay" class="plot-selection-watermark" data-selection-overlay></div>
           <div id="timeScatterViewport" class="surface-viewport" aria-label="Interactive 3D scatter plot generated from selected PC1, PC2, and time data"></div>
         </div>
 
@@ -1193,7 +1229,8 @@
         </div>
 
         <div id="evolutionViewportWrap" class="surface-viewport-wrap is-hidden">
-          <button id="downloadEvolutionGifBtn" class="plot-download-btn" type="button" title="Download GIF" aria-label="Download evolution GIF">↓</button>
+          <button id="downloadEvolutionGifBtn" class="plot-download-btn" type="button" title="Download animation" aria-label="Download evolution animation">↓</button>
+          <div id="evolutionSelectionOverlay" class="plot-selection-watermark" data-selection-overlay></div>
           <div id="evolutionViewport" class="surface-viewport" aria-label="Animated 3D trajectory evolution from overlapping windows of selected data"></div>
         </div>
 
@@ -1226,6 +1263,12 @@
             <label for="evolutionLineWidth">Line width</label>
             <input id="evolutionLineWidth" type="range" min="1" max="8" value="2" step="0.25" />
             <span id="evolutionLineWidthValue" class="value">2.00</span>
+          </div>
+
+          <div class="ctl">
+            <label for="evolutionLineInterpolation">Line interpolation</label>
+            <input id="evolutionLineInterpolation" type="range" min="0" max="20" value="0" step="1" />
+            <span id="evolutionLineInterpolationValue" class="value">0x</span>
           </div>
 
           <div class="ctl">
@@ -1300,6 +1343,46 @@
           <div class="ctl">
             <label for="evolutionAutoRotate">Auto rotate</label>
             <input id="evolutionAutoRotate" type="checkbox" />
+          </div>
+
+          <div class="ctl">
+            <label for="evolutionAxisMode">Axis</label>
+            <select id="evolutionAxisMode">
+              <option value="fixed" selected>Fixed</option>
+              <option value="auto">Auto</option>
+            </select>
+          </div>
+
+          <div class="ctl">
+            <label for="evolutionExportFormat">Export</label>
+            <select id="evolutionExportFormat">
+              <option value="webm" selected>WebM high quality</option>
+              <option value="gif">GIF compatible</option>
+            </select>
+          </div>
+
+          <div class="ctl">
+            <label for="evolutionExportScale">Export size</label>
+            <input id="evolutionExportScale" type="range" min="25" max="100" value="100" step="5" />
+            <span id="evolutionExportScaleValue" class="value">100%</span>
+          </div>
+
+          <div class="ctl">
+            <label for="evolutionExportFps">Export FPS</label>
+            <input id="evolutionExportFps" type="range" min="5" max="30" value="20" step="1" />
+            <span id="evolutionExportFpsValue" class="value">20</span>
+          </div>
+
+          <div class="ctl">
+            <label for="evolutionExportFrameCount">Export frames</label>
+            <input id="evolutionExportFrameCount" type="range" min="20" max="240" value="120" step="5" />
+            <span id="evolutionExportFrameCountValue" class="value">120</span>
+          </div>
+
+          <div class="ctl">
+            <label for="evolutionExportBitrate">WebM quality</label>
+            <input id="evolutionExportBitrate" type="range" min="2" max="30" value="10" step="1" />
+            <span id="evolutionExportBitrateValue" class="value">10 Mbps</span>
           </div>
         </div>
       </section>
@@ -1376,6 +1459,7 @@
     const meterFill = document.getElementById("meterFill");
     const statusText = document.getElementById("status");
     const topAnalysisGrid = document.getElementById("topAnalysisGrid");
+    const plotSelectionOverlays = Array.from(document.querySelectorAll("[data-selection-overlay]"));
     const phaseGrid = document.getElementById("phaseGrid");
     const surfaceSection = document.getElementById("surfaceSection");
     const scatterSection = document.getElementById("scatterSection");
@@ -1485,6 +1569,7 @@
     const evolutionSpeedSlider = document.getElementById("evolutionSpeed");
     const evolutionSphereRadiusSlider = document.getElementById("evolutionSphereRadius");
     const evolutionLineWidthSlider = document.getElementById("evolutionLineWidth");
+    const evolutionLineInterpolationSlider = document.getElementById("evolutionLineInterpolation");
     const evolutionPaletteSelect = document.getElementById("evolutionPalette");
     const evolutionViewHeightSlider = document.getElementById("evolutionViewHeight");
     const evolutionViewWidthSlider = document.getElementById("evolutionViewWidth");
@@ -1496,11 +1581,22 @@
     const evolutionLoopCheckbox = document.getElementById("evolutionLoop");
     const evolutionShowHelpersCheckbox = document.getElementById("evolutionShowHelpers");
     const evolutionAutoRotateCheckbox = document.getElementById("evolutionAutoRotate");
+    const evolutionAxisModeSelect = document.getElementById("evolutionAxisMode");
+    const evolutionExportFormatSelect = document.getElementById("evolutionExportFormat");
+    const evolutionExportScaleSlider = document.getElementById("evolutionExportScale");
+    const evolutionExportFpsSlider = document.getElementById("evolutionExportFps");
+    const evolutionExportFrameCountSlider = document.getElementById("evolutionExportFrameCount");
+    const evolutionExportBitrateSlider = document.getElementById("evolutionExportBitrate");
     const evolutionWindowPercentValue = document.getElementById("evolutionWindowPercentValue");
     const evolutionOverlapValue = document.getElementById("evolutionOverlapValue");
     const evolutionSpeedValue = document.getElementById("evolutionSpeedValue");
     const evolutionSphereRadiusValue = document.getElementById("evolutionSphereRadiusValue");
     const evolutionLineWidthValue = document.getElementById("evolutionLineWidthValue");
+    const evolutionLineInterpolationValue = document.getElementById("evolutionLineInterpolationValue");
+    const evolutionExportScaleValue = document.getElementById("evolutionExportScaleValue");
+    const evolutionExportFpsValue = document.getElementById("evolutionExportFpsValue");
+    const evolutionExportFrameCountValue = document.getElementById("evolutionExportFrameCountValue");
+    const evolutionExportBitrateValue = document.getElementById("evolutionExportBitrateValue");
     const evolutionViewHeightValue = document.getElementById("evolutionViewHeightValue");
     const evolutionViewWidthValue = document.getElementById("evolutionViewWidthValue");
     const evolutionScaleValue = document.getElementById("evolutionScaleValue");
@@ -1654,6 +1750,7 @@
     let evolutionBuildInProgress = false;
     let evolutionRebuildTimer = 0;
     let evolutionQueuedRebuild = false;
+    let evolutionNormalizedPoints = [];
     let lastLive3dAutoUpdateTime = 0;
     const LIVE_3D_AUTO_UPDATE_MS = 900;
 
@@ -2706,6 +2803,26 @@
       input.value = String(value);
     }
 
+    function plotSelectionOverlayText() {
+      const tauLabel = formatTau(Number(phaseTauSlider.value));
+      const dimensionLabel = phasePcaModeCheckbox.checked ? phaseEmbeddingDimension() : 2;
+      const range = currentSelectionIndexRange();
+
+      if (!range) {
+        return `tau ${tauLabel} · D ${dimensionLabel} · idx —`;
+      }
+
+      return `tau ${tauLabel} · D ${dimensionLabel} · idx ${range.startIndex.toLocaleString()} → ${range.endIndex.toLocaleString()}`;
+    }
+
+    function updatePlotSelectionOverlays() {
+      if (!plotSelectionOverlays || !plotSelectionOverlays.length) return;
+      const label = plotSelectionOverlayText();
+      plotSelectionOverlays.forEach((overlay) => {
+        overlay.textContent = label;
+      });
+    }
+
     function updateSelectionIndexControls() {
       const maxIndex = Math.max(0, waveformSampleCount - 1);
       selectionStartIndexInput.max = String(maxIndex);
@@ -2717,6 +2834,7 @@
         selectionTimeValue.textContent = "—";
         setIndexInputValue(selectionStartIndexInput, 0);
         setIndexInputValue(selectionEndIndexInput, 0);
+        updatePlotSelectionOverlays();
         return;
       }
 
@@ -2732,6 +2850,7 @@
       selectionTimeValue.textContent = `${formatSeconds(startSeconds)} → ${formatSeconds(endSeconds)} (${formatPhaseDuration(durationMs)})`;
       setIndexInputValue(selectionStartIndexInput, range.startIndex);
       setIndexInputValue(selectionEndIndexInput, range.endIndex);
+      updatePlotSelectionOverlays();
     }
 
     function applySelectionFromVisibleIndexRange(startIndex, endIndex, viewStartIndex, viewEndIndex) {
@@ -5492,27 +5611,223 @@
       }
     }
 
-    function loadGifshot() {
-      if (window.gifshot && window.gifshot.createGIF) {
-        return Promise.resolve(window.gifshot);
+    function writeGifAscii(bytes, text) {
+      for (let i = 0; i < text.length; i += 1) {
+        bytes.push(text.charCodeAt(i) & 255);
       }
-      if (window.__gifshotLoadingPromise) {
-        return window.__gifshotLoadingPromise;
-      }
-      window.__gifshotLoadingPromise = new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/gifshot@0.4.5/build/gifshot.min.js";
-        script.async = true;
-        script.onload = () => window.gifshot ? resolve(window.gifshot) : reject(new Error("GIF encoder could not load"));
-        script.onerror = () => reject(new Error("GIF encoder could not load"));
-        document.head.appendChild(script);
-      });
-      return window.__gifshotLoadingPromise;
     }
 
-    async function downloadEvolutionGif() {
+    function writeGifShort(bytes, value) {
+      bytes.push(value & 255, (value >> 8) & 255);
+    }
+
+    function fixedGifPalette() {
+      const palette = [];
+      const steps = [0, 51, 102, 153, 204, 255];
+      for (let r = 0; r < 6; r += 1) {
+        for (let g = 0; g < 6; g += 1) {
+          for (let b = 0; b < 6; b += 1) {
+            palette.push(steps[r], steps[g], steps[b]);
+          }
+        }
+      }
+      for (let i = 216; i < 256; i += 1) {
+        const gray = Math.round((i - 216) / 39 * 255);
+        palette.push(gray, gray, gray);
+      }
+      return palette.slice(0, 768);
+    }
+
+    function quantizeGifFrame(imageData) {
+      const source = imageData.data;
+      const indices = new Uint8Array(imageData.width * imageData.height);
+      for (let pixel = 0, sourceIndex = 0; pixel < indices.length; pixel += 1, sourceIndex += 4) {
+        if (source[sourceIndex + 3] < 128) {
+          indices[pixel] = 215;
+          continue;
+        }
+        const r = Math.max(0, Math.min(5, Math.round(source[sourceIndex] / 51)));
+        const g = Math.max(0, Math.min(5, Math.round(source[sourceIndex + 1] / 51)));
+        const b = Math.max(0, Math.min(5, Math.round(source[sourceIndex + 2] / 51)));
+        indices[pixel] = r * 36 + g * 6 + b;
+      }
+      return indices;
+    }
+
+    function lzwEncodeGifIndices(indices, minCodeSize = 8) {
+      // Robust low-compression GIF LZW stream.
+      // It writes literal palette indices and manages the code-size growth exactly
+      // as a GIF decoder expects. This is larger than dictionary compression, but
+      // it avoids corrupted / partially decoded frames in strict GIF viewers.
+      const clearCode = 1 << minCodeSize;
+      const endCode = clearCode + 1;
+      const output = [];
+      let codeSize = minCodeSize + 1;
+      let nextCode = endCode + 1;
+      let bitBuffer = 0;
+      let bitCount = 0;
+
+      function resetDictionaryState() {
+        codeSize = minCodeSize + 1;
+        nextCode = endCode + 1;
+      }
+
+      function writeCode(code) {
+        bitBuffer |= code << bitCount;
+        bitCount += codeSize;
+        while (bitCount >= 8) {
+          output.push(bitBuffer & 255);
+          bitBuffer >>>= 8;
+          bitCount -= 8;
+        }
+      }
+
+      resetDictionaryState();
+      writeCode(clearCode);
+
+      if (indices.length) {
+        writeCode(indices[0]);
+        for (let i = 1; i < indices.length; i += 1) {
+          if (nextCode >= 4096) {
+            writeCode(clearCode);
+            resetDictionaryState();
+            writeCode(indices[i]);
+          } else {
+            writeCode(indices[i]);
+            nextCode += 1;
+            if (nextCode === (1 << codeSize) && codeSize < 12) {
+              codeSize += 1;
+            }
+          }
+        }
+      }
+
+      writeCode(endCode);
+      if (bitCount > 0) {
+        output.push(bitBuffer & 255);
+      }
+      return output;
+    }
+
+    function writeGifSubBlocks(bytes, data) {
+      for (let offset = 0; offset < data.length; offset += 255) {
+        const blockLength = Math.min(255, data.length - offset);
+        bytes.push(blockLength);
+        for (let i = 0; i < blockLength; i += 1) {
+          bytes.push(data[offset + i] & 255);
+        }
+      }
+      bytes.push(0);
+    }
+
+    function encodeIndexedGif(frames, width, height, delayCentiseconds) {
+      const bytes = [];
+      const palette = fixedGifPalette();
+      writeGifAscii(bytes, "GIF89a");
+      writeGifShort(bytes, width);
+      writeGifShort(bytes, height);
+      bytes.push(0xf7, 0, 0);
+      for (let i = 0; i < 768; i += 1) {
+        bytes.push(palette[i] || 0);
+      }
+
+      // Netscape loop extension, loop forever.
+      bytes.push(0x21, 0xff, 0x0b);
+      writeGifAscii(bytes, "NETSCAPE2.0");
+      bytes.push(0x03, 0x01, 0x00, 0x00, 0x00);
+
+      frames.forEach((indices) => {
+        bytes.push(0x21, 0xf9, 0x04, 0x00);
+        writeGifShort(bytes, delayCentiseconds);
+        bytes.push(0x00, 0x00);
+        bytes.push(0x2c);
+        writeGifShort(bytes, 0);
+        writeGifShort(bytes, 0);
+        writeGifShort(bytes, width);
+        writeGifShort(bytes, height);
+        bytes.push(0x00);
+        bytes.push(0x08);
+        writeGifSubBlocks(bytes, lzwEncodeGifIndices(indices, 8));
+      });
+
+      bytes.push(0x3b);
+      return new Uint8Array(bytes);
+    }
+
+    function evolutionExportScale() {
+      return clamp((Number(evolutionExportScaleSlider.value) || 100) / 100, 0.05, 2);
+    }
+
+    function evolutionExportFps() {
+      return clamp(Math.round(Number(evolutionExportFpsSlider.value) || 20), 1, 60);
+    }
+
+    function evolutionExportFrameCount() {
+      return Math.min(Math.max(1, Math.round(Number(evolutionExportFrameCountSlider.value) || 120)), Math.max(1, evolutionSegments.length));
+    }
+
+    function evolutionExportBitrate() {
+      return Math.max(500000, Math.round(Number(evolutionExportBitrateSlider.value) || 10) * 1000000);
+    }
+
+    function renderEvolutionExportFrame(segmentIndex, width, height, canvas, context) {
+      updateEvolutionSegment(segmentIndex);
+      if (evolutionOrbitControls) evolutionOrbitControls.update();
+      evolutionRenderer.render(evolutionScene, evolutionCamera);
+      const gl = evolutionRenderer.getContext && evolutionRenderer.getContext();
+      if (gl && gl.finish) {
+        gl.finish();
+      }
+      context.save();
+      context.globalCompositeOperation = "source-over";
+      context.fillStyle = evolutionUsesPosterStyle() ? "#f4ecd9" : "#05070a";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(evolutionRenderer.domElement, 0, 0, width, height);
+      context.restore();
+    }
+
+    function captureEvolutionGifFrame(width, height, canvas, context) {
+      return quantizeGifFrame(context.getImageData(0, 0, width, height));
+    }
+
+    function evolutionBestWebMMimeType() {
+      const candidates = [
+        "video/webm;codecs=vp9",
+        "video/webm;codecs=vp8",
+        "video/webm"
+      ];
+      if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+      return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+    }
+
+    function prepareEvolutionExportCanvas(maxWidth = Infinity, maxHeight = Infinity) {
+      const sourceCanvas = evolutionRenderer.domElement;
+      const scale = Math.min(evolutionExportScale(), maxWidth / Math.max(1, sourceCanvas.width), maxHeight / Math.max(1, sourceCanvas.height));
+      const width = Math.max(2, Math.round(sourceCanvas.width * scale));
+      const height = Math.max(2, Math.round(sourceCanvas.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      return { canvas, context, width, height };
+    }
+
+    async function downloadEvolutionWebM() {
       if (!evolutionRenderer || !evolutionScene || !evolutionCamera || !evolutionSegments.length) {
-        downloadRendererImage(evolutionRenderer, evolutionScene, evolutionCamera, "trajectory_evolution_frame");
+        evolutionStatus.textContent = "Plot the trajectory animation first, then download it.";
+        evolutionStatus.classList.remove("is-hidden");
+        return;
+      }
+      if (!HTMLCanvasElement.prototype.captureStream || !window.MediaRecorder) {
+        evolutionStatus.textContent = "WebM export is not supported in this browser. Select GIF compatible export instead.";
+        evolutionStatus.classList.remove("is-hidden");
+        return;
+      }
+
+      const mimeType = evolutionBestWebMMimeType();
+      if (!mimeType) {
+        evolutionStatus.textContent = "This browser cannot encode WebM. Select GIF compatible export instead.";
+        evolutionStatus.classList.remove("is-hidden");
         return;
       }
 
@@ -5524,48 +5839,109 @@
       if (downloadEvolutionGifBtn) downloadEvolutionGifBtn.disabled = true;
 
       try {
-        const gifshot = await loadGifshot();
-        const frameCount = Math.min(120, Math.max(1, evolutionSegments.length));
-        const images = [];
+        const { canvas: exportCanvas, context: exportCtx, width, height } = prepareEvolutionExportCanvas(Infinity, Infinity);
+        const fps = evolutionExportFps();
+        const frameCount = evolutionExportFrameCount();
+        const stream = exportCanvas.captureStream(0);
+        const track = stream.getVideoTracks()[0];
+        const chunks = [];
+        const recorder = new MediaRecorder(stream, {
+          mimeType,
+          videoBitsPerSecond: evolutionExportBitrate()
+        });
+
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) chunks.push(event.data);
+        };
+
+        const stopped = new Promise((resolve, reject) => {
+          recorder.onstop = resolve;
+          recorder.onerror = () => reject(new Error("WebM recording failed."));
+        });
+
+        evolutionStatus.textContent = `Encoding WebM 0/${frameCount}...`;
+        evolutionStatus.classList.remove("is-hidden");
+        recorder.start();
+
         for (let frame = 0; frame < frameCount; frame += 1) {
           const segmentIndex = frameCount === 1 ? 0 : Math.round(frame / (frameCount - 1) * (evolutionSegments.length - 1));
-          updateEvolutionSegment(segmentIndex);
-          if (evolutionOrbitControls) evolutionOrbitControls.update();
-          evolutionRenderer.render(evolutionScene, evolutionCamera);
-          images.push(evolutionRenderer.domElement.toDataURL("image/png"));
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          renderEvolutionExportFrame(segmentIndex, width, height, exportCanvas, exportCtx);
+          if (track && track.requestFrame) {
+            track.requestFrame();
+          }
+          evolutionStatus.textContent = `Encoding WebM ${frame + 1}/${frameCount}...`;
+          await new Promise((resolve) => setTimeout(resolve, Math.max(1, 1000 / fps)));
         }
 
-        gifshot.createGIF({
-          images,
-          gifWidth: evolutionRenderer.domElement.width,
-          gifHeight: evolutionRenderer.domElement.height,
-          interval: 0.08,
-          numFrames: images.length
-        }, (result) => {
-          if (!result || result.error) {
-            downloadRendererImage(evolutionRenderer, evolutionScene, evolutionCamera, "trajectory_evolution_frame");
-          } else {
-            fetch(result.image).then((response) => response.blob()).then((blob) => {
-              downloadBlob(blob, `trajectory_evolution_${timestampForFilename()}.gif`);
-            }).catch(() => {
-              const link = document.createElement("a");
-              link.href = result.image;
-              link.download = `trajectory_evolution_${timestampForFilename()}.gif`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            });
-          }
-        });
+        recorder.stop();
+        await stopped;
+        stream.getTracks().forEach((trackItem) => trackItem.stop());
+        downloadBlob(new Blob(chunks, { type: mimeType }), "trajectory_evolution_" + timestampForFilename() + ".webm");
+        evolutionStatus.textContent = "WebM downloaded.";
       } catch (error) {
-        downloadRendererImage(evolutionRenderer, evolutionScene, evolutionCamera, "trajectory_evolution_frame");
+        evolutionStatus.textContent = "Could not export WebM: " + error.message;
+        evolutionStatus.classList.remove("is-hidden");
       } finally {
         evolutionFrameFloat = previousFrameFloat;
         updateEvolutionSegment(previousIndex >= 0 ? previousIndex : Math.floor(previousFrameFloat));
         evolutionPlaying = wasPlaying;
         playEvolutionBtn.textContent = evolutionPlaying ? "Pause" : "Play";
         if (downloadEvolutionGifBtn) downloadEvolutionGifBtn.disabled = false;
+      }
+    }
+
+    async function downloadEvolutionGif() {
+      if (!evolutionRenderer || !evolutionScene || !evolutionCamera || !evolutionSegments.length) {
+        evolutionStatus.textContent = "Plot the trajectory animation first, then download it as a GIF.";
+        evolutionStatus.classList.remove("is-hidden");
+        return;
+      }
+
+      const wasPlaying = evolutionPlaying;
+      const previousFrameFloat = evolutionFrameFloat;
+      const previousIndex = evolutionCurrentSegmentIndex;
+      evolutionPlaying = false;
+      playEvolutionBtn.textContent = "Play";
+      if (downloadEvolutionGifBtn) downloadEvolutionGifBtn.disabled = true;
+
+      try {
+        const { canvas: exportCanvas, context: exportCtx, width: gifWidth, height: gifHeight } = prepareEvolutionExportCanvas(900, 560);
+        const frameCount = evolutionExportFrameCount();
+        const frames = [];
+        const delayCentiseconds = Math.max(2, Math.round(100 / evolutionExportFps()));
+
+        evolutionStatus.textContent = `Encoding GIF 0/${frameCount}...`;
+        evolutionStatus.classList.remove("is-hidden");
+
+        for (let frame = 0; frame < frameCount; frame += 1) {
+          const segmentIndex = frameCount === 1 ? 0 : Math.round(frame / (frameCount - 1) * (evolutionSegments.length - 1));
+          renderEvolutionExportFrame(segmentIndex, gifWidth, gifHeight, exportCanvas, exportCtx);
+          frames.push(captureEvolutionGifFrame(gifWidth, gifHeight, exportCanvas, exportCtx));
+          evolutionStatus.textContent = `Encoding GIF ${frame + 1}/${frameCount}...`;
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+
+        evolutionStatus.textContent = "Writing GIF file...";
+        const gifBytes = encodeIndexedGif(frames, gifWidth, gifHeight, delayCentiseconds);
+        downloadBlob(new Blob([gifBytes], { type: "image/gif" }), "trajectory_evolution_" + timestampForFilename() + ".gif");
+        evolutionStatus.textContent = "GIF downloaded. WebM export gives higher quality with a smaller file.";
+      } catch (error) {
+        evolutionStatus.textContent = "Could not export GIF: " + error.message;
+        evolutionStatus.classList.remove("is-hidden");
+      } finally {
+        evolutionFrameFloat = previousFrameFloat;
+        updateEvolutionSegment(previousIndex >= 0 ? previousIndex : Math.floor(previousFrameFloat));
+        evolutionPlaying = wasPlaying;
+        playEvolutionBtn.textContent = evolutionPlaying ? "Pause" : "Play";
+        if (downloadEvolutionGifBtn) downloadEvolutionGifBtn.disabled = false;
+      }
+    }
+
+    function downloadEvolutionAnimation() {
+      if (evolutionExportFormatSelect && evolutionExportFormatSelect.value === "gif") {
+        downloadEvolutionGif();
+      } else {
+        downloadEvolutionWebM();
       }
     }
 
@@ -5585,6 +5961,16 @@
       evolutionSpeedValue.textContent = `${Number(evolutionSpeedSlider.value).toFixed(1)}x`;
       evolutionSphereRadiusValue.textContent = Number(evolutionSphereRadiusSlider.value).toFixed(3);
       evolutionLineWidthValue.textContent = Number(evolutionLineWidthSlider.value).toFixed(2);
+      evolutionLineInterpolationValue.textContent = `${Math.max(0, Math.round(Number(evolutionLineInterpolationSlider.value) || 0))}x`;
+      evolutionExportScaleValue.textContent = `${evolutionExportScaleSlider.value}%`;
+      evolutionExportFpsValue.textContent = String(Math.round(Number(evolutionExportFpsSlider.value) || 20));
+      evolutionExportFrameCountValue.textContent = String(Math.round(Number(evolutionExportFrameCountSlider.value) || 120));
+      evolutionExportBitrateValue.textContent = `${Math.round(Number(evolutionExportBitrateSlider.value) || 10)} Mbps`;
+      if (downloadEvolutionGifBtn && evolutionExportFormatSelect) {
+        const format = evolutionExportFormatSelect.value === "gif" ? "GIF" : "WebM";
+        downloadEvolutionGifBtn.title = `Download ${format}`;
+        downloadEvolutionGifBtn.setAttribute("aria-label", `Download evolution ${format}`);
+      }
       evolutionViewHeightValue.textContent = `${evolutionViewHeightSlider.value} px`;
       evolutionViewWidthValue.textContent = `${evolutionViewWidthSlider.value}%`;
       evolutionScaleValue.textContent = Number(evolutionScaleSlider.value).toFixed(1);
@@ -5710,6 +6096,7 @@
       evolutionFrameFloat = 0;
       evolutionCurrentSegmentIndex = -1;
       evolutionSegments = [];
+      evolutionNormalizedPoints = [];
       evolutionSourcePointCount = 0;
       if (evolutionScene && evolutionGroup) {
         evolutionScene.remove(evolutionGroup);
@@ -5813,6 +6200,22 @@
 
       evolutionOrbitControls.target.copy(center);
       evolutionOrbitControls.update();
+    }
+
+    function evolutionUsesAutoAxis() {
+      return !!evolutionAxisModeSelect && evolutionAxisModeSelect.value === "auto";
+    }
+
+    function updateEvolutionAxisFit(force = false) {
+      if (!surfaceModules || !surfaceModules.THREE || !evolutionCamera || !evolutionOrbitControls) return;
+      const THREE = surfaceModules.THREE;
+      if (evolutionUsesAutoAxis()) {
+        if (evolutionCurrentSegmentIndex >= 0 && evolutionSegments[evolutionCurrentSegmentIndex]) {
+          fitEvolutionCamera(evolutionSegments[evolutionCurrentSegmentIndex].points, THREE);
+        }
+      } else if (force && evolutionNormalizedPoints.length) {
+        fitEvolutionCamera(evolutionNormalizedPoints, THREE);
+      }
     }
 
     async function ensureEvolutionScene() {
@@ -5935,6 +6338,18 @@
       return curvePath;
     }
 
+    function evolutionLineInterpolationFactor() {
+      return Math.max(0, Math.round(Number(evolutionLineInterpolationSlider.value) || 0));
+    }
+
+    function makeEvolutionLineCurve(points, THREE) {
+      const interpolationFactor = evolutionLineInterpolationFactor();
+      if (interpolationFactor <= 0 || points.length < 4) {
+        return makePolylineCurve(points, THREE);
+      }
+      return new THREE.CatmullRomCurve3(points, false, "centripetal", 0.45);
+    }
+
     function applyEvolutionTubeColors(geometry, THREE, tubularSegments, radialSegments, segmentStart, segmentPointCount) {
       const colors = new Float32Array(geometry.attributes.position.count * 3);
       const ringStride = radialSegments + 1;
@@ -5958,6 +6373,9 @@
       const segmentIndex = clamp(index, 0, evolutionSegments.length - 1);
       const segment = evolutionSegments[segmentIndex];
       const points = segment.points;
+      if (evolutionUsesAutoAxis()) {
+        fitEvolutionCamera(points, THREE);
+      }
       const dummy = new THREE.Object3D();
       const useColors = evolutionTrajectoryColorsCheckbox.checked;
       const solidColor = evolutionSolidColor(THREE);
@@ -5981,9 +6399,10 @@
       let lineGeometry = new THREE.BufferGeometry();
       if (points.length >= 2) {
         const radialSegments = 8;
-        const tubularSegments = Math.max(1, points.length - 1);
+        const interpolationFactor = evolutionLineInterpolationFactor();
+        const tubularSegments = Math.max(1, Math.min(60000, Math.round((points.length - 1) * (interpolationFactor + 1))));
         const lineRadius = Math.max(0.0005, Number(evolutionLineWidthSlider.value) || 2) * 0.0035;
-        const curvePath = makePolylineCurve(points, THREE);
+        const curvePath = makeEvolutionLineCurve(points, THREE);
         lineGeometry = new THREE.TubeGeometry(curvePath, tubularSegments, lineRadius, radialSegments, false);
         if (useColors) {
           applyEvolutionTubeColors(lineGeometry, THREE, tubularSegments, radialSegments, segment.start, points.length);
@@ -6101,6 +6520,7 @@
         }
 
         const normalizedPoints = normalizeEvolutionPoints(selected.points, THREE);
+        evolutionNormalizedPoints = normalizedPoints;
         evolutionSegments = buildEvolutionSegments(normalizedPoints);
         evolutionSourcePointCount = normalizedPoints.length;
         if (!evolutionSegments.length) {
@@ -6151,7 +6571,7 @@
         evolutionGroup.add(evolutionLine);
         evolutionScene.add(evolutionGroup);
 
-        if (savedCameraState) {
+        if (savedCameraState && !evolutionUsesAutoAxis()) {
           evolutionCamera.position.copy(savedCameraState.position);
           evolutionCamera.quaternion.copy(savedCameraState.quaternion);
           evolutionCamera.zoom = savedCameraState.zoom;
@@ -6547,7 +6967,7 @@
     }
     clearEvolutionBtn.addEventListener("click", clearEvolutionGeometry);
 
-    [evolutionWindowPercentSlider, evolutionOverlapSlider, evolutionSpeedSlider, evolutionSphereRadiusSlider, evolutionLineWidthSlider, evolutionPaletteSelect, evolutionViewHeightSlider, evolutionViewWidthSlider, evolutionScaleSlider, evolutionStyleSelect, evolutionShowPointsCheckbox, evolutionShowLineCheckbox, evolutionTrajectoryColorsCheckbox, evolutionLoopCheckbox, evolutionShowHelpersCheckbox, evolutionAutoRotateCheckbox].forEach((input) => {
+    [evolutionWindowPercentSlider, evolutionOverlapSlider, evolutionSpeedSlider, evolutionSphereRadiusSlider, evolutionLineWidthSlider, evolutionLineInterpolationSlider, evolutionPaletteSelect, evolutionViewHeightSlider, evolutionViewWidthSlider, evolutionScaleSlider, evolutionStyleSelect, evolutionShowPointsCheckbox, evolutionShowLineCheckbox, evolutionTrajectoryColorsCheckbox, evolutionLoopCheckbox, evolutionShowHelpersCheckbox, evolutionAutoRotateCheckbox, evolutionAxisModeSelect, evolutionExportFormatSelect, evolutionExportScaleSlider, evolutionExportFpsSlider, evolutionExportFrameCountSlider, evolutionExportBitrateSlider].forEach((input) => {
       const eventName = input.tagName === "SELECT" || input.type === "checkbox" ? "change" : "input";
       input.addEventListener(eventName, () => {
         updateEvolutionControlLabels();
@@ -6560,10 +6980,17 @@
             applyEvolutionSceneStyle(surfaceModules.THREE);
           }
         }
+        if (input === evolutionAxisModeSelect) {
+          updateEvolutionAxisFit(true);
+          return;
+        }
+        if (input === evolutionExportFormatSelect || input === evolutionExportScaleSlider || input === evolutionExportFpsSlider || input === evolutionExportFrameCountSlider || input === evolutionExportBitrateSlider) {
+          return;
+        }
         if (input === evolutionSpeedSlider || input === evolutionLoopCheckbox || input === evolutionAutoRotateCheckbox || input === evolutionShowHelpersCheckbox) {
           return;
         }
-        if ((input === evolutionShowPointsCheckbox || input === evolutionShowLineCheckbox) && evolutionSegments.length) {
+        if ((input === evolutionLineWidthSlider || input === evolutionLineInterpolationSlider || input === evolutionShowPointsCheckbox || input === evolutionShowLineCheckbox) && evolutionSegments.length) {
           updateEvolutionSegment(Math.max(0, evolutionCurrentSegmentIndex));
           return;
         }
@@ -6705,7 +7132,7 @@
       downloadTimeScatterImageBtn.addEventListener("click", () => downloadRendererImage(timeScatterRenderer, timeScatterScene, timeScatterCamera, "pc1_pc2_time_scatter"));
     }
     if (downloadEvolutionGifBtn) {
-      downloadEvolutionGifBtn.addEventListener("click", downloadEvolutionGif);
+      downloadEvolutionGifBtn.addEventListener("click", downloadEvolutionAnimation);
     }
 
     updateLabels();
