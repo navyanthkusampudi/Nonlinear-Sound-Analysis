@@ -300,13 +300,14 @@
     }
 
     .surface-main-controls {
-      justify-content: flex-end;
-    }
-
-    .surface-controls {
+      justify-content: flex-start;
       margin-top: 14px;
       padding-top: 14px;
       border-top: 1px solid #1e2430;
+    }
+
+    .surface-controls {
+      margin-top: 10px;
     }
 
     .surface-viewport-wrap {
@@ -331,7 +332,7 @@
     .surface-viewport {
       position: relative;
       width: 100%;
-      height: 640px;
+      height: 580px;
       min-height: 320px;
       background: radial-gradient(circle at 42% 28%, #fffdf6 0%, #f4ead9 48%, #d9c9ad 100%);
     }
@@ -607,13 +608,19 @@
             <p id="surfaceStatus" class="note">Surface is not plotted yet. Select a spectrogram window above, then click Plot 3D surface.</p>
           </div>
 
-          <div class="controls surface-main-controls">
+
+        </div>
+
+        <div id="surfaceViewportWrap" class="surface-viewport-wrap is-hidden">
+          <div id="surfaceViewport" class="surface-viewport" aria-label="Interactive 3D surface generated from selected PCA phase data"></div>
+        </div>
+
+        <div class="controls surface-main-controls">
             <button id="plotSurfaceBtn" type="button">Plot 3D surface</button>
             <button id="surfaceOptionsToggle" class="more-controls-toggle" type="button" aria-expanded="false">Surface options</button>
             <button id="exportSurfaceStlBtn" type="button" disabled>Download STL</button>
             <button id="clearSurfaceBtn" type="button" disabled>Clear surface</button>
           </div>
-        </div>
 
         <div id="surfaceControls" class="controls surface-controls is-hidden">
           <div class="ctl">
@@ -624,8 +631,8 @@
 
           <div class="ctl">
             <label for="surfaceRadius">Tube radius</label>
-            <input id="surfaceRadius" type="range" min="0.005" max="0.30" value="0.045" step="0.005" />
-            <span id="surfaceRadiusValue" class="value">0.045</span>
+            <input id="surfaceRadius" type="range" min="0.005" max="0.30" value="0.05" step="0.005" />
+            <span id="surfaceRadiusValue" class="value">0.050</span>
           </div>
 
           <div class="ctl">
@@ -643,9 +650,9 @@
           <div class="ctl">
             <label for="surfacePalette">Surface palette</label>
             <select id="surfacePalette">
-              <option value="mineral" selected>Mineral pearl</option>
+              <option value="mineral">Mineral pearl</option>
               <option value="iceCopper">Ice and copper</option>
-              <option value="oceanGold">Ocean gold</option>
+              <option value="oceanGold" selected>Ocean gold</option>
               <option value="pca">PCA blue-green-yellow</option>
               <option value="singlePearl">Single pearl</option>
             </select>
@@ -653,14 +660,14 @@
 
           <div class="ctl">
             <label for="surfaceViewHeight">Panel height</label>
-            <input id="surfaceViewHeight" type="range" min="320" max="1200" value="640" step="20" />
-            <span id="surfaceViewHeightValue" class="value">640 px</span>
+            <input id="surfaceViewHeight" type="range" min="320" max="1200" value="580" step="20" />
+            <span id="surfaceViewHeightValue" class="value">580 px</span>
           </div>
 
           <div class="ctl">
             <label for="surfaceViewWidth">Panel width</label>
-            <input id="surfaceViewWidth" type="range" min="60" max="100" value="100" step="5" />
-            <span id="surfaceViewWidthValue" class="value">100%</span>
+            <input id="surfaceViewWidth" type="range" min="60" max="100" value="60" step="5" />
+            <span id="surfaceViewWidthValue" class="value">60%</span>
           </div>
 
           <div class="ctl">
@@ -674,6 +681,29 @@
           <div class="ctl">
             <label for="surfaceTrajectoryColors">Trajectory colors</label>
             <input id="surfaceTrajectoryColors" type="checkbox" checked />
+          </div>
+
+          <div class="ctl">
+            <label for="surfaceShowSpheres">Animate spheres</label>
+            <input id="surfaceShowSpheres" type="checkbox" />
+          </div>
+
+          <div class="ctl">
+            <label for="surfaceSphereCount">No. of spheres</label>
+            <input id="surfaceSphereCount" type="range" min="1" max="20" value="5" step="1" />
+            <span id="surfaceSphereCountValue" class="value">5</span>
+          </div>
+
+          <div class="ctl">
+            <label for="surfaceSphereRadius">Sphere radius</label>
+            <input id="surfaceSphereRadius" type="range" min="0.01" max="0.30" value="0.07" step="0.005" />
+            <span id="surfaceSphereRadiusValue" class="value">0.070</span>
+          </div>
+
+          <div class="ctl">
+            <label for="surfaceSphereSpeed">Sphere speed</label>
+            <input id="surfaceSphereSpeed" type="range" min="0" max="5" value="1" step="0.05" />
+            <span id="surfaceSphereSpeedValue" class="value">1.00x</span>
           </div>
 
           <div class="ctl">
@@ -706,10 +736,6 @@
             <label for="surfaceAutoRotate">Auto rotate</label>
             <input id="surfaceAutoRotate" type="checkbox" checked />
           </div>
-        </div>
-
-        <div id="surfaceViewportWrap" class="surface-viewport-wrap is-hidden">
-          <div id="surfaceViewport" class="surface-viewport" aria-label="Interactive 3D surface generated from selected PCA phase data"></div>
         </div>
       </section>
     </div>
@@ -793,6 +819,10 @@
     const surfaceViewWidthSlider = document.getElementById("surfaceViewWidth");
     const surfaceStyleSelect = document.getElementById("surfaceStyle");
     const surfaceTrajectoryColorsCheckbox = document.getElementById("surfaceTrajectoryColors");
+    const surfaceShowSpheresCheckbox = document.getElementById("surfaceShowSpheres");
+    const surfaceSphereCountSlider = document.getElementById("surfaceSphereCount");
+    const surfaceSphereRadiusSlider = document.getElementById("surfaceSphereRadius");
+    const surfaceSphereSpeedSlider = document.getElementById("surfaceSphereSpeed");
     const surfaceScaleSlider = document.getElementById("surfaceScale");
     const surfaceClosedCheckbox = document.getElementById("surfaceClosed");
     const surfaceCapEndsCheckbox = document.getElementById("surfaceCapEnds");
@@ -803,6 +833,9 @@
     const surfaceRadiusValue = document.getElementById("surfaceRadiusValue");
     const surfaceSmoothnessValue = document.getElementById("surfaceSmoothnessValue");
     const surfaceInterpolationValue = document.getElementById("surfaceInterpolationValue");
+    const surfaceSphereCountValue = document.getElementById("surfaceSphereCountValue");
+    const surfaceSphereRadiusValue = document.getElementById("surfaceSphereRadiusValue");
+    const surfaceSphereSpeedValue = document.getElementById("surfaceSphereSpeedValue");
     const surfaceViewHeightValue = document.getElementById("surfaceViewHeightValue");
     const surfaceViewWidthValue = document.getElementById("surfaceViewWidthValue");
     const surfaceScaleValue = document.getElementById("surfaceScaleValue");
@@ -887,6 +920,10 @@
     let surfaceGroup = null;
     let surfaceMesh = null;
     let surfaceLine = null;
+    let surfaceSphereGroup = null;
+    let surfaceAnimatedSpheres = [];
+    let surfaceCurve = null;
+    let surfaceAnimationClockStart = 0;
     let surfaceGrid = null;
     let surfaceAxes = null;
     let surfaceGround = null;
@@ -2405,6 +2442,9 @@
       surfaceRadiusValue.textContent = Number(surfaceRadiusSlider.value).toFixed(3);
       surfaceSmoothnessValue.textContent = surfaceSmoothnessSlider.value;
       surfaceInterpolationValue.textContent = `${surfaceInterpolationSlider.value}x`;
+      surfaceSphereCountValue.textContent = surfaceSphereCountSlider.value;
+      surfaceSphereRadiusValue.textContent = Number(surfaceSphereRadiusSlider.value).toFixed(3);
+      surfaceSphereSpeedValue.textContent = `${Number(surfaceSphereSpeedSlider.value).toFixed(2)}x`;
       surfaceViewHeightValue.textContent = `${surfaceViewHeightSlider.value} px`;
       surfaceViewWidthValue.textContent = `${surfaceViewWidthSlider.value}%`;
       surfaceScaleValue.textContent = Number(surfaceScaleSlider.value).toFixed(1);
@@ -2642,6 +2682,73 @@
       });
     }
 
+    function clearSurfaceSphereGroup() {
+      if (surfaceGroup && surfaceSphereGroup) {
+        surfaceGroup.remove(surfaceSphereGroup);
+        disposeThreeObject(surfaceSphereGroup);
+      }
+      surfaceSphereGroup = null;
+      surfaceAnimatedSpheres = [];
+    }
+
+    function buildSurfaceSphereGroup(THREE, curve, tubeRadius) {
+      clearSurfaceSphereGroup();
+      surfaceCurve = curve || null;
+      surfaceAnimationClockStart = performance.now();
+
+      if (!surfaceGroup || !surfaceCurve || !surfaceShowSpheresCheckbox.checked) return;
+
+      const sphereCount = Math.max(1, Number(surfaceSphereCountSlider.value) || 5);
+      const sphereRadius = Math.max(0.005, Number(surfaceSphereRadiusSlider.value) || Math.max(0.04, tubeRadius * 1.35));
+      const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 24, 18);
+      surfaceSphereGroup = new THREE.Group();
+      surfaceAnimatedSpheres = [];
+
+      for (let index = 0; index < sphereCount; index += 1) {
+        const t = sphereCount > 1 ? index / sphereCount : 0;
+        const color = surfaceTrajectoryColor(THREE, t);
+        const material = surfaceUsesPosterStyle()
+          ? new THREE.MeshPhysicalMaterial({
+              color,
+              metalness: 0.06,
+              roughness: 0.18,
+              clearcoat: 0.85,
+              clearcoatRoughness: 0.22
+            })
+          : new THREE.MeshStandardMaterial({
+              color,
+              metalness: 0.24,
+              roughness: 0.32,
+              emissive: color.clone().multiplyScalar(0.08)
+            });
+        const sphere = new THREE.Mesh(sphereGeometry.clone(), material);
+        sphere.castShadow = true;
+        sphere.receiveShadow = true;
+        sphere.userData.offset = t;
+        surfaceSphereGroup.add(sphere);
+        surfaceAnimatedSpheres.push(sphere);
+      }
+
+      surfaceSphereGroup.visible = true;
+      surfaceGroup.add(surfaceSphereGroup);
+      updateSurfaceSphereAnimation(performance.now());
+    }
+
+    function updateSurfaceSphereAnimation(now = performance.now()) {
+      if (!surfaceCurve || !surfaceAnimatedSpheres.length) return;
+
+      const elapsed = Math.max(0, now - surfaceAnimationClockStart);
+      const speed = Math.max(0, Number(surfaceSphereSpeedSlider.value) || 0);
+      const cycleDurationMs = 6200;
+      const baseT = speed <= 0 ? 0 : ((elapsed * speed) % cycleDurationMs) / cycleDurationMs;
+
+      surfaceAnimatedSpheres.forEach((sphere) => {
+        const t = (baseT + (sphere.userData.offset || 0)) % 1;
+        const point = surfaceCurve.getPointAt(t);
+        sphere.position.copy(point);
+      });
+    }
+
     async function ensureSurfaceScene() {
       const modules = await loadSurfaceModules();
       const { THREE, OrbitControls } = modules;
@@ -2724,6 +2831,7 @@
         if (surfaceOrbitControls) {
           surfaceOrbitControls.update();
         }
+        updateSurfaceSphereAnimation(performance.now());
         if (surfaceGroup && surfaceAutoRotateCheckbox.checked) {
           surfaceGroup.rotation.y += 0.002;
         }
@@ -2762,6 +2870,9 @@
       surfaceGroup = null;
       surfaceMesh = null;
       surfaceLine = null;
+      surfaceSphereGroup = null;
+      surfaceAnimatedSpheres = [];
+      surfaceCurve = null;
       surfaceLastSourceSignature = "";
       exportSurfaceStlBtn.disabled = true;
       clearSurfaceBtn.disabled = true;
@@ -2905,6 +3016,8 @@
         );
 
         const curve = new THREE.CatmullRomCurve3(points, closedCurve, "centripetal", 0.35);
+        surfaceCurve = curve;
+        surfaceAnimationClockStart = performance.now();
         const tubeGeometry = new THREE.TubeGeometry(curve, tubularSegments, tubeRadius, radialSegments, closedCurve);
         tubeGeometry.computeVertexNormals();
         if (surfaceTrajectoryColorsEnabled()) {
@@ -2948,6 +3061,8 @@
         surfaceLine.visible = surfaceShowLineCheckbox.checked;
         surfaceGroup.add(surfaceLine);
 
+        buildSurfaceSphereGroup(THREE, curve, tubeRadius);
+
         surfaceScene.add(surfaceGroup);
         if (savedCameraState) {
           surfaceCamera.position.copy(savedCameraState.position);
@@ -2967,7 +3082,8 @@
         clearSurfaceBtn.disabled = false;
         plotSurfaceBtn.textContent = "Update 3D surface";
         const colorLabel = surfaceTrajectoryColorsEnabled() ? "trajectory-colored" : "single-color";
-        surfaceStatus.textContent = `${options.autoUpdate ? "Surface updated" : "Surface plotted"} from ${selected.points.length.toLocaleString()} selected ${selected.sourceLabel} points, with ${interpolationFactor}x curve interpolation. Tube mesh: ${triangleCount.toLocaleString()} triangles, ${colorLabel}. STL export is ready.`;
+        const sphereLabel = surfaceShowSpheresCheckbox.checked ? `, animated spheres ${Number(surfaceSphereCountSlider.value)}` : "";
+        surfaceStatus.textContent = `${options.autoUpdate ? "Surface updated" : "Surface plotted"} from ${selected.points.length.toLocaleString()} selected ${selected.sourceLabel} points, with ${interpolationFactor}x curve interpolation. Tube mesh: ${triangleCount.toLocaleString()} triangles, ${colorLabel}${sphereLabel}. STL export is ready.`;
       } catch (error) {
         surfaceStatus.textContent = `Could not build the 3D surface: ${error.message}`;
       } finally {
@@ -3247,7 +3363,7 @@
     exportSurfaceStlBtn.addEventListener("click", exportSurfaceStl);
     clearSurfaceBtn.addEventListener("click", clearSurfaceGeometry);
 
-    [surfacePointLimitSlider, surfaceRadiusSlider, surfaceSmoothnessSlider, surfaceInterpolationSlider, surfacePaletteSelect, surfaceViewHeightSlider, surfaceViewWidthSlider, surfaceStyleSelect, surfaceTrajectoryColorsCheckbox, surfaceScaleSlider, surfaceClosedCheckbox, surfaceCapEndsCheckbox, surfaceShowLineCheckbox, surfaceShowHelpersCheckbox, surfaceAutoRotateCheckbox].forEach((input) => {
+    [surfacePointLimitSlider, surfaceRadiusSlider, surfaceSmoothnessSlider, surfaceInterpolationSlider, surfacePaletteSelect, surfaceViewHeightSlider, surfaceViewWidthSlider, surfaceStyleSelect, surfaceTrajectoryColorsCheckbox, surfaceShowSpheresCheckbox, surfaceSphereCountSlider, surfaceSphereRadiusSlider, surfaceSphereSpeedSlider, surfaceScaleSlider, surfaceClosedCheckbox, surfaceCapEndsCheckbox, surfaceShowLineCheckbox, surfaceShowHelpersCheckbox, surfaceAutoRotateCheckbox].forEach((input) => {
       const eventName = input.tagName === "SELECT" || input.type === "checkbox" ? "change" : "input";
       input.addEventListener(eventName, () => {
         updateSurfaceControlLabels();
@@ -3257,6 +3373,9 @@
         }
         if (input === surfaceViewHeightSlider || input === surfaceViewWidthSlider) {
           updateSurfaceViewportSize();
+          return;
+        }
+        if (input === surfaceSphereSpeedSlider) {
           return;
         }
         if (input === surfaceShowHelpersCheckbox || input === surfaceStyleSelect) {
