@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lorenz Attractor Surface to STL</title>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+    }
+
+    #ui {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 330px;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      z-index: 10;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 8px 0;
+    }
+
+    p {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.4;
+      margin: 0 0 12px 0;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin-top: 11px;
+      color: #e5e7eb;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .value {
+      float: right;
+      color: #38bdf8;
+      font-weight: bold;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 14px;
+      padding: 10px;
+      border: none;
+      border-radius: 9px;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #equations {
+      margin-top: 13px;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #dbeafe;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div id="ui">
+    <h1>Lorenz Attractor → Surface → STL</h1>
+    <p>
+      Change the Lorenz parameters and generate the corresponding attractor.
+      The trajectory is converted into a printable tube surface.
+    </p>
+
+    <label>
+      σ — sigma
+      <span class="value" id="sigmaValue">10.0</span>
+      <input id="sigmaSlider" type="range" min="1" max="30" step="0.1" value="10">
+    </label>
+
+    <label>
+      ρ — rho
+      <span class="value" id="rhoValue">28.0</span>
+      <input id="rhoSlider" type="range" min="1" max="60" step="0.1" value="28">
+    </label>
+
+    <label>
+      β — beta
+      <span class="value" id="betaValue">2.67</span>
+      <input id="betaSlider" type="range" min="0.5" max="10" step="0.01" value="2.6667">
+    </label>
+
+    <label>
+      Time step dt
+      <span class="value" id="dtValue">0.006</span>
+      <input id="dtSlider" type="range" min="0.001" max="0.02" step="0.001" value="0.006">
+    </label>
+
+    <label>
+      Integration steps
+      <span class="value" id="stepsValue">6000</span>
+      <input id="stepsSlider" type="range" min="1000" max="16000" step="500" value="6000">
+    </label>
+
+    <label>
+      Tube radius
+      <span class="value" id="radiusValue">0.035</span>
+      <input id="radiusSlider" type="range" min="0.005" max="0.15" step="0.005" value="0.035">
+    </label>
+
+    <label>
+      Tube smoothness
+      <span class="value" id="radialValue">12</span>
+      <input id="radialSlider" type="range" min="6" max="28" step="1" value="12">
+    </label>
+
+    <button id="exportBtn">Export STL</button>
+
+    <div id="equations">
+      dx/dt = σ(y − x)<br>
+      dy/dt = x(ρ − z) − y<br>
+      dz/dt = xy − βz
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { STLExporter } from "three/addons/exporters/STLExporter.js";
+
+    let scene, camera, renderer, controls;
+    let attractorMesh = null;
+    let attractorLine = null;
+
+    const ui = {
+      sigma: document.getElementById("sigmaSlider"),
+      rho: document.getElementById("rhoSlider"),
+      beta: document.getElementById("betaSlider"),
+      dt: document.getElementById("dtSlider"),
+      steps: document.getElementById("stepsSlider"),
+      radius: document.getElementById("radiusSlider"),
+      radial: document.getElementById("radialSlider"),
+
+      sigmaValue: document.getElementById("sigmaValue"),
+      rhoValue: document.getElementById("rhoValue"),
+      betaValue: document.getElementById("betaValue"),
+      dtValue: document.getElementById("dtValue"),
+      stepsValue: document.getElementById("stepsValue"),
+      radiusValue: document.getElementById("radiusValue"),
+      radialValue: document.getElementById("radialValue"),
+
+      exportBtn: document.getElementById("exportBtn")
+    };
+
+    init();
+    createLorenzAttractor();
+    animate();
+
+    function init() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0f172a);
+
+      camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight,
+        0.01,
+        1000
+      );
+      camera.position.set(5, 4, 7);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      document.body.appendChild(renderer.domElement);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1.3);
+      directionalLight.position.set(5, 7, 5);
+      scene.add(directionalLight);
+
+      const pointLight1 = new THREE.PointLight(0x38bdf8, 2.0, 30);
+      pointLight1.position.set(-4, 4, 4);
+      scene.add(pointLight1);
+
+      const pointLight2 = new THREE.PointLight(0xfacc15, 1.5, 30);
+      pointLight2.position.set(4, -2, 3);
+      scene.add(pointLight2);
+
+      const grid = new THREE.GridHelper(8, 16, 0x334155, 0x1e293b);
+      grid.position.y = -2.6;
+      scene.add(grid);
+
+      const axes = new THREE.AxesHelper(2.5);
+      scene.add(axes);
+
+      window.addEventListener("resize", onWindowResize);
+
+      const sliders = [
+        ui.sigma,
+        ui.rho,
+        ui.beta,
+        ui.dt,
+        ui.steps,
+        ui.radius,
+        ui.radial
+      ];
+
+      for (const slider of sliders) {
+        slider.addEventListener("input", createLorenzAttractor);
+      }
+
+      ui.exportBtn.addEventListener("click", exportSTL);
+    }
+
+    function lorenzDerivative(p, sigma, rho, beta) {
+      return {
+        x: sigma * (p.y - p.x),
+        y: p.x * (rho - p.z) - p.y,
+        z: p.x * p.y - beta * p.z
+      };
+    }
+
+    function rk4Step(p, dt, sigma, rho, beta) {
+      const k1 = lorenzDerivative(p, sigma, rho, beta);
+
+      const p2 = {
+        x: p.x + 0.5 * dt * k1.x,
+        y: p.y + 0.5 * dt * k1.y,
+        z: p.z + 0.5 * dt * k1.z
+      };
+      const k2 = lorenzDerivative(p2, sigma, rho, beta);
+
+      const p3 = {
+        x: p.x + 0.5 * dt * k2.x,
+        y: p.y + 0.5 * dt * k2.y,
+        z: p.z + 0.5 * dt * k2.z
+      };
+      const k3 = lorenzDerivative(p3, sigma, rho, beta);
+
+      const p4 = {
+        x: p.x + dt * k3.x,
+        y: p.y + dt * k3.y,
+        z: p.z + dt * k3.z
+      };
+      const k4 = lorenzDerivative(p4, sigma, rho, beta);
+
+      return {
+        x: p.x + (dt / 6) * (k1.x + 2 * k2.x + 2 * k3.x + k4.x),
+        y: p.y + (dt / 6) * (k1.y + 2 * k2.y + 2 * k3.y + k4.y),
+        z: p.z + (dt / 6) * (k1.z + 2 * k2.z + 2 * k3.z + k4.z)
+      };
+    }
+
+    function generateLorenzPoints() {
+      const sigma = Number(ui.sigma.value);
+      const rho = Number(ui.rho.value);
+      const beta = Number(ui.beta.value);
+      const dt = Number(ui.dt.value);
+      const steps = Number(ui.steps.value);
+
+      const burnIn = 300;
+
+      let p = {
+        x: 0.1,
+        y: 0,
+        z: 0
+      };
+
+      const rawPoints = [];
+
+      for (let i = 0; i < steps + burnIn; i++) {
+        p = rk4Step(p, dt, sigma, rho, beta);
+
+        if (i >= burnIn) {
+          rawPoints.push(new THREE.Vector3(p.x, p.y, p.z));
+        }
+      }
+
+      return normalizePoints(rawPoints);
+    }
+
+    function normalizePoints(points) {
+      const box = new THREE.Box3().setFromPoints(points);
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+
+      box.getCenter(center);
+      box.getSize(size);
+
+      const maxDimension = Math.max(size.x, size.y, size.z);
+      const targetSize = 5.2;
+      const scale = targetSize / maxDimension;
+
+      return points.map(p => {
+        return new THREE.Vector3(
+          (p.x - center.x) * scale,
+          (p.y - center.y) * scale,
+          (p.z - center.z) * scale
+        );
+      });
+    }
+
+    function createTubeGeometryWithCaps(points, radius, radialSegments) {
+      const vertices = [];
+      const indices = [];
+
+      const tangents = [];
+      const normals = [];
+      const binormals = [];
+
+      for (let i = 0; i < points.length; i++) {
+        let tangent;
+
+        if (i === 0) {
+          tangent = new THREE.Vector3().subVectors(points[1], points[0]);
+        } else if (i === points.length - 1) {
+          tangent = new THREE.Vector3().subVectors(points[i], points[i - 1]);
+        } else {
+          tangent = new THREE.Vector3().subVectors(points[i + 1], points[i - 1]);
+        }
+
+        tangent.normalize();
+        tangents.push(tangent);
+      }
+
+      let initialNormal = new THREE.Vector3(0, 1, 0);
+      if (Math.abs(initialNormal.dot(tangents[0])) > 0.9) {
+        initialNormal = new THREE.Vector3(1, 0, 0);
+      }
+
+      let binormal = new THREE.Vector3().crossVectors(tangents[0], initialNormal).normalize();
+      let normal = new THREE.Vector3().crossVectors(binormal, tangents[0]).normalize();
+
+      normals.push(normal.clone());
+      binormals.push(binormal.clone());
+
+      for (let i = 1; i < points.length; i++) {
+        const previousTangent = tangents[i - 1];
+        const currentTangent = tangents[i];
+
+        const axis = new THREE.Vector3().crossVectors(previousTangent, currentTangent);
+        const axisLength = axis.length();
+
+        if (axisLength > 1e-6) {
+          axis.normalize();
+          const angle = Math.acos(
+            THREE.MathUtils.clamp(previousTangent.dot(currentTangent), -1, 1)
+          );
+
+          const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+          normal.applyQuaternion(quaternion);
+        }
+
+        binormal = new THREE.Vector3().crossVectors(currentTangent, normal).normalize();
+        normal = new THREE.Vector3().crossVectors(binormal, currentTangent).normalize();
+
+        normals.push(normal.clone());
+        binormals.push(binormal.clone());
+      }
+
+      for (let i = 0; i < points.length; i++) {
+        for (let j = 0; j < radialSegments; j++) {
+          const angle = (j / radialSegments) * Math.PI * 2;
+
+          const radialDirection = new THREE.Vector3()
+            .addScaledVector(normals[i], Math.cos(angle))
+            .addScaledVector(binormals[i], Math.sin(angle))
+            .normalize();
+
+          const vertex = new THREE.Vector3()
+            .copy(points[i])
+            .addScaledVector(radialDirection, radius);
+
+          vertices.push(vertex.x, vertex.y, vertex.z);
+        }
+      }
+
+      for (let i = 0; i < points.length - 1; i++) {
+        for (let j = 0; j < radialSegments; j++) {
+          const a = i * radialSegments + j;
+          const b = i * radialSegments + ((j + 1) % radialSegments);
+          const c = (i + 1) * radialSegments + j;
+          const d = (i + 1) * radialSegments + ((j + 1) % radialSegments);
+
+          indices.push(a, c, b);
+          indices.push(b, c, d);
+        }
+      }
+
+      const startCenterIndex = vertices.length / 3;
+      vertices.push(points[0].x, points[0].y, points[0].z);
+
+      for (let j = 0; j < radialSegments; j++) {
+        const a = j;
+        const b = (j + 1) % radialSegments;
+        indices.push(startCenterIndex, b, a);
+      }
+
+      const endCenterIndex = vertices.length / 3;
+      const lastRingStart = (points.length - 1) * radialSegments;
+      const lastPoint = points[points.length - 1];
+
+      vertices.push(lastPoint.x, lastPoint.y, lastPoint.z);
+
+      for (let j = 0; j < radialSegments; j++) {
+        const a = lastRingStart + j;
+        const b = lastRingStart + ((j + 1) % radialSegments);
+        indices.push(endCenterIndex, a, b);
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(vertices, 3)
+      );
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+
+      return geometry;
+    }
+
+    function createLorenzAttractor() {
+      updateUIValues();
+
+      if (attractorMesh) {
+        scene.remove(attractorMesh);
+        attractorMesh.geometry.dispose();
+        attractorMesh.material.dispose();
+      }
+
+      if (attractorLine) {
+        scene.remove(attractorLine);
+        attractorLine.geometry.dispose();
+        attractorLine.material.dispose();
+      }
+
+      const points = generateLorenzPoints();
+
+      const radius = Number(ui.radius.value);
+      const radialSegments = Number(ui.radial.value);
+
+      const geometry = createTubeGeometryWithCaps(points, radius, radialSegments);
+
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        metalness: 0.25,
+        roughness: 0.28,
+        side: THREE.DoubleSide
+      });
+
+      attractorMesh = new THREE.Mesh(geometry, material);
+      scene.add(attractorMesh);
+
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0xfacc15
+      });
+
+      attractorLine = new THREE.Line(lineGeometry, lineMaterial);
+      scene.add(attractorLine);
+    }
+
+    function updateUIValues() {
+      ui.sigmaValue.textContent = Number(ui.sigma.value).toFixed(1);
+      ui.rhoValue.textContent = Number(ui.rho.value).toFixed(1);
+      ui.betaValue.textContent = Number(ui.beta.value).toFixed(2);
+      ui.dtValue.textContent = Number(ui.dt.value).toFixed(3);
+      ui.stepsValue.textContent = ui.steps.value;
+      ui.radiusValue.textContent = Number(ui.radius.value).toFixed(3);
+      ui.radialValue.textContent = ui.radial.value;
+    }
+
+    function exportSTL() {
+      if (!attractorMesh) return;
+
+      const exporter = new STLExporter();
+      const binary = true;
+      const stlData = exporter.parse(attractorMesh, { binary });
+
+      const blob = new Blob([stlData], {
+        type: "application/octet-stream"
+      });
+
+      const url = URL.createObjectURL(blob);
+
+      const filename =
+        "lorenz_attractor_" +
+        "sigma_" + Number(ui.sigma.value).toFixed(1) +
+        "_rho_" + Number(ui.rho.value).toFixed(1) +
+        "_beta_" + Number(ui.beta.value).toFixed(2) +
+        ".stl";
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      controls.update();
+
+      if (attractorMesh) {
+        attractorMesh.rotation.y += 0.0015;
+      }
+
+      if (attractorLine) {
+        attractorLine.rotation.y += 0.0015;
+      }
+
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+</html>
