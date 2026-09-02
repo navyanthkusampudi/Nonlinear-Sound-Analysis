@@ -1,20 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width,
-               initial-scale=1,
-               maximum-scale=1,
-               user-scalable=no">
-
+<meta charset="UTF-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+/>
 <title>Sound as a Dynamical Link</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/p5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/addons/p5.sound.min.js"></script>
 
 <style>
-
 * {
   box-sizing: border-box;
 }
@@ -22,10 +19,9 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: #02040a;
+  background: #02050b;
   color: white;
   font-family: Arial, Helvetica, sans-serif;
-  overscroll-behavior: none;
 }
 
 body {
@@ -45,7 +41,7 @@ h1 {
 }
 
 .subtitle {
-  color: #aeb9c8;
+  color: #b6c1d0;
   font-size: clamp(13px, 3.5vw, 17px);
   line-height: 1.35;
   margin-bottom: 12px;
@@ -69,8 +65,8 @@ button {
 }
 
 #micButton {
-  background: #36d8ff;
-  color: #001119;
+  background: #35d8ff;
+  color: #00131b;
 }
 
 #connectionButton {
@@ -78,17 +74,17 @@ button {
   color: #180007;
 }
 
-#resetButton {
-  background: #f5df52;
-  color: #181400;
-}
-
-#speechButton {
-  background: #303846;
+#voiceButton {
+  background: #7b57ff;
   color: white;
 }
 
-#sliderBox {
+#resetButton {
+  background: #f1de52;
+  color: #171400;
+}
+
+.sliderBox {
   background: #0b1019;
   border: 1px solid #273140;
   border-radius: 12px;
@@ -104,7 +100,7 @@ button {
   font-weight: bold;
 }
 
-#kValue {
+.sliderValue {
   color: #ffe552;
 }
 
@@ -118,7 +114,7 @@ input[type="range"] {
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid #202938;
+  border: 1px solid #1f2937;
   background: #03050a;
 }
 
@@ -128,7 +124,7 @@ input[type="range"] {
   height: auto !important;
 }
 
-#explanation {
+#info {
   margin-top: 10px;
   background: #0a0f17;
   border-left: 4px solid #ffe552;
@@ -136,7 +132,7 @@ input[type="range"] {
   border-radius: 5px;
   color: #c6ced9;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 #status {
@@ -150,1814 +146,749 @@ input[type="range"] {
     grid-template-columns: repeat(4, 1fr);
   }
 }
-
 </style>
 </head>
-
 <body>
 
 <div id="app">
-
   <h1>Sound as a Dynamical Link</h1>
 
   <div class="subtitle">
     Two systems begin independently. A signal creates a coupling channel
-    that can coordinate their dynamics.
+    that can coordinate their dynamics. The same sound is shown as a
+    waveform, spectrogram, and a 2D attractor.
   </div>
-
 
   <div id="controls">
-
-    <button id="micButton">
-      🎤 START MIC
-    </button>
-
-    <button id="connectionButton">
-      ✂ CUT CONNECTION
-    </button>
-
-    <button id="speechButton">
-      VOICE CONTROL: OFF
-    </button>
-
-    <button id="resetButton">
-      ↻ RESET
-    </button>
-
+    <button id="micButton">🎤 START MIC</button>
+    <button id="connectionButton">✂ CUT CONNECTION</button>
+    <button id="voiceButton">VOICE CONTROL: OFF</button>
+    <button id="resetButton">↻ RESET</button>
   </div>
 
-
-  <div id="sliderBox">
-
+  <div class="sliderBox">
     <div class="sliderHeader">
       <span>Coupling strength</span>
-      <span>K = <span id="kValue">0.75</span></span>
+      <span>K = <span id="kValue" class="sliderValue">0.80</span></span>
     </div>
-
-    <input
-      id="kSlider"
-      type="range"
-      min="0"
-      max="2.5"
-      step="0.01"
-      value="0.75"
-    >
-
+    <input id="kSlider" type="range" min="0" max="2.5" step="0.01" value="0.80">
   </div>
 
+  <div class="sliderBox">
+    <div class="sliderHeader">
+      <span>Attractor delay</span>
+      <span>τ = <span id="tauValue" class="sliderValue">18</span></span>
+    </div>
+    <input id="tauSlider" type="range" min="2" max="80" step="1" value="18">
+  </div>
 
   <div id="canvasHolder"></div>
 
-
-  <div id="explanation">
-    <strong>Concept:</strong>
-    like Huygens' clocks, two dynamical systems can become coordinated
-    when a coupling channel connects them. Here, sound represents that
-    channel. The microphone also shows how a real vocal signal becomes
-    a trajectory in delay space.
+  <div id="info">
+    <strong>How to use:</strong>
+    1) Tap <strong>START MIC</strong>. 2) Say <strong>“aaaa”</strong> or <strong>“ooo”</strong>.
+    3) Watch the waveform, spectrogram, and attractor update live.
+    4) Cut or restore the connection between the two agents.
+    5) Turn <strong>VOICE CONTROL ON</strong> to let speech energy control coupling.
   </div>
 
   <div id="status">
-    The simulation works without microphone access.
+    The demo can run without microphone access, but the live sound panels need microphone permission.
   </div>
-
 </div>
 
-
 <script>
+/* =========================================================
+   GLOBALS
+========================================================= */
 
-/* ======================================================
-   STATE
-====================================================== */
-
-let agentA;
-let agentB;
+let agentA, agentB;
 
 let connectionOn = true;
 let voiceControl = false;
 
-let mic;
-let fft;
+let mic, fft;
 let micActive = false;
-
 let voiceEnergy = 0;
 
 let micHistory = [];
 let outputA = [];
 let outputB = [];
-
 let trailA = [];
 let trailB = [];
+let spectrogramHistory = [];
 
 const MAX_TRAIL = 260;
-const MAX_SIGNAL = 320;
+const MAX_SIGNAL = 420;
+const SPEC_BINS = 96;
+const MAX_SPEC_COLS = 260;
 
-const CYAN    = [45, 220, 255];
+const CYAN = [45, 220, 255];
 const MAGENTA = [255, 70, 175];
-const YELLOW  = [255, 225, 65];
+const YELLOW = [255, 225, 65];
+const LIME = [130, 255, 160];
 
-
-/* ======================================================
+/* =========================================================
    SETUP
-====================================================== */
+========================================================= */
 
 function setup() {
-
   createResponsiveCanvas();
 
   let c = document.querySelector("canvas");
   c.parentElement.removeChild(c);
-  document
-    .getElementById("canvasHolder")
-    .appendChild(c);
+  document.getElementById("canvasHolder").appendChild(c);
 
   textFont("Arial");
+  colorMode(RGB, 255, 255, 255, 255);
 
   mic = new p5.AudioIn();
-
-  fft = new p5.FFT(
-    0.72,
-    512
-  );
+  fft = new p5.FFT(0.82, 512);
 
   resetSimulation();
-
-  setupButtons();
+  setupControls();
 }
-
-
-/* ======================================================
-   RESPONSIVE CANVAS
-====================================================== */
 
 function createResponsiveCanvas() {
-
-  const available =
-    Math.min(
-      window.innerWidth - 22,
-      1050
-    );
-
-  const landscape =
-    window.innerWidth >
-    window.innerHeight;
-
-  const h =
-    landscape
-      ? available * 0.70
-      : available * 1.28;
-
-  createCanvas(
-    available,
-    h
-  );
+  const available = Math.min(window.innerWidth - 22, 1100);
+  const landscape = window.innerWidth > window.innerHeight;
+  const h = landscape ? available * 0.78 : available * 1.55;
+  createCanvas(available, h);
 }
-
 
 function windowResized() {
-
-  const available =
-    Math.min(
-      window.innerWidth - 22,
-      1050
-    );
-
-  const landscape =
-    window.innerWidth >
-    window.innerHeight;
-
-  const h =
-    landscape
-      ? available * 0.70
-      : available * 1.28;
-
-  resizeCanvas(
-    available,
-    h
-  );
+  const available = Math.min(window.innerWidth - 22, 1100);
+  const landscape = window.innerWidth > window.innerHeight;
+  const h = landscape ? available * 0.78 : available * 1.55;
+  resizeCanvas(available, h);
 }
 
+/* =========================================================
+   CONTROLS
+========================================================= */
 
-/* ======================================================
-   BUTTONS
-====================================================== */
+function setupControls() {
+  const kSlider = document.getElementById("kSlider");
+  const tauSlider = document.getElementById("tauSlider");
 
-function setupButtons() {
+  kSlider.addEventListener("input", () => {
+    document.getElementById("kValue").textContent = Number(kSlider.value).toFixed(2);
+  });
 
-  const kSlider =
-    document.getElementById(
-      "kSlider"
-    );
+  tauSlider.addEventListener("input", () => {
+    document.getElementById("tauValue").textContent = tauSlider.value;
+  });
 
-  kSlider.addEventListener(
-    "input",
-    () => {
-
-      document
-        .getElementById(
-          "kValue"
-        )
-        .textContent =
-        Number(
-          kSlider.value
-        ).toFixed(2);
-
-    }
-  );
-
-
-  document
-    .getElementById(
-      "micButton"
-    )
-    .addEventListener(
-      "click",
-      startMic
-    );
-
-
-  document
-    .getElementById(
-      "connectionButton"
-    )
-    .addEventListener(
-      "click",
-      toggleConnection
-    );
-
-
-  document
-    .getElementById(
-      "speechButton"
-    )
-    .addEventListener(
-      "click",
-      toggleVoiceControl
-    );
-
-
-  document
-    .getElementById(
-      "resetButton"
-    )
-    .addEventListener(
-      "click",
-      resetSimulation
-    );
-
+  document.getElementById("micButton").addEventListener("click", startMic);
+  document.getElementById("connectionButton").addEventListener("click", toggleConnection);
+  document.getElementById("voiceButton").addEventListener("click", toggleVoiceControl);
+  document.getElementById("resetButton").addEventListener("click", resetSimulation);
 }
 
-
-/* ======================================================
+/* =========================================================
    MICROPHONE
-====================================================== */
+========================================================= */
 
 function startMic() {
-
   userStartAudio();
 
   mic.start(
-
     () => {
-
       micActive = true;
-
-      fft.setInput(
-        mic
-      );
-
-      document
-        .getElementById(
-          "micButton"
-        )
-        .textContent =
-        "🎤 MIC ACTIVE";
-
-      document
-        .getElementById(
-          "status"
-        )
-        .textContent =
-        "Speak, hum or say a vowel such as aaa or ooo.";
-
+      fft.setInput(mic);
+      document.getElementById("micButton").textContent = "🎤 MIC ACTIVE";
+      document.getElementById("status").textContent =
+        "Microphone active. Speak, hum, whistle, or say vowels such as aaa and ooo.";
     },
-
     () => {
-
-      document
-        .getElementById(
-          "status"
-        )
-        .textContent =
+      document.getElementById("status").textContent =
         "Microphone permission was not granted.";
-
     }
-
   );
 }
 
-
-/* ======================================================
-   CONNECTION
-====================================================== */
-
 function toggleConnection() {
-
-  connectionOn =
-    !connectionOn;
-
-  const button =
-    document.getElementById(
-      "connectionButton"
-    );
+  connectionOn = !connectionOn;
+  const b = document.getElementById("connectionButton");
 
   if (connectionOn) {
-
-    button.textContent =
-      "✂ CUT CONNECTION";
-
-    button.style.background =
-      "#ff668c";
-
+    b.textContent = "✂ CUT CONNECTION";
+    b.style.background = "#ff668c";
+  } else {
+    b.textContent = "🔗 CONNECT";
+    b.style.background = "#4ee58b";
   }
-
-  else {
-
-    button.textContent =
-      "🔗 CONNECT";
-
-    button.style.background =
-      "#4ee58b";
-
-  }
-
 }
-
-
-/* ======================================================
-   VOICE CONTROL
-====================================================== */
 
 function toggleVoiceControl() {
-
-  voiceControl =
-    !voiceControl;
-
-  const button =
-    document.getElementById(
-      "speechButton"
-    );
+  voiceControl = !voiceControl;
+  const b = document.getElementById("voiceButton");
 
   if (voiceControl) {
-
-    button.textContent =
-      "VOICE CONTROL: ON";
-
-    button.style.background =
-      "#7f58ff";
-
+    b.textContent = "VOICE CONTROL: ON";
+    b.style.background = "#7b57ff";
+  } else {
+    b.textContent = "VOICE CONTROL: OFF";
+    b.style.background = "#303846";
   }
-
-  else {
-
-    button.textContent =
-      "VOICE CONTROL: OFF";
-
-    button.style.background =
-      "#303846";
-
-  }
-
 }
 
-
-/* ======================================================
+/* =========================================================
    RESET
-====================================================== */
+========================================================= */
 
 function resetSimulation() {
-
-  agentA =
-    new Agent(
-      -0.9,
-      0.2,
-      1.00
-    );
-
-  agentB =
-    new Agent(
-      0.6,
-      -0.75,
-      1.16
-    );
+  agentA = new Agent(-0.92, 0.20, 1.00);
+  agentB = new Agent(0.63, -0.74, 1.15);
 
   trailA = [];
   trailB = [];
-
   outputA = [];
   outputB = [];
+
+  if (!micActive) {
+    micHistory = [];
+    spectrogramHistory = [];
+  }
 }
 
-
-/* ======================================================
-   NONLINEAR AGENT
-
-   Stuart–Landau oscillator:
-
-   dx/dt = (1-r²)x - ωy + coupling
-   dy/dt = (1-r²)y + ωx
-
-====================================================== */
+/* =========================================================
+   AGENT DYNAMICS
+   Stuart-Landau oscillator
+========================================================= */
 
 class Agent {
-
-  constructor(
-    x,
-    y,
-    omega
-  ) {
-
-    this.x =
-      x;
-
-    this.y =
-      y;
-
-    this.omega =
-      omega;
-
+  constructor(x, y, omega) {
+    this.x = x;
+    this.y = y;
+    this.omega = omega;
   }
 
-
-  step(
-    otherSignal,
-    K,
-    dt
-  ) {
-
-    const r2 =
-      this.x * this.x +
-      this.y * this.y;
-
+  step(otherSignal, K, dt) {
+    const r2 = this.x * this.x + this.y * this.y;
 
     const dx =
-      (
-        1 - r2
-      ) *
-      this.x
-      -
-      this.omega *
-      this.y
-      +
-      K *
-      (
-        otherSignal -
-        this.x
-      );
-
+      (1 - r2) * this.x
+      - this.omega * this.y
+      + K * (otherSignal - this.x);
 
     const dy =
-      (
-        1 - r2
-      ) *
-      this.y
-      +
-      this.omega *
-      this.x;
+      (1 - r2) * this.y
+      + this.omega * this.x;
 
-
-    this.x +=
-      dx * dt;
-
-
-    this.y +=
-      dy * dt;
-
+    this.x += dx * dt;
+    this.y += dy * dt;
   }
-
 
   phase() {
-
-    return atan2(
-      this.y,
-      this.x
-    );
-
+    return atan2(this.y, this.x);
   }
-
 }
 
-
-/* ======================================================
+/* =========================================================
    MAIN LOOP
-====================================================== */
+========================================================= */
 
 function draw() {
-
-  background(
-    3,
-    5,
-    10
-  );
+  background(3, 5, 10);
 
   updateMicrophone();
 
+  let K = Number(document.getElementById("kSlider").value);
 
-  let K =
-    Number(
-      document
-        .getElementById(
-          "kSlider"
-        )
-        .value
-    );
+  if (!connectionOn) K = 0;
+  if (voiceControl) K *= voiceEnergy;
 
+  for (let n = 0; n < 5; n++) {
+    const aSignal = agentA.x;
+    const bSignal = agentB.x;
 
-  if (!connectionOn) {
-
-    K = 0;
-
+    agentA.step(bSignal, K, 0.0038);
+    agentB.step(aSignal, K, 0.0038);
   }
 
-
-  /*
-     When VOICE CONTROL is ON,
-     speaking opens the coupling channel.
-  */
-
-  if (voiceControl) {
-
-    K *=
-      voiceEnergy;
-
-  }
-
-
-  /*
-     Integrate dynamics
-  */
-
-  for (
-    let n = 0;
-    n < 5;
-    n++
-  ) {
-
-    const aSignal =
-      agentA.x;
-
-    const bSignal =
-      agentB.x;
-
-
-    agentA.step(
-      bSignal,
-      K,
-      0.0035
-    );
-
-
-    agentB.step(
-      aSignal,
-      K,
-      0.0035
-    );
-
-  }
-
-
-  updateTrails();
-
-  drawScene(
-    K
-  );
-
+  updateHistories();
+  drawScene(K);
 }
 
-
-/* ======================================================
-   MICROPHONE
-====================================================== */
+/* =========================================================
+   MICROPHONE ANALYSIS
+========================================================= */
 
 function updateMicrophone() {
-
-  let target =
-    0;
-
+  let target = 0;
 
   if (micActive) {
+    const level = mic.getLevel();
 
-    const level =
-      mic.getLevel();
+    // boosted for phone microphones
+    target = constrain(level * 120, 0, 1);
 
+    const wave = fft.waveform();
 
-    target =
-      constrain(
-        level * 18,
-        0,
-        1
-      );
+    // store downsampled waveform history
+    for (let i = 0; i < wave.length; i += 3) {
+      micHistory.push(wave[i]);
+    }
+    while (micHistory.length > MAX_SIGNAL) micHistory.shift();
 
+    // store spectrogram columns
+    const spectrum = fft.analyze();
+    const col = [];
 
-    const wave =
-      fft.waveform();
-
-
-    for (
-      let i = 0;
-      i < wave.length;
-      i += 6
-    ) {
-
-      micHistory.push(
-        wave[i]
-      );
-
+    for (let i = 0; i < SPEC_BINS; i++) {
+      const idx = floor(map(i, 0, SPEC_BINS - 1, 1, spectrum.length / 2));
+      col.push(spectrum[idx] / 255.0);
     }
 
-
-    while (
-      micHistory.length >
-      MAX_SIGNAL
-    ) {
-
-      micHistory.shift();
-
-    }
-
+    spectrogramHistory.push(col);
+    while (spectrogramHistory.length > MAX_SPEC_COLS) spectrogramHistory.shift();
   }
 
-
-  voiceEnergy =
-    lerp(
-      voiceEnergy,
-      target,
-      0.12
-    );
-
+  voiceEnergy = lerp(voiceEnergy, target, 0.12);
 }
 
-
-/* ======================================================
+/* =========================================================
    HISTORIES
-====================================================== */
+========================================================= */
 
-function updateTrails() {
+function updateHistories() {
+  trailA.push({ x: agentA.x, y: agentA.y });
+  trailB.push({ x: agentB.x, y: agentB.y });
 
-  trailA.push({
-    x: agentA.x,
-    y: agentA.y
-  });
+  if (trailA.length > MAX_TRAIL) trailA.shift();
+  if (trailB.length > MAX_TRAIL) trailB.shift();
 
-  trailB.push({
-    x: agentB.x,
-    y: agentB.y
-  });
+  outputA.push(agentA.x);
+  outputB.push(agentB.x);
 
-
-  if (
-    trailA.length >
-    MAX_TRAIL
-  ) {
-    trailA.shift();
-  }
-
-
-  if (
-    trailB.length >
-    MAX_TRAIL
-  ) {
-    trailB.shift();
-  }
-
-
-  outputA.push(
-    agentA.x
-  );
-
-  outputB.push(
-    agentB.x
-  );
-
-
-  if (
-    outputA.length >
-    MAX_SIGNAL
-  ) {
-
+  if (outputA.length > MAX_SIGNAL) {
     outputA.shift();
     outputB.shift();
-
   }
-
 }
 
-
-/* ======================================================
-   MAIN LAYOUT
-====================================================== */
+/* =========================================================
+   MAIN SCENE
+========================================================= */
 
 function drawScene(K) {
-
-  const landscape =
-    width > height;
-
+  const landscape = width > height;
 
   if (landscape) {
-
-    drawLandscape(
-      K
-    );
-
+    drawLandscape(K);
+  } else {
+    drawPortrait(K);
   }
-
-  else {
-
-    drawPortrait(
-      K
-    );
-
-  }
-
 }
 
-
-/* ======================================================
-   PORTRAIT PHONE
-====================================================== */
+/* =========================================================
+   PORTRAIT
+========================================================= */
 
 function drawPortrait(K) {
+  const top = height * 0.03;
+  const agentY = height * 0.16;
+  const radius = width * 0.17;
 
-  const top =
-    height * 0.04;
+  drawHeader(top);
 
-  const agentY =
-    height * 0.18;
+  drawAgent(width * 0.26, agentY, radius, trailA, agentA, CYAN, "AGENT A");
+  drawAgent(width * 0.74, agentY, radius, trailB, agentB, MAGENTA, "AGENT B");
 
-  const radius =
-    width * 0.18;
+  drawLink(width * 0.41, width * 0.59, agentY, K);
+  drawSyncMeter(width * 0.14, height * 0.29, width * 0.72);
 
-
-  drawHeader(
-    top
-  );
-
-
-  drawAgent(
-    width * 0.27,
-    agentY,
-    radius,
-    trailA,
-    agentA,
-    CYAN,
-    "AGENT A"
-  );
-
-
-  drawAgent(
-    width * 0.73,
-    agentY,
-    radius,
-    trailB,
-    agentB,
-    MAGENTA,
-    "AGENT B"
-  );
-
-
-  drawLink(
-    width * 0.42,
-    width * 0.58,
-    agentY,
-    K
-  );
-
-
-  drawSyncMeter(
-    width * 0.15,
-    height * 0.34,
-    width * 0.70
-  );
-
-
-  drawPanel(
-    width * 0.05,
-    height * 0.41,
-    width * 0.90,
-    height * 0.16,
-    "LIVE SOUND",
-    "wave"
-  );
-
-
-  drawPanel(
-    width * 0.05,
-    height * 0.60,
-    width * 0.90,
-    height * 0.17,
-    "SOUND → SHAPE",
-    "delay"
-  );
-
-
-  drawPanel(
-    width * 0.05,
-    height * 0.80,
-    width * 0.90,
-    height * 0.16,
-    "AGENT OUTPUTS",
-    "agents"
-  );
-
+  drawPanel(width * 0.05, height * 0.35, width * 0.90, height * 0.12, "LIVE WAVEFORM", "wave");
+  drawPanel(width * 0.05, height * 0.49, width * 0.90, height * 0.17, "LIVE SPECTROGRAM", "spectrogram");
+  drawPanel(width * 0.05, height * 0.68, width * 0.90, height * 0.16, "SOUND ATTRACTOR (2D)", "attractor");
+  drawPanel(width * 0.05, height * 0.86, width * 0.90, height * 0.11, "AGENT OUTPUTS", "agents");
 }
 
-
-/* ======================================================
-   LANDSCAPE PHONE
-====================================================== */
+/* =========================================================
+   LANDSCAPE
+========================================================= */
 
 function drawLandscape(K) {
+  drawHeader(height * 0.03);
 
-  drawHeader(
-    height * 0.035
-  );
+  drawAgent(width * 0.22, height * 0.21, height * 0.15, trailA, agentA, CYAN, "AGENT A");
+  drawAgent(width * 0.78, height * 0.21, height * 0.15, trailB, agentB, MAGENTA, "AGENT B");
 
+  drawLink(width * 0.37, width * 0.63, height * 0.21, K);
+  drawSyncMeter(width * 0.37, height * 0.32, width * 0.26);
 
-  drawAgent(
-    width * 0.23,
-    height * 0.28,
-    height * 0.17,
-    trailA,
-    agentA,
-    CYAN,
-    "AGENT A"
-  );
+  const panelY1 = height * 0.42;
+  const panelY2 = height * 0.70;
+  const panelW = width * 0.46;
+  const panelH = height * 0.22;
 
-
-  drawAgent(
-    width * 0.77,
-    height * 0.28,
-    height * 0.17,
-    trailB,
-    agentB,
-    MAGENTA,
-    "AGENT B"
-  );
-
-
-  drawLink(
-    width * 0.37,
-    width * 0.63,
-    height * 0.28,
-    K
-  );
-
-
-  drawSyncMeter(
-    width * 0.37,
-    height * 0.40,
-    width * 0.26
-  );
-
-
-  const y =
-    height * 0.53;
-
-  const panelW =
-    width * 0.30;
-
-
-  drawPanel(
-    width * 0.02,
-    y,
-    panelW,
-    height * 0.40,
-    "LIVE SOUND",
-    "wave"
-  );
-
-
-  drawPanel(
-    width * 0.35,
-    y,
-    panelW,
-    height * 0.40,
-    "SOUND → SHAPE",
-    "delay"
-  );
-
-
-  drawPanel(
-    width * 0.68,
-    y,
-    panelW,
-    height * 0.40,
-    "AGENT OUTPUTS",
-    "agents"
-  );
-
+  drawPanel(width * 0.03, panelY1, panelW, panelH, "LIVE WAVEFORM", "wave");
+  drawPanel(width * 0.51, panelY1, panelW, panelH, "LIVE SPECTROGRAM", "spectrogram");
+  drawPanel(width * 0.03, panelY2, panelW, panelH, "SOUND ATTRACTOR (2D)", "attractor");
+  drawPanel(width * 0.51, panelY2, panelW, panelH, "AGENT OUTPUTS", "agents");
 }
 
-
-/* ======================================================
+/* =========================================================
    HEADER
-====================================================== */
+========================================================= */
 
 function drawHeader(y) {
-
   fill(255);
-
   noStroke();
-
-  textAlign(
-    CENTER,
-    TOP
-  );
-
+  textAlign(CENTER, TOP);
   textStyle(BOLD);
-
-  textSize(
-    max(
-      13,
-      width * 0.025
-    )
-  );
-
-  text(
-    "INDEPENDENT DYNAMICS  →  COUPLING  →  COORDINATION",
-    width / 2,
-    y
-  );
-
+  textSize(max(13, width * 0.022));
+  text("INDEPENDENT → COUPLED → COORDINATED", width / 2, y);
   textStyle(NORMAL);
 }
 
+/* =========================================================
+   AGENTS
+========================================================= */
 
-/* ======================================================
-   AGENT ATTRACTOR
-====================================================== */
-
-function drawAgent(
-  cx,
-  cy,
-  radius,
-  trail,
-  agent,
-  col,
-  label
-) {
-
+function drawAgent(cx, cy, radius, trail, agent, col, label) {
   push();
 
+  noFill();
+  stroke(col[0], col[1], col[2], 55);
+  strokeWeight(1.6);
+  circle(cx, cy, radius * 2.2);
 
   noFill();
-
-  stroke(
-    col[0],
-    col[1],
-    col[2],
-    55
-  );
-
-  strokeWeight(1.5);
-
-  circle(
-    cx,
-    cy,
-    radius * 2.2
-  );
-
-
-  noFill();
-
   beginShape();
-
-
-  for (
-    let i = 0;
-    i < trail.length;
-    i++
-  ) {
-
-    const alpha =
-      map(
-        i,
-        0,
-        trail.length,
-        5,
-        220
-      );
-
-
-    stroke(
-      col[0],
-      col[1],
-      col[2],
-      alpha
-    );
-
-
-    const px =
-      cx +
-      trail[i].x *
-      radius;
-
-
-    const py =
-      cy +
-      trail[i].y *
-      radius;
-
-
-    vertex(
-      px,
-      py
-    );
-
+  for (let i = 0; i < trail.length; i++) {
+    const alpha = map(i, 0, trail.length, 5, 220);
+    stroke(col[0], col[1], col[2], alpha);
+    vertex(cx + trail[i].x * radius, cy + trail[i].y * radius);
   }
-
-
   endShape();
 
-
   noStroke();
+  fill(col[0], col[1], col[2]);
+  circle(cx + agent.x * radius, cy + agent.y * radius, max(7, width * 0.012));
 
-  fill(
-    col
-  );
-
-
-  circle(
-    cx +
-    agent.x *
-    radius,
-
-    cy +
-    agent.y *
-    radius,
-
-    max(
-      7,
-      width * 0.012
-    )
-  );
-
-
-  fill(
-    col
-  );
-
-  textAlign(
-    CENTER,
-    BOTTOM
-  );
-
+  fill(col[0], col[1], col[2]);
+  textAlign(CENTER, BOTTOM);
   textStyle(BOLD);
-
-  textSize(
-    max(
-      12,
-      width * 0.026
-    )
-  );
-
-  text(
-    label,
-    cx,
-    cy -
-    radius * 1.3
-  );
-
+  textSize(max(12, width * 0.024));
+  text(label, cx, cy - radius * 1.28);
 
   textStyle(NORMAL);
-
   pop();
-
 }
 
+/* =========================================================
+   LINK
+========================================================= */
 
-/* ======================================================
-   SOUND LINK
-====================================================== */
+function drawLink(x1, x2, y, K) {
+  const active = connectionOn && K > 0.005;
 
-function drawLink(
-  x1,
-  x2,
-  y,
-  K
-) {
-
-  const active =
-    connectionOn &&
-    K > 0.005;
-
-
-  strokeWeight(
-    active ? 3 : 2
-  );
-
-
+  strokeWeight(active ? 3 : 2);
   if (active) {
-
-    stroke(
-      YELLOW[0],
-      YELLOW[1],
-      YELLOW[2],
-      220
-    );
-
+    stroke(YELLOW[0], YELLOW[1], YELLOW[2], 220);
+  } else {
+    stroke(90, 100, 110);
   }
 
-  else {
-
-    stroke(
-      90,
-      100,
-      110
-    );
-
-  }
-
-
-  line(
-    x1,
-    y,
-    x2,
-    y
-  );
-
-
-  /*
-     Little sound waveform
-  */
+  line(x1, y, x2, y);
 
   if (active) {
-
     noFill();
-
     beginShape();
-
-
-    for (
-      let x = x1;
-      x <= x2;
-      x += 4
-    ) {
-
-      const yy =
-        y +
-        sin(
-          x * 0.09 +
-          frameCount * 0.08
-        ) *
-        7;
-
-
-      vertex(
-        x,
-        yy
-      );
-
+    for (let x = x1; x <= x2; x += 4) {
+      const yy = y + sin(x * 0.09 + frameCount * 0.09) * 7;
+      vertex(x, yy);
     }
-
-
     endShape();
-
   }
-
 
   noStroke();
-
-  textAlign(
-    CENTER,
-    CENTER
-  );
-
+  textAlign(CENTER, CENTER);
   textStyle(BOLD);
-
-  textSize(
-    max(
-      10,
-      width * 0.018
-    )
-  );
-
+  textSize(max(10, width * 0.017));
 
   if (connectionOn) {
-
-    fill(
-      YELLOW
-    );
-
-    text(
-      "SOUND",
-      (
-        x1 + x2
-      ) / 2,
-      y - 22
-    );
-
+    fill(YELLOW[0], YELLOW[1], YELLOW[2]);
+    text("SOUND", (x1 + x2) / 2, y - 22);
+  } else {
+    fill(255, 90, 115);
+    text("CONNECTION CUT", (x1 + x2) / 2, y - 22);
   }
-
-  else {
-
-    fill(
-      255,
-      90,
-      115
-    );
-
-    text(
-      "CONNECTION CUT",
-      (
-        x1 + x2
-      ) / 2,
-      y - 22
-    );
-
-  }
-
 
   textStyle(NORMAL);
-
 }
 
-
-/* ======================================================
-   SYNCHRONIZATION
-====================================================== */
+/* =========================================================
+   SYNCHRONY
+========================================================= */
 
 function synchrony() {
-
-  let d =
-    agentA.phase() -
-    agentB.phase();
-
-
-  d =
-    atan2(
-      sin(d),
-      cos(d)
-    );
-
-
-  return constrain(
-    (
-      1 +
-      cos(d)
-    ) /
-    2,
-    0,
-    1
-  );
-
+  let d = agentA.phase() - agentB.phase();
+  d = atan2(sin(d), cos(d));
+  return constrain((1 + cos(d)) / 2, 0, 1);
 }
 
-
-/* ======================================================
-   SYNC METER
-====================================================== */
-
-function drawSyncMeter(
-  x,
-  y,
-  w
-) {
-
-  const sync =
-    synchrony();
-
+function drawSyncMeter(x, y, w) {
+  const sync = synchrony();
 
   noStroke();
+  fill(45);
+  rect(x, y, w, 13, 8);
 
-  fill(
-    45
-  );
-
-
-  rect(
-    x,
-    y,
-    w,
-    13,
-    8
-  );
-
-
-  fill(
-    YELLOW
-  );
-
-
-  rect(
-    x,
-    y,
-    w * sync,
-    13,
-    8
-  );
-
+  fill(YELLOW[0], YELLOW[1], YELLOW[2]);
+  rect(x, y, w * sync, 13, 8);
 
   fill(220);
-
-  textAlign(
-    CENTER,
-    BOTTOM
-  );
-
+  textAlign(CENTER, BOTTOM);
   textStyle(BOLD);
-
-  textSize(
-    max(
-      11,
-      width * 0.020
-    )
-  );
-
-
-  text(
-    "DYNAMICAL COORDINATION  " +
-    Math.round(
-      sync * 100
-    ) +
-    "%",
-    x + w / 2,
-    y - 6
-  );
-
-
+  textSize(max(11, width * 0.018));
+  text("COORDINATION  " + Math.round(sync * 100) + "%", x + w / 2, y - 6);
   textStyle(NORMAL);
-
 }
 
-
-/* ======================================================
+/* =========================================================
    PANELS
-====================================================== */
+========================================================= */
 
-function drawPanel(
-  x,
-  y,
-  w,
-  h,
-  title,
-  mode
-) {
-
+function drawPanel(x, y, w, h, title, mode) {
   noStroke();
-
-  fill(
-    9,
-    13,
-    22
-  );
-
-
-  rect(
-    x,
-    y,
-    w,
-    h,
-    12
-  );
-
+  fill(9, 13, 22);
+  rect(x, y, w, h, 12);
 
   noFill();
-
-  stroke(
-    38,
-    50,
-    67
-  );
-
-
-  rect(
-    x,
-    y,
-    w,
-    h,
-    12
-  );
-
+  stroke(38, 50, 67);
+  rect(x, y, w, h, 12);
 
   fill(240);
-
   noStroke();
-
-  textAlign(
-    LEFT,
-    TOP
-  );
-
+  textAlign(LEFT, TOP);
   textStyle(BOLD);
-
-  textSize(
-    max(
-      12,
-      width * 0.021
-    )
-  );
-
-
-  text(
-    title,
-    x + 14,
-    y + 10
-  );
-
-
+  textSize(max(12, width * 0.018));
+  text(title, x + 14, y + 10);
   textStyle(NORMAL);
 
-
-  if (
-    mode === "wave"
-  ) {
-
-    drawWaveform(
-      x + 15,
-      y + h * 0.30,
-      w - 30,
-      h * 0.55
-    );
-
+  if (mode === "wave") {
+    drawWaveform(x + 15, y + h * 0.28, w - 30, h * 0.60);
+  } else if (mode === "spectrogram") {
+    drawSpectrogram(x + 12, y + h * 0.24, w - 24, h * 0.66);
+  } else if (mode === "attractor") {
+    drawAttractor(x, y, w, h);
+  } else if (mode === "agents") {
+    drawAgentOutputs(x + 15, y + h * 0.28, w - 30, h * 0.60);
   }
-
-
-  else if (
-    mode === "delay"
-  ) {
-
-    drawDelay(
-      x,
-      y,
-      w,
-      h
-    );
-
-  }
-
-
-  else if (
-    mode === "agents"
-  ) {
-
-    drawAgentOutputs(
-      x + 15,
-      y + h * 0.30,
-      w - 30,
-      h * 0.55
-    );
-
-  }
-
 }
 
+/* =========================================================
+   WAVEFORM
+========================================================= */
 
-/* ======================================================
-   LIVE WAVEFORM
-====================================================== */
+function drawWaveform(x, y, w, h) {
+  stroke(60);
+  line(x, y + h / 2, x + w, y + h / 2);
 
-function drawWaveform(
-  x,
-  y,
-  w,
-  h
-) {
-
-  stroke(
-    60
-  );
-
-  line(
-    x,
-    y + h / 2,
-    x + w,
-    y + h / 2
-  );
-
-
-  if (
-    micHistory.length <
-    2
-  ) {
-
-    fill(
-      120
-    );
-
+  if (micHistory.length < 2) {
+    fill(120);
     noStroke();
-
-    textAlign(
-      CENTER,
-      CENTER
-    );
-
-    textSize(
-      max(
-        10,
-        width * 0.018
-      )
-    );
-
-    text(
-      micActive
-        ? "Speak into the microphone"
-        : "Tap START MIC",
-      x + w / 2,
-      y + h / 2
-    );
-
+    textAlign(CENTER, CENTER);
+    textSize(max(10, width * 0.016));
+    text(micActive ? "Speak into the microphone" : "Tap START MIC", x + w / 2, y + h / 2);
     return;
-
   }
 
-
   noFill();
-
-  stroke(
-    CYAN
-  );
-
+  stroke(CYAN[0], CYAN[1], CYAN[2]);
   strokeWeight(2);
 
   beginShape();
-
-
-  for (
-    let i = 0;
-    i < micHistory.length;
-    i++
-  ) {
-
+  for (let i = 0; i < micHistory.length; i++) {
+    const scaled = constrain(micHistory[i] * 7.5, -1, 1);
     vertex(
-
-      map(
-        i,
-        0,
-        micHistory.length - 1,
-        x,
-        x + w
-      ),
-
-      map(
-        micHistory[i],
-        -1,
-        1,
-        y + h,
-        y
-      )
-
+      map(i, 0, micHistory.length - 1, x, x + w),
+      map(scaled, -1, 1, y + h, y)
     );
-
   }
-
-
   endShape();
-
 }
 
+/* =========================================================
+   SPECTROGRAM
+========================================================= */
 
-/* ======================================================
-   DELAY EMBEDDING
-====================================================== */
-
-function drawDelay(
-  x,
-  y,
-  w,
-  h
-) {
-
-  const cx =
-    x + w / 2;
-
-  const cy =
-    y + h * 0.60;
-
-  const scale =
-    min(
-      w,
-      h
-    ) * 0.32;
-
-  const tau =
-    17;
-
-
-  stroke(
-    60
-  );
-
-  line(
-    cx - scale,
-    cy,
-    cx + scale,
-    cy
-  );
-
-  line(
-    cx,
-    cy - scale,
-    cx,
-    cy + scale
-  );
-
-
-  if (
-    micHistory.length <=
-    tau + 2
-  ) {
-
+function drawSpectrogram(x, y, w, h) {
+  if (spectrogramHistory.length < 2) {
+    fill(120);
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textSize(max(10, width * 0.016));
+    text(micActive ? "Speak into the microphone" : "Tap START MIC", x + w / 2, y + h / 2);
     return;
-
   }
-
-
-  strokeWeight(2);
-
-
-  for (
-    let i = tau;
-    i < micHistory.length;
-    i++
-  ) {
-
-    const alpha =
-      map(
-        i,
-        tau,
-        micHistory.length,
-        15,
-        220
-      );
-
-
-    stroke(
-      205,
-      80,
-      255,
-      alpha
-    );
-
-
-    point(
-
-      cx +
-      micHistory[i] *
-      scale,
-
-      cy -
-      micHistory[
-        i - tau
-      ] *
-      scale
-
-    );
-
-  }
-
-
-  fill(
-    140
-  );
 
   noStroke();
 
-  textSize(
-    max(
-      9,
-      width * 0.016
-    )
-  );
+  const cols = spectrogramHistory.length;
+  const dx = w / cols;
+  const dy = h / SPEC_BINS;
 
-  textAlign(
-    CENTER,
-    TOP
-  );
+  for (let c = 0; c < cols; c++) {
+    const column = spectrogramHistory[c];
 
+    for (let b = 0; b < SPEC_BINS; b++) {
+      const val = column[b];
+      const col = infernoColor(val);
 
-  text(
-    "x(t) vs x(t−τ)",
-    cx,
-    y + h - 21
-  );
+      fill(col[0], col[1], col[2]);
+      rect(x + c * dx, y + h - (b + 1) * dy, dx + 1, dy + 1);
+    }
+  }
 
+  // axis hints
+  fill(150);
+  textSize(max(9, width * 0.013));
+  textAlign(LEFT, BOTTOM);
+  text("low f", x + 2, y + h - 2);
+  textAlign(LEFT, TOP);
+  text("high f", x + 2, y + 2);
 }
 
+/* =========================================================
+   ATTRACTOR
+   x(t) vs x(t-tau)
+========================================================= */
 
-/* ======================================================
-   AGENT OUTPUTS
-====================================================== */
+function drawAttractor(x, y, w, h) {
+  const cx = x + w / 2;
+  const cy = y + h * 0.58;
+  const scale = min(w, h) * 0.30;
+  const tau = Number(document.getElementById("tauSlider").value);
 
-function drawAgentOutputs(
-  x,
-  y,
-  w,
-  h
-) {
+  stroke(65);
+  strokeWeight(1.2);
+  line(cx - scale, cy, cx + scale, cy);
+  line(cx, cy - scale, cx, cy + scale);
 
-  stroke(
-    60
-  );
-
-  line(
-    x,
-    y + h / 2,
-    x + w,
-    y + h / 2
-  );
-
-
-  drawTrace(
-    outputA,
-    x,
-    y,
-    w,
-    h,
-    CYAN
-  );
-
-
-  drawTrace(
-    outputB,
-    x,
-    y,
-    w,
-    h,
-    MAGENTA
-  );
-
-}
-
-
-/* ======================================================
-   SIGNAL TRACE
-====================================================== */
-
-function drawTrace(
-  data,
-  x,
-  y,
-  w,
-  h,
-  col
-) {
-
-  if (
-    data.length <
-    2
-  ) {
+  if (micHistory.length <= tau + 2) {
+    fill(120);
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textSize(max(10, width * 0.016));
+    text(micActive ? "Speak into the microphone" : "Tap START MIC", cx, cy);
     return;
   }
 
+  for (let i = tau; i < micHistory.length; i++) {
+    const a = constrain(micHistory[i] * 3.8, -1, 1);
+    const b = constrain(micHistory[i - tau] * 3.8, -1, 1);
 
-  noFill();
+    const t = map(i, tau, micHistory.length - 1, 0, 1);
+    const col = attractorGradient(t);
+    const alpha = map(i, tau, micHistory.length - 1, 30, 240);
 
-  stroke(
-    col
-  );
+    stroke(col[0], col[1], col[2], alpha);
+    strokeWeight(2.2);
 
-  strokeWeight(
-    1.7
-  );
-
-  beginShape();
-
-
-  for (
-    let i = 0;
-    i < data.length;
-    i++
-  ) {
-
-    vertex(
-
-      map(
-        i,
-        0,
-        data.length - 1,
-        x,
-        x + w
-      ),
-
-      map(
-        data[i],
-        -1.4,
-        1.4,
-        y + h,
-        y
-      )
-
+    point(
+      cx + a * scale,
+      cy - b * scale
     );
-
   }
 
+  fill(170);
+  noStroke();
+  textAlign(CENTER, TOP);
+  textSize(max(9, width * 0.013));
+  text("x(t)", cx + scale * 0.85, cy + 4);
 
-  endShape();
-
+  push();
+  translate(cx + 4, cy - scale * 0.85);
+  rotate(-HALF_PI);
+  text("x(t−τ)", 0, 0);
+  pop();
 }
 
-</script>
+/* =========================================================
+   AGENT OUTPUTS
+========================================================= */
 
+function drawAgentOutputs(x, y, w, h) {
+  stroke(60);
+  line(x, y + h / 2, x + w, y + h / 2);
+
+  drawTrace(outputA, x, y, w, h, CYAN);
+  drawTrace(outputB, x, y, w, h, MAGENTA);
+}
+
+function drawTrace(data, x, y, w, h, col) {
+  if (data.length < 2) return;
+
+  noFill();
+  stroke(col[0], col[1], col[2], 230);
+  strokeWeight(1.8);
+
+  beginShape();
+  for (let i = 0; i < data.length; i++) {
+    vertex(
+      map(i, 0, data.length - 1, x, x + w),
+      map(data[i], -1.4, 1.4, y + h, y)
+    );
+  }
+  endShape();
+}
+
+/* =========================================================
+   COLOR MAPS
+========================================================= */
+
+function infernoColor(v) {
+  v = constrain(v, 0, 1);
+
+  const stops = [
+    [0.00, 3, 4, 12],
+    [0.15, 25, 10, 55],
+    [0.35, 80, 15, 110],
+    [0.55, 170, 35, 95],
+    [0.72, 235, 80, 45],
+    [0.88, 250, 180, 40],
+    [1.00, 255, 245, 160]
+  ];
+
+  return interpStops(v, stops);
+}
+
+function attractorGradient(t) {
+  t = constrain(t, 0, 1);
+
+  const stops = [
+    [0.00, 40, 220, 255],
+    [0.35, 120, 255, 170],
+    [0.60, 255, 230, 70],
+    [0.82, 255, 110, 180],
+    [1.00, 210, 90, 255]
+  ];
+
+  return interpStops(t, stops);
+}
+
+function interpStops(v, stops) {
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i];
+    const b = stops[i + 1];
+
+    if (v >= a[0] && v <= b[0]) {
+      const f = (v - a[0]) / (b[0] - a[0]);
+      return [
+        lerp(a[1], b[1], f),
+        lerp(a[2], b[2], f),
+        lerp(a[3], b[3], f)
+      ];
+    }
+  }
+
+  const last = stops[stops.length - 1];
+  return [last[1], last[2], last[3]];
+}
+</script>
 </body>
 </html>
