@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1,
+               maximum-scale=1,
+               user-scalable=no">
+
+<title>Sound as a Dynamical Link</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/addons/p5.sound.min.js"></script>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #02040a;
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
+  overscroll-behavior: none;
+}
+
+body {
+  padding: 10px;
+}
+
+#app {
+  width: 100%;
+  max-width: 1100px;
+  margin: auto;
+}
+
+h1 {
+  margin: 4px 0 5px;
+  font-size: clamp(24px, 6vw, 38px);
+  line-height: 1.05;
+}
+
+.subtitle {
+  color: #aeb9c8;
+  font-size: clamp(13px, 3.5vw, 17px);
+  line-height: 1.35;
+  margin-bottom: 12px;
+}
+
+#controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+button {
+  min-height: 56px;
+  border: none;
+  border-radius: 12px;
+  padding: 8px;
+  font-weight: 800;
+  font-size: 15px;
+  touch-action: manipulation;
+}
+
+#micButton {
+  background: #36d8ff;
+  color: #001119;
+}
+
+#connectionButton {
+  background: #ff668c;
+  color: #180007;
+}
+
+#resetButton {
+  background: #f5df52;
+  color: #181400;
+}
+
+#speechButton {
+  background: #303846;
+  color: white;
+}
+
+#sliderBox {
+  background: #0b1019;
+  border: 1px solid #273140;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.sliderHeader {
+  display: flex;
+  justify-content: space-between;
+  color: #d4dae3;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+#kValue {
+  color: #ffe552;
+}
+
+input[type="range"] {
+  width: 100%;
+  min-height: 36px;
+  margin-top: 3px;
+}
+
+#canvasHolder {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #202938;
+  background: #03050a;
+}
+
+#canvasHolder canvas {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+#explanation {
+  margin-top: 10px;
+  background: #0a0f17;
+  border-left: 4px solid #ffe552;
+  padding: 10px 12px;
+  border-radius: 5px;
+  color: #c6ced9;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+#status {
+  color: #8fa0b3;
+  margin-top: 7px;
+  font-size: 12px;
+}
+
+@media (min-width: 700px) {
+  #controls {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+  <h1>Sound as a Dynamical Link</h1>
+
+  <div class="subtitle">
+    Two systems begin independently. A signal creates a coupling channel
+    that can coordinate their dynamics.
+  </div>
+
+
+  <div id="controls">
+
+    <button id="micButton">
+      🎤 START MIC
+    </button>
+
+    <button id="connectionButton">
+      ✂ CUT CONNECTION
+    </button>
+
+    <button id="speechButton">
+      VOICE CONTROL: OFF
+    </button>
+
+    <button id="resetButton">
+      ↻ RESET
+    </button>
+
+  </div>
+
+
+  <div id="sliderBox">
+
+    <div class="sliderHeader">
+      <span>Coupling strength</span>
+      <span>K = <span id="kValue">0.75</span></span>
+    </div>
+
+    <input
+      id="kSlider"
+      type="range"
+      min="0"
+      max="2.5"
+      step="0.01"
+      value="0.75"
+    >
+
+  </div>
+
+
+  <div id="canvasHolder"></div>
+
+
+  <div id="explanation">
+    <strong>Concept:</strong>
+    like Huygens' clocks, two dynamical systems can become coordinated
+    when a coupling channel connects them. Here, sound represents that
+    channel. The microphone also shows how a real vocal signal becomes
+    a trajectory in delay space.
+  </div>
+
+  <div id="status">
+    The simulation works without microphone access.
+  </div>
+
+</div>
+
+
+<script>
+
+/* ======================================================
+   STATE
+====================================================== */
+
+let agentA;
+let agentB;
+
+let connectionOn = true;
+let voiceControl = false;
+
+let mic;
+let fft;
+let micActive = false;
+
+let voiceEnergy = 0;
+
+let micHistory = [];
+let outputA = [];
+let outputB = [];
+
+let trailA = [];
+let trailB = [];
+
+const MAX_TRAIL = 260;
+const MAX_SIGNAL = 320;
+
+const CYAN    = [45, 220, 255];
+const MAGENTA = [255, 70, 175];
+const YELLOW  = [255, 225, 65];
+
+
+/* ======================================================
+   SETUP
+====================================================== */
+
+function setup() {
+
+  createResponsiveCanvas();
+
+  let c = document.querySelector("canvas");
+  c.parentElement.removeChild(c);
+  document
+    .getElementById("canvasHolder")
+    .appendChild(c);
+
+  textFont("Arial");
+
+  mic = new p5.AudioIn();
+
+  fft = new p5.FFT(
+    0.72,
+    512
+  );
+
+  resetSimulation();
+
+  setupButtons();
+}
+
+
+/* ======================================================
+   RESPONSIVE CANVAS
+====================================================== */
+
+function createResponsiveCanvas() {
+
+  const available =
+    Math.min(
+      window.innerWidth - 22,
+      1050
+    );
+
+  const landscape =
+    window.innerWidth >
+    window.innerHeight;
+
+  const h =
+    landscape
+      ? available * 0.70
+      : available * 1.28;
+
+  createCanvas(
+    available,
+    h
+  );
+}
+
+
+function windowResized() {
+
+  const available =
+    Math.min(
+      window.innerWidth - 22,
+      1050
+    );
+
+  const landscape =
+    window.innerWidth >
+    window.innerHeight;
+
+  const h =
+    landscape
+      ? available * 0.70
+      : available * 1.28;
+
+  resizeCanvas(
+    available,
+    h
+  );
+}
+
+
+/* ======================================================
+   BUTTONS
+====================================================== */
+
+function setupButtons() {
+
+  const kSlider =
+    document.getElementById(
+      "kSlider"
+    );
+
+  kSlider.addEventListener(
+    "input",
+    () => {
+
+      document
+        .getElementById(
+          "kValue"
+        )
+        .textContent =
+        Number(
+          kSlider.value
+        ).toFixed(2);
+
+    }
+  );
+
+
+  document
+    .getElementById(
+      "micButton"
+    )
+    .addEventListener(
+      "click",
+      startMic
+    );
+
+
+  document
+    .getElementById(
+      "connectionButton"
+    )
+    .addEventListener(
+      "click",
+      toggleConnection
+    );
+
+
+  document
+    .getElementById(
+      "speechButton"
+    )
+    .addEventListener(
+      "click",
+      toggleVoiceControl
+    );
+
+
+  document
+    .getElementById(
+      "resetButton"
+    )
+    .addEventListener(
+      "click",
+      resetSimulation
+    );
+
+}
+
+
+/* ======================================================
+   MICROPHONE
+====================================================== */
+
+function startMic() {
+
+  userStartAudio();
+
+  mic.start(
+
+    () => {
+
+      micActive = true;
+
+      fft.setInput(
+        mic
+      );
+
+      document
+        .getElementById(
+          "micButton"
+        )
+        .textContent =
+        "🎤 MIC ACTIVE";
+
+      document
+        .getElementById(
+          "status"
+        )
+        .textContent =
+        "Speak, hum or say a vowel such as aaa or ooo.";
+
+    },
+
+    () => {
+
+      document
+        .getElementById(
+          "status"
+        )
+        .textContent =
+        "Microphone permission was not granted.";
+
+    }
+
+  );
+}
+
+
+/* ======================================================
+   CONNECTION
+====================================================== */
+
+function toggleConnection() {
+
+  connectionOn =
+    !connectionOn;
+
+  const button =
+    document.getElementById(
+      "connectionButton"
+    );
+
+  if (connectionOn) {
+
+    button.textContent =
+      "✂ CUT CONNECTION";
+
+    button.style.background =
+      "#ff668c";
+
+  }
+
+  else {
+
+    button.textContent =
+      "🔗 CONNECT";
+
+    button.style.background =
+      "#4ee58b";
+
+  }
+
+}
+
+
+/* ======================================================
+   VOICE CONTROL
+====================================================== */
+
+function toggleVoiceControl() {
+
+  voiceControl =
+    !voiceControl;
+
+  const button =
+    document.getElementById(
+      "speechButton"
+    );
+
+  if (voiceControl) {
+
+    button.textContent =
+      "VOICE CONTROL: ON";
+
+    button.style.background =
+      "#7f58ff";
+
+  }
+
+  else {
+
+    button.textContent =
+      "VOICE CONTROL: OFF";
+
+    button.style.background =
+      "#303846";
+
+  }
+
+}
+
+
+/* ======================================================
+   RESET
+====================================================== */
+
+function resetSimulation() {
+
+  agentA =
+    new Agent(
+      -0.9,
+      0.2,
+      1.00
+    );
+
+  agentB =
+    new Agent(
+      0.6,
+      -0.75,
+      1.16
+    );
+
+  trailA = [];
+  trailB = [];
+
+  outputA = [];
+  outputB = [];
+}
+
+
+/* ======================================================
+   NONLINEAR AGENT
+
+   Stuart–Landau oscillator:
+
+   dx/dt = (1-r²)x - ωy + coupling
+   dy/dt = (1-r²)y + ωx
+
+====================================================== */
+
+class Agent {
+
+  constructor(
+    x,
+    y,
+    omega
+  ) {
+
+    this.x =
+      x;
+
+    this.y =
+      y;
+
+    this.omega =
+      omega;
+
+  }
+
+
+  step(
+    otherSignal,
+    K,
+    dt
+  ) {
+
+    const r2 =
+      this.x * this.x +
+      this.y * this.y;
+
+
+    const dx =
+      (
+        1 - r2
+      ) *
+      this.x
+      -
+      this.omega *
+      this.y
+      +
+      K *
+      (
+        otherSignal -
+        this.x
+      );
+
+
+    const dy =
+      (
+        1 - r2
+      ) *
+      this.y
+      +
+      this.omega *
+      this.x;
+
+
+    this.x +=
+      dx * dt;
+
+
+    this.y +=
+      dy * dt;
+
+  }
+
+
+  phase() {
+
+    return atan2(
+      this.y,
+      this.x
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   MAIN LOOP
+====================================================== */
+
+function draw() {
+
+  background(
+    3,
+    5,
+    10
+  );
+
+  updateMicrophone();
+
+
+  let K =
+    Number(
+      document
+        .getElementById(
+          "kSlider"
+        )
+        .value
+    );
+
+
+  if (!connectionOn) {
+
+    K = 0;
+
+  }
+
+
+  /*
+     When VOICE CONTROL is ON,
+     speaking opens the coupling channel.
+  */
+
+  if (voiceControl) {
+
+    K *=
+      voiceEnergy;
+
+  }
+
+
+  /*
+     Integrate dynamics
+  */
+
+  for (
+    let n = 0;
+    n < 5;
+    n++
+  ) {
+
+    const aSignal =
+      agentA.x;
+
+    const bSignal =
+      agentB.x;
+
+
+    agentA.step(
+      bSignal,
+      K,
+      0.0035
+    );
+
+
+    agentB.step(
+      aSignal,
+      K,
+      0.0035
+    );
+
+  }
+
+
+  updateTrails();
+
+  drawScene(
+    K
+  );
+
+}
+
+
+/* ======================================================
+   MICROPHONE
+====================================================== */
+
+function updateMicrophone() {
+
+  let target =
+    0;
+
+
+  if (micActive) {
+
+    const level =
+      mic.getLevel();
+
+
+    target =
+      constrain(
+        level * 18,
+        0,
+        1
+      );
+
+
+    const wave =
+      fft.waveform();
+
+
+    for (
+      let i = 0;
+      i < wave.length;
+      i += 6
+    ) {
+
+      micHistory.push(
+        wave[i]
+      );
+
+    }
+
+
+    while (
+      micHistory.length >
+      MAX_SIGNAL
+    ) {
+
+      micHistory.shift();
+
+    }
+
+  }
+
+
+  voiceEnergy =
+    lerp(
+      voiceEnergy,
+      target,
+      0.12
+    );
+
+}
+
+
+/* ======================================================
+   HISTORIES
+====================================================== */
+
+function updateTrails() {
+
+  trailA.push({
+    x: agentA.x,
+    y: agentA.y
+  });
+
+  trailB.push({
+    x: agentB.x,
+    y: agentB.y
+  });
+
+
+  if (
+    trailA.length >
+    MAX_TRAIL
+  ) {
+    trailA.shift();
+  }
+
+
+  if (
+    trailB.length >
+    MAX_TRAIL
+  ) {
+    trailB.shift();
+  }
+
+
+  outputA.push(
+    agentA.x
+  );
+
+  outputB.push(
+    agentB.x
+  );
+
+
+  if (
+    outputA.length >
+    MAX_SIGNAL
+  ) {
+
+    outputA.shift();
+    outputB.shift();
+
+  }
+
+}
+
+
+/* ======================================================
+   MAIN LAYOUT
+====================================================== */
+
+function drawScene(K) {
+
+  const landscape =
+    width > height;
+
+
+  if (landscape) {
+
+    drawLandscape(
+      K
+    );
+
+  }
+
+  else {
+
+    drawPortrait(
+      K
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   PORTRAIT PHONE
+====================================================== */
+
+function drawPortrait(K) {
+
+  const top =
+    height * 0.04;
+
+  const agentY =
+    height * 0.18;
+
+  const radius =
+    width * 0.18;
+
+
+  drawHeader(
+    top
+  );
+
+
+  drawAgent(
+    width * 0.27,
+    agentY,
+    radius,
+    trailA,
+    agentA,
+    CYAN,
+    "AGENT A"
+  );
+
+
+  drawAgent(
+    width * 0.73,
+    agentY,
+    radius,
+    trailB,
+    agentB,
+    MAGENTA,
+    "AGENT B"
+  );
+
+
+  drawLink(
+    width * 0.42,
+    width * 0.58,
+    agentY,
+    K
+  );
+
+
+  drawSyncMeter(
+    width * 0.15,
+    height * 0.34,
+    width * 0.70
+  );
+
+
+  drawPanel(
+    width * 0.05,
+    height * 0.41,
+    width * 0.90,
+    height * 0.16,
+    "LIVE SOUND",
+    "wave"
+  );
+
+
+  drawPanel(
+    width * 0.05,
+    height * 0.60,
+    width * 0.90,
+    height * 0.17,
+    "SOUND → SHAPE",
+    "delay"
+  );
+
+
+  drawPanel(
+    width * 0.05,
+    height * 0.80,
+    width * 0.90,
+    height * 0.16,
+    "AGENT OUTPUTS",
+    "agents"
+  );
+
+}
+
+
+/* ======================================================
+   LANDSCAPE PHONE
+====================================================== */
+
+function drawLandscape(K) {
+
+  drawHeader(
+    height * 0.035
+  );
+
+
+  drawAgent(
+    width * 0.23,
+    height * 0.28,
+    height * 0.17,
+    trailA,
+    agentA,
+    CYAN,
+    "AGENT A"
+  );
+
+
+  drawAgent(
+    width * 0.77,
+    height * 0.28,
+    height * 0.17,
+    trailB,
+    agentB,
+    MAGENTA,
+    "AGENT B"
+  );
+
+
+  drawLink(
+    width * 0.37,
+    width * 0.63,
+    height * 0.28,
+    K
+  );
+
+
+  drawSyncMeter(
+    width * 0.37,
+    height * 0.40,
+    width * 0.26
+  );
+
+
+  const y =
+    height * 0.53;
+
+  const panelW =
+    width * 0.30;
+
+
+  drawPanel(
+    width * 0.02,
+    y,
+    panelW,
+    height * 0.40,
+    "LIVE SOUND",
+    "wave"
+  );
+
+
+  drawPanel(
+    width * 0.35,
+    y,
+    panelW,
+    height * 0.40,
+    "SOUND → SHAPE",
+    "delay"
+  );
+
+
+  drawPanel(
+    width * 0.68,
+    y,
+    panelW,
+    height * 0.40,
+    "AGENT OUTPUTS",
+    "agents"
+  );
+
+}
+
+
+/* ======================================================
+   HEADER
+====================================================== */
+
+function drawHeader(y) {
+
+  fill(255);
+
+  noStroke();
+
+  textAlign(
+    CENTER,
+    TOP
+  );
+
+  textStyle(BOLD);
+
+  textSize(
+    max(
+      13,
+      width * 0.025
+    )
+  );
+
+  text(
+    "INDEPENDENT DYNAMICS  →  COUPLING  →  COORDINATION",
+    width / 2,
+    y
+  );
+
+  textStyle(NORMAL);
+}
+
+
+/* ======================================================
+   AGENT ATTRACTOR
+====================================================== */
+
+function drawAgent(
+  cx,
+  cy,
+  radius,
+  trail,
+  agent,
+  col,
+  label
+) {
+
+  push();
+
+
+  noFill();
+
+  stroke(
+    col[0],
+    col[1],
+    col[2],
+    55
+  );
+
+  strokeWeight(1.5);
+
+  circle(
+    cx,
+    cy,
+    radius * 2.2
+  );
+
+
+  noFill();
+
+  beginShape();
+
+
+  for (
+    let i = 0;
+    i < trail.length;
+    i++
+  ) {
+
+    const alpha =
+      map(
+        i,
+        0,
+        trail.length,
+        5,
+        220
+      );
+
+
+    stroke(
+      col[0],
+      col[1],
+      col[2],
+      alpha
+    );
+
+
+    const px =
+      cx +
+      trail[i].x *
+      radius;
+
+
+    const py =
+      cy +
+      trail[i].y *
+      radius;
+
+
+    vertex(
+      px,
+      py
+    );
+
+  }
+
+
+  endShape();
+
+
+  noStroke();
+
+  fill(
+    col
+  );
+
+
+  circle(
+    cx +
+    agent.x *
+    radius,
+
+    cy +
+    agent.y *
+    radius,
+
+    max(
+      7,
+      width * 0.012
+    )
+  );
+
+
+  fill(
+    col
+  );
+
+  textAlign(
+    CENTER,
+    BOTTOM
+  );
+
+  textStyle(BOLD);
+
+  textSize(
+    max(
+      12,
+      width * 0.026
+    )
+  );
+
+  text(
+    label,
+    cx,
+    cy -
+    radius * 1.3
+  );
+
+
+  textStyle(NORMAL);
+
+  pop();
+
+}
+
+
+/* ======================================================
+   SOUND LINK
+====================================================== */
+
+function drawLink(
+  x1,
+  x2,
+  y,
+  K
+) {
+
+  const active =
+    connectionOn &&
+    K > 0.005;
+
+
+  strokeWeight(
+    active ? 3 : 2
+  );
+
+
+  if (active) {
+
+    stroke(
+      YELLOW[0],
+      YELLOW[1],
+      YELLOW[2],
+      220
+    );
+
+  }
+
+  else {
+
+    stroke(
+      90,
+      100,
+      110
+    );
+
+  }
+
+
+  line(
+    x1,
+    y,
+    x2,
+    y
+  );
+
+
+  /*
+     Little sound waveform
+  */
+
+  if (active) {
+
+    noFill();
+
+    beginShape();
+
+
+    for (
+      let x = x1;
+      x <= x2;
+      x += 4
+    ) {
+
+      const yy =
+        y +
+        sin(
+          x * 0.09 +
+          frameCount * 0.08
+        ) *
+        7;
+
+
+      vertex(
+        x,
+        yy
+      );
+
+    }
+
+
+    endShape();
+
+  }
+
+
+  noStroke();
+
+  textAlign(
+    CENTER,
+    CENTER
+  );
+
+  textStyle(BOLD);
+
+  textSize(
+    max(
+      10,
+      width * 0.018
+    )
+  );
+
+
+  if (connectionOn) {
+
+    fill(
+      YELLOW
+    );
+
+    text(
+      "SOUND",
+      (
+        x1 + x2
+      ) / 2,
+      y - 22
+    );
+
+  }
+
+  else {
+
+    fill(
+      255,
+      90,
+      115
+    );
+
+    text(
+      "CONNECTION CUT",
+      (
+        x1 + x2
+      ) / 2,
+      y - 22
+    );
+
+  }
+
+
+  textStyle(NORMAL);
+
+}
+
+
+/* ======================================================
+   SYNCHRONIZATION
+====================================================== */
+
+function synchrony() {
+
+  let d =
+    agentA.phase() -
+    agentB.phase();
+
+
+  d =
+    atan2(
+      sin(d),
+      cos(d)
+    );
+
+
+  return constrain(
+    (
+      1 +
+      cos(d)
+    ) /
+    2,
+    0,
+    1
+  );
+
+}
+
+
+/* ======================================================
+   SYNC METER
+====================================================== */
+
+function drawSyncMeter(
+  x,
+  y,
+  w
+) {
+
+  const sync =
+    synchrony();
+
+
+  noStroke();
+
+  fill(
+    45
+  );
+
+
+  rect(
+    x,
+    y,
+    w,
+    13,
+    8
+  );
+
+
+  fill(
+    YELLOW
+  );
+
+
+  rect(
+    x,
+    y,
+    w * sync,
+    13,
+    8
+  );
+
+
+  fill(220);
+
+  textAlign(
+    CENTER,
+    BOTTOM
+  );
+
+  textStyle(BOLD);
+
+  textSize(
+    max(
+      11,
+      width * 0.020
+    )
+  );
+
+
+  text(
+    "DYNAMICAL COORDINATION  " +
+    Math.round(
+      sync * 100
+    ) +
+    "%",
+    x + w / 2,
+    y - 6
+  );
+
+
+  textStyle(NORMAL);
+
+}
+
+
+/* ======================================================
+   PANELS
+====================================================== */
+
+function drawPanel(
+  x,
+  y,
+  w,
+  h,
+  title,
+  mode
+) {
+
+  noStroke();
+
+  fill(
+    9,
+    13,
+    22
+  );
+
+
+  rect(
+    x,
+    y,
+    w,
+    h,
+    12
+  );
+
+
+  noFill();
+
+  stroke(
+    38,
+    50,
+    67
+  );
+
+
+  rect(
+    x,
+    y,
+    w,
+    h,
+    12
+  );
+
+
+  fill(240);
+
+  noStroke();
+
+  textAlign(
+    LEFT,
+    TOP
+  );
+
+  textStyle(BOLD);
+
+  textSize(
+    max(
+      12,
+      width * 0.021
+    )
+  );
+
+
+  text(
+    title,
+    x + 14,
+    y + 10
+  );
+
+
+  textStyle(NORMAL);
+
+
+  if (
+    mode === "wave"
+  ) {
+
+    drawWaveform(
+      x + 15,
+      y + h * 0.30,
+      w - 30,
+      h * 0.55
+    );
+
+  }
+
+
+  else if (
+    mode === "delay"
+  ) {
+
+    drawDelay(
+      x,
+      y,
+      w,
+      h
+    );
+
+  }
+
+
+  else if (
+    mode === "agents"
+  ) {
+
+    drawAgentOutputs(
+      x + 15,
+      y + h * 0.30,
+      w - 30,
+      h * 0.55
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   LIVE WAVEFORM
+====================================================== */
+
+function drawWaveform(
+  x,
+  y,
+  w,
+  h
+) {
+
+  stroke(
+    60
+  );
+
+  line(
+    x,
+    y + h / 2,
+    x + w,
+    y + h / 2
+  );
+
+
+  if (
+    micHistory.length <
+    2
+  ) {
+
+    fill(
+      120
+    );
+
+    noStroke();
+
+    textAlign(
+      CENTER,
+      CENTER
+    );
+
+    textSize(
+      max(
+        10,
+        width * 0.018
+      )
+    );
+
+    text(
+      micActive
+        ? "Speak into the microphone"
+        : "Tap START MIC",
+      x + w / 2,
+      y + h / 2
+    );
+
+    return;
+
+  }
+
+
+  noFill();
+
+  stroke(
+    CYAN
+  );
+
+  strokeWeight(2);
+
+  beginShape();
+
+
+  for (
+    let i = 0;
+    i < micHistory.length;
+    i++
+  ) {
+
+    vertex(
+
+      map(
+        i,
+        0,
+        micHistory.length - 1,
+        x,
+        x + w
+      ),
+
+      map(
+        micHistory[i],
+        -1,
+        1,
+        y + h,
+        y
+      )
+
+    );
+
+  }
+
+
+  endShape();
+
+}
+
+
+/* ======================================================
+   DELAY EMBEDDING
+====================================================== */
+
+function drawDelay(
+  x,
+  y,
+  w,
+  h
+) {
+
+  const cx =
+    x + w / 2;
+
+  const cy =
+    y + h * 0.60;
+
+  const scale =
+    min(
+      w,
+      h
+    ) * 0.32;
+
+  const tau =
+    17;
+
+
+  stroke(
+    60
+  );
+
+  line(
+    cx - scale,
+    cy,
+    cx + scale,
+    cy
+  );
+
+  line(
+    cx,
+    cy - scale,
+    cx,
+    cy + scale
+  );
+
+
+  if (
+    micHistory.length <=
+    tau + 2
+  ) {
+
+    return;
+
+  }
+
+
+  strokeWeight(2);
+
+
+  for (
+    let i = tau;
+    i < micHistory.length;
+    i++
+  ) {
+
+    const alpha =
+      map(
+        i,
+        tau,
+        micHistory.length,
+        15,
+        220
+      );
+
+
+    stroke(
+      205,
+      80,
+      255,
+      alpha
+    );
+
+
+    point(
+
+      cx +
+      micHistory[i] *
+      scale,
+
+      cy -
+      micHistory[
+        i - tau
+      ] *
+      scale
+
+    );
+
+  }
+
+
+  fill(
+    140
+  );
+
+  noStroke();
+
+  textSize(
+    max(
+      9,
+      width * 0.016
+    )
+  );
+
+  textAlign(
+    CENTER,
+    TOP
+  );
+
+
+  text(
+    "x(t) vs x(t−τ)",
+    cx,
+    y + h - 21
+  );
+
+}
+
+
+/* ======================================================
+   AGENT OUTPUTS
+====================================================== */
+
+function drawAgentOutputs(
+  x,
+  y,
+  w,
+  h
+) {
+
+  stroke(
+    60
+  );
+
+  line(
+    x,
+    y + h / 2,
+    x + w,
+    y + h / 2
+  );
+
+
+  drawTrace(
+    outputA,
+    x,
+    y,
+    w,
+    h,
+    CYAN
+  );
+
+
+  drawTrace(
+    outputB,
+    x,
+    y,
+    w,
+    h,
+    MAGENTA
+  );
+
+}
+
+
+/* ======================================================
+   SIGNAL TRACE
+====================================================== */
+
+function drawTrace(
+  data,
+  x,
+  y,
+  w,
+  h,
+  col
+) {
+
+  if (
+    data.length <
+    2
+  ) {
+    return;
+  }
+
+
+  noFill();
+
+  stroke(
+    col
+  );
+
+  strokeWeight(
+    1.7
+  );
+
+  beginShape();
+
+
+  for (
+    let i = 0;
+    i < data.length;
+    i++
+  ) {
+
+    vertex(
+
+      map(
+        i,
+        0,
+        data.length - 1,
+        x,
+        x + w
+      ),
+
+      map(
+        data[i],
+        -1.4,
+        1.4,
+        y + h,
+        y
+      )
+
+    );
+
+  }
+
+
+  endShape();
+
+}
+
+</script>
+
+</body>
+</html>
