@@ -1,0 +1,6568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Sound to Shape — 2D Delay Embedding</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #05070b;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.page {
+    width: 96%;
+    max-width: 1850px;
+    margin: auto;
+    padding: 22px 0 40px;
+}
+
+h1 {
+    text-align: center;
+    margin: 5px 0 8px;
+    font-size: 42px;
+}
+
+.subtitle {
+    text-align: center;
+    margin-bottom: 22px;
+    color: #9ea9bd;
+    font-size: 18px;
+}
+
+
+/* =========================================================
+   CONTROLS
+   ========================================================= */
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 16px;
+
+    padding: 18px;
+    margin-bottom: 24px;
+
+    background: #0b0e15;
+    border: 1px solid #20283a;
+    border-radius: 15px;
+}
+
+.signal-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 15px;
+
+    padding: 12px 15px;
+
+    background: #10151f;
+    border: 1px solid #273248;
+    border-radius: 12px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+label {
+    color: #cbd4e4;
+    font-size: 14px;
+}
+
+button {
+    padding: 11px 20px;
+
+    background: #d5a900;
+    color: #171200;
+
+    border: none;
+    border-radius: 9px;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+button:hover {
+    filter: brightness(1.12);
+}
+
+button.secondary {
+    background: #283044;
+    color: white;
+}
+
+button.sound {
+    background: #d5a900;
+    color: #171200;
+}
+
+button.stop-sound {
+    background: #553c1b;
+    color: #ffe6a3;
+}
+
+select,
+input[type="number"],
+input[type="file"] {
+    padding: 8px 10px;
+
+    background: #151b27;
+    color: white;
+
+    border: 1px solid #344159;
+    border-radius: 8px;
+
+    font-size: 15px;
+}
+
+input[type="number"] {
+    width: 100px;
+}
+
+input[type="range"] {
+    width: 175px;
+    accent-color: #ffd84d;
+}
+
+input[type="file"] {
+    max-width: 270px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.hint {
+    color: #8996ad;
+    font-size: 13px;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding-bottom: 7px;
+}
+
+
+/* =========================================================
+   UPLOAD
+   ========================================================= */
+
+.upload-controls {
+    width: min(1100px, 95vw);
+}
+
+.upload-overview-wrap {
+    width: 100%;
+}
+
+#uploadOverviewCanvas {
+    display: block;
+
+    width: 100%;
+    height: 130px;
+
+    margin-top: 8px;
+
+    background: #06080d;
+
+    border: 1px solid #253047;
+    border-radius: 9px;
+}
+
+.upload-status {
+    color: #aeb9cb;
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   PANELS
+   ========================================================= */
+
+.container {
+    display: grid;
+
+    grid-template-columns: 1.35fr 1fr;
+
+    gap: 24px;
+}
+
+.panel {
+    padding: 18px;
+
+    background: #090c13;
+
+    border: 1px solid #20283a;
+    border-radius: 18px;
+
+    overflow: hidden;
+}
+
+.panel h2 {
+    margin: 5px 0 13px;
+
+    font-size: 28px;
+}
+
+.description {
+    margin-bottom: 14px;
+
+    color: #9ca8bc;
+
+    font-size: 16px;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+
+    background: #05070b;
+
+    border-radius: 12px;
+}
+
+
+/* =========================================================
+   COLOR LEGEND
+   ========================================================= */
+
+.legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    gap: 25px;
+
+    margin-top: 15px;
+
+    font-size: 17px;
+}
+
+.blue-color {
+    color: #4da6ff;
+}
+
+.gold-color {
+    color: #ffd84d;
+}
+
+.green-color {
+    color: #54e391;
+}
+
+
+/* =========================================================
+   BOTTOM ANIMATION CONTROLS
+   ========================================================= */
+
+.animation-controls-bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 18px;
+
+    margin-top: 18px;
+    margin-bottom: 24px;
+
+    padding: 14px 18px;
+
+    background: #0b0e15;
+
+    border: 1px solid #20283a;
+    border-radius: 14px;
+}
+
+.animation-main-button {
+    min-width: 200px;
+
+    padding: 12px 24px;
+
+    background: #d5a900;
+    color: #171200;
+
+    font-size: 17px;
+}
+
+.animation-speed-bottom {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 10px;
+}
+
+.animation-speed-bottom input[type="range"] {
+    width: 280px;
+}
+
+.animation-speed-bottom span {
+    min-width: 85px;
+}
+
+
+/* =========================================================
+   INFO
+   ========================================================= */
+
+.formula-box {
+    margin-top: 22px;
+
+    padding: 18px;
+
+    background: #0b0e15;
+
+    border: 1px solid #20283a;
+    border-radius: 15px;
+
+    text-align: center;
+
+    font-size: 18px;
+    line-height: 1.8;
+}
+
+.signal-name {
+    color: #97a4b9;
+    font-size: 14px;
+}
+
+.sample-info {
+    margin-top: 12px;
+
+    padding: 11px 14px;
+
+    background: #10151f;
+
+    border: 1px solid #28334a;
+    border-radius: 10px;
+
+    color: #bcc6d8;
+
+    text-align: center;
+
+    font-size: 14px;
+}
+
+.warning {
+    color: #ffd84d;
+}
+
+@media(max-width: 1100px) {
+
+    .container {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+@media(max-width: 700px) {
+
+    .animation-controls-bottom {
+        flex-direction: column;
+    }
+
+}
+</style>
+</head>
+
+
+<body>
+
+<div class="page">
+
+<h1>
+    Can Sound Have a Shape?
+</h1>
+
+<div class="subtitle">
+    Time → three temporal regions → delay coordinates → geometry
+</div>
+
+
+
+<!-- =========================================================
+     TOP CONTROLS
+     ========================================================= -->
+
+<div class="controls">
+
+
+    <!-- SOUND -->
+
+    <button
+        id="soundButton"
+        class="sound"
+    >
+        ▶ Play Sound
+    </button>
+
+    <button
+        id="stopSoundButton"
+        class="stop-sound"
+    >
+        ■ Stop Sound
+    </button>
+
+
+
+    <!-- SIGNAL -->
+
+    <div class="control-group">
+
+        <label for="signalType">
+            Signal type
+        </label>
+
+        <select id="signalType">
+
+            <option value="pure">
+                Pure tone
+            </option>
+
+            <option value="two">
+                Two frequencies
+            </option>
+
+            <option value="damped">
+                Damped oscillation
+            </option>
+
+            <option value="custom">
+                Uploaded audio
+            </option>
+
+        </select>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         PURE
+         ===================================================== -->
+
+    <div
+        id="pureControls"
+        class="signal-controls"
+    >
+
+        <div class="control-group">
+
+            <label for="pureFrequency">
+                Frequency
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="pureFrequency"
+                    type="number"
+                    min="0.01"
+                    max="10000"
+                    step="1"
+                    value="220"
+                >
+
+                <span>Hz</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="pureAmplitude">
+                Amplitude
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="pureAmplitude"
+                    type="range"
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                    value="1"
+                >
+
+                <span id="pureAmplitudeValue">
+                    1.00
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         TWO FREQUENCIES
+         ===================================================== -->
+
+    <div
+        id="twoControls"
+        class="signal-controls hidden"
+    >
+
+        <div class="control-group">
+
+            <label for="frequency1">
+                Frequency 1
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="frequency1"
+                    type="number"
+                    min="0.01"
+                    max="10000"
+                    step="1"
+                    value="220"
+                >
+
+                <span>Hz</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="amplitude1">
+                Amplitude 1
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="amplitude1"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value="1"
+                >
+
+                <span id="amplitude1Value">
+                    1.00
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="frequency2">
+                Frequency 2
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="frequency2"
+                    type="number"
+                    min="0.01"
+                    max="10000"
+                    step="1"
+                    value="330"
+                >
+
+                <span>Hz</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="amplitude2">
+                Amplitude 2
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="amplitude2"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value="0.65"
+                >
+
+                <span id="amplitude2Value">
+                    0.65
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         DAMPED
+         ===================================================== -->
+
+    <div
+        id="dampedControls"
+        class="signal-controls hidden"
+    >
+
+        <div class="control-group">
+
+            <label for="dampedFrequency">
+                Frequency
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="dampedFrequency"
+                    type="number"
+                    min="0.01"
+                    max="10000"
+                    step="1"
+                    value="220"
+                >
+
+                <span>Hz</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="dampedAmplitude">
+                Initial amplitude
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="dampedAmplitude"
+                    type="range"
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                    value="1"
+                >
+
+                <span id="dampedAmplitudeValue">
+                    1.00
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="dampingMax">
+                β slider maximum
+            </label>
+
+            <input
+                id="dampingMax"
+                type="number"
+                min="0.01"
+                max="1000"
+                step="0.5"
+                value="5"
+            >
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="damping">
+                Damping β
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="damping"
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.01"
+                    value="1"
+                >
+
+                <span id="dampingValue">
+                    1.00
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="checkbox-row">
+
+            <input
+                id="loopDamped"
+                type="checkbox"
+                checked
+            >
+
+            <label for="loopDamped">
+                Auto restart
+            </label>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         UPLOADED AUDIO
+         ===================================================== -->
+
+    <div
+        id="customControls"
+        class="signal-controls upload-controls hidden"
+    >
+
+        <div class="control-group">
+
+            <label for="audioFileInput">
+                Choose audio file
+            </label>
+
+            <input
+                id="audioFileInput"
+                type="file"
+                accept="audio/*"
+            >
+
+            <span
+                id="uploadStatus"
+                class="upload-status"
+            >
+                No file loaded
+            </span>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="segmentStartSlider">
+                Segment start
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="segmentStartSlider"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.001"
+                    value="0"
+                    disabled
+                >
+
+                <input
+                    id="segmentStartInput"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.001"
+                    value="0"
+                    disabled
+                >
+
+                <span>s</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="control-group">
+
+            <label for="segmentDurationSlider">
+                Segment duration
+            </label>
+
+            <div class="control-row">
+
+                <input
+                    id="segmentDurationSlider"
+                    type="range"
+                    min="0.01"
+                    max="1"
+                    step="0.001"
+                    value="1"
+                    disabled
+                >
+
+                <input
+                    id="segmentDurationInput"
+                    type="number"
+                    min="0.01"
+                    max="1"
+                    step="0.001"
+                    value="1"
+                    disabled
+                >
+
+                <span>s</span>
+
+            </div>
+
+        </div>
+
+
+        <button
+            id="fullFileButton"
+            class="secondary"
+            disabled
+        >
+            Use Full File
+        </button>
+
+
+        <div class="checkbox-row">
+
+            <input
+                id="loopCustom"
+                type="checkbox"
+                checked
+            >
+
+            <label for="loopCustom">
+                Loop selected segment
+            </label>
+
+        </div>
+
+
+        <div class="upload-overview-wrap">
+
+            <label>
+                Selected audio segment
+            </label>
+
+            <canvas
+                id="uploadOverviewCanvas"
+                width="1100"
+                height="130"
+            >
+            </canvas>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         DELAY
+         ===================================================== -->
+
+    <div class="control-group">
+
+        <label for="delayInput">
+            Delay τ
+        </label>
+
+        <div class="control-row">
+
+            <input
+                id="delaySlider"
+                type="range"
+                min="0"
+                max="100"
+                step="0.01"
+                value="1.14"
+            >
+
+            <input
+                id="delayInput"
+                type="number"
+                min="0"
+                max="5000"
+                step="0.01"
+                value="1.14"
+            >
+
+            <span>ms</span>
+
+        </div>
+
+        <span
+            id="delayHint"
+            class="hint"
+        >
+        </span>
+
+    </div>
+
+
+
+    <!-- SAMPLE RATE -->
+
+    <div
+        id="sampleRateGroup"
+        class="control-group"
+    >
+
+        <label for="sampleRateInput">
+            Sampling rate
+        </label>
+
+        <div class="control-row">
+
+            <input
+                id="sampleRateInput"
+                type="number"
+                min="100"
+                max="192000"
+                step="100"
+                value="8000"
+            >
+
+            <span>Hz</span>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- WINDOW -->
+
+    <div class="control-group">
+
+        <label for="windowSelect">
+            Time window
+        </label>
+
+        <select id="windowSelect">
+
+            <option value="0.005">
+                5 ms
+            </option>
+
+            <option value="0.01">
+                10 ms
+            </option>
+
+            <option
+                value="0.03"
+                selected
+            >
+                30 ms
+            </option>
+
+            <option value="0.05">
+                50 ms
+            </option>
+
+            <option value="0.1">
+                100 ms
+            </option>
+
+            <option value="0.5">
+                500 ms
+            </option>
+
+            <option value="1">
+                1 s
+            </option>
+
+            <option value="2">
+                2 s
+            </option>
+
+            <option value="5">
+                5 s
+            </option>
+
+        </select>
+
+    </div>
+
+
+
+    <!-- PLOT -->
+
+    <div class="control-group">
+
+        <label for="plotMode">
+            Delay plot
+        </label>
+
+        <select id="plotMode">
+
+            <option value="line">
+                Line only
+            </option>
+
+            <option value="scatter">
+                Scatter only
+            </option>
+
+            <option
+                value="both"
+                selected
+            >
+                Scatter + faded line
+            </option>
+
+        </select>
+
+    </div>
+
+
+
+    <!-- LINE ALPHA -->
+
+    <div class="control-group">
+
+        <label for="lineAlpha">
+            Line alpha
+        </label>
+
+        <div class="control-row">
+
+            <input
+                id="lineAlpha"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value="0.22"
+            >
+
+            <span id="lineAlphaValue">
+                0.22
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- POINT ALPHA -->
+
+    <div class="control-group">
+
+        <label for="scatterAlpha">
+            Point alpha
+        </label>
+
+        <div class="control-row">
+
+            <input
+                id="scatterAlpha"
+                type="range"
+                min="0.01"
+                max="1"
+                step="0.01"
+                value="0.90"
+            >
+
+            <span id="scatterAlphaValue">
+                0.90
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- POINT SIZE -->
+
+    <div class="control-group">
+
+        <label for="pointSize">
+            Point size
+        </label>
+
+        <div class="control-row">
+
+            <input
+                id="pointSize"
+                type="range"
+                min="0.5"
+                max="8"
+                step="0.5"
+                value="2.5"
+            >
+
+            <span id="pointSizeValue">
+                2.5
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- WAVE GLOW -->
+
+    <div class="control-group">
+
+        <label for="waveGlow">
+            Time-series glow
+        </label>
+
+        <div class="control-row">
+
+            <input
+                id="waveGlow"
+                type="range"
+                min="0"
+                max="40"
+                step="1"
+                value="16"
+            >
+
+            <span id="waveGlowValue">
+                16
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- EMBEDDING GLOW -->
+
+    <div class="control-group">
+
+        <label for="embeddingGlow">
+            Embedding glow
+        </label>
+
+        <div class="control-row">
+
+            <input
+                id="embeddingGlow"
+                type="range"
+                min="0"
+                max="40"
+                step="1"
+                value="18"
+            >
+
+            <span id="embeddingGlowValue">
+                18
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- POINT HISTORY -->
+
+    <div class="control-group">
+
+        <label for="maxPointsInput">
+            Maximum samples
+        </label>
+
+        <input
+            id="maxPointsInput"
+            type="number"
+            min="50"
+            max="50000"
+            step="50"
+            value="5000"
+        >
+
+    </div>
+
+
+
+    <!-- SOUND DURATION -->
+
+    <div
+        id="soundDurationGroup"
+        class="control-group"
+    >
+
+        <label for="soundDuration">
+            Sound duration
+        </label>
+
+        <div class="control-row">
+
+            <input
+                id="soundDuration"
+                type="number"
+                min="0.2"
+                max="30"
+                step="0.1"
+                value="3"
+            >
+
+            <span>s</span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     VISUALS
+     ========================================================= -->
+
+<div class="container">
+
+
+    <div class="panel">
+
+        <h2>
+            1. The Sound Signal
+        </h2>
+
+        <div
+            id="signalDescription"
+            class="description"
+        >
+            The visible time window is divided into three temporal regions.
+        </div>
+
+
+        <canvas
+            id="waveCanvas"
+            width="1100"
+            height="580"
+        >
+        </canvas>
+
+
+        <div class="legend">
+
+            <span class="blue-color">
+                ● Early third
+            </span>
+
+            <span class="gold-color">
+                ● Middle third
+            </span>
+
+            <span class="green-color">
+                ● Recent third
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="panel">
+
+        <h2>
+            2. Time-Delay Embedding
+        </h2>
+
+        <div class="description">
+
+            The same temporal colors are carried into
+
+            <strong>
+                (x[n], x[n−k])
+            </strong>.
+
+        </div>
+
+
+        <canvas
+            id="shapeCanvas"
+            width="750"
+            height="750"
+        >
+        </canvas>
+
+
+        <div
+            id="sampleInfo"
+            class="sample-info"
+        >
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     ANIMATION CONTROLS
+     ========================================================= -->
+
+<div class="animation-controls-bottom">
+
+    <button
+        id="playButton"
+        class="animation-main-button"
+    >
+        ❚❚ Pause Animation
+    </button>
+
+
+    <button
+        id="resetButton"
+        class="secondary"
+    >
+        ↺ Reset Animation
+    </button>
+
+
+    <div class="animation-speed-bottom">
+
+        <label for="speedSlider">
+            Animation speed
+        </label>
+
+
+        <input
+            id="speedSlider"
+            type="range"
+            min="0"
+            max="1000"
+            step="1"
+            value="500"
+        >
+
+
+        <span id="speedValue">
+            0.001×
+        </span>
+
+        <span class="hint">
+            logarithmic
+        </span>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     FORMULA
+     ========================================================= -->
+
+<div class="formula-box">
+
+    <div class="signal-name">
+        2D time-delay embedding
+    </div>
+
+    <div>
+
+        <span class="blue-color">
+            early
+        </span>
+
+        &nbsp;→&nbsp;
+
+        <span class="gold-color">
+            middle
+        </span>
+
+        &nbsp;→&nbsp;
+
+        <span class="green-color">
+            recent
+        </span>
+
+    </div>
+
+
+    <div>
+
+        Delay coordinates:
+
+        <strong>
+            (x[n], x[n−k])
+        </strong>
+
+    </div>
+
+</div>
+
+</div>
+
+
+
+<script>
+
+/* ============================================================
+   COLOR PALETTE
+   ============================================================ */
+
+const COLORS = {
+
+    blue:
+        "#4da6ff",
+
+    gold:
+        "#ffd84d",
+
+    green:
+        "#54e391",
+
+    axis:
+        "rgba(220,230,245,0.25)",
+
+    grid:
+        "rgba(220,230,245,0.055)",
+
+    text:
+        "#d9e1ee",
+
+    white:
+        "#ffffff"
+
+};
+
+
+const TWO_PI =
+    Math.PI * 2;
+
+
+
+/* ============================================================
+   CANVAS
+   ============================================================ */
+
+const waveCanvas =
+    document.getElementById("waveCanvas");
+
+const waveCtx =
+    waveCanvas.getContext("2d");
+
+
+const shapeCanvas =
+    document.getElementById("shapeCanvas");
+
+const shapeCtx =
+    shapeCanvas.getContext("2d");
+
+
+const uploadOverviewCanvas =
+    document.getElementById(
+        "uploadOverviewCanvas"
+    );
+
+const uploadOverviewCtx =
+    uploadOverviewCanvas.getContext("2d");
+
+
+
+/* ============================================================
+   ELEMENTS
+   ============================================================ */
+
+const signalType =
+    document.getElementById("signalType");
+
+
+const pureControls =
+    document.getElementById("pureControls");
+
+const twoControls =
+    document.getElementById("twoControls");
+
+const dampedControls =
+    document.getElementById("dampedControls");
+
+const customControls =
+    document.getElementById("customControls");
+
+
+const pureFrequency =
+    document.getElementById("pureFrequency");
+
+const pureAmplitude =
+    document.getElementById("pureAmplitude");
+
+const pureAmplitudeValue =
+    document.getElementById("pureAmplitudeValue");
+
+
+const frequency1 =
+    document.getElementById("frequency1");
+
+const frequency2 =
+    document.getElementById("frequency2");
+
+const amplitude1 =
+    document.getElementById("amplitude1");
+
+const amplitude2 =
+    document.getElementById("amplitude2");
+
+const amplitude1Value =
+    document.getElementById("amplitude1Value");
+
+const amplitude2Value =
+    document.getElementById("amplitude2Value");
+
+
+const dampedFrequency =
+    document.getElementById("dampedFrequency");
+
+const dampedAmplitude =
+    document.getElementById("dampedAmplitude");
+
+const dampedAmplitudeValue =
+    document.getElementById("dampedAmplitudeValue");
+
+const damping =
+    document.getElementById("damping");
+
+const dampingValue =
+    document.getElementById("dampingValue");
+
+const dampingMax =
+    document.getElementById("dampingMax");
+
+const loopDamped =
+    document.getElementById("loopDamped");
+
+
+const audioFileInput =
+    document.getElementById("audioFileInput");
+
+const uploadStatus =
+    document.getElementById("uploadStatus");
+
+const segmentStartSlider =
+    document.getElementById("segmentStartSlider");
+
+const segmentStartInput =
+    document.getElementById("segmentStartInput");
+
+const segmentDurationSlider =
+    document.getElementById("segmentDurationSlider");
+
+const segmentDurationInput =
+    document.getElementById("segmentDurationInput");
+
+const fullFileButton =
+    document.getElementById("fullFileButton");
+
+const loopCustom =
+    document.getElementById("loopCustom");
+
+
+const delaySlider =
+    document.getElementById("delaySlider");
+
+const delayInput =
+    document.getElementById("delayInput");
+
+const delayHint =
+    document.getElementById("delayHint");
+
+
+const sampleRateGroup =
+    document.getElementById("sampleRateGroup");
+
+const sampleRateInput =
+    document.getElementById("sampleRateInput");
+
+
+const windowSelect =
+    document.getElementById("windowSelect");
+
+const plotMode =
+    document.getElementById("plotMode");
+
+
+const lineAlpha =
+    document.getElementById("lineAlpha");
+
+const lineAlphaValue =
+    document.getElementById("lineAlphaValue");
+
+
+const scatterAlpha =
+    document.getElementById("scatterAlpha");
+
+const scatterAlphaValue =
+    document.getElementById("scatterAlphaValue");
+
+
+const pointSize =
+    document.getElementById("pointSize");
+
+const pointSizeValue =
+    document.getElementById("pointSizeValue");
+
+
+const waveGlow =
+    document.getElementById("waveGlow");
+
+const waveGlowValue =
+    document.getElementById("waveGlowValue");
+
+
+const embeddingGlow =
+    document.getElementById("embeddingGlow");
+
+const embeddingGlowValue =
+    document.getElementById("embeddingGlowValue");
+
+
+const maxPointsInput =
+    document.getElementById("maxPointsInput");
+
+
+const soundDurationGroup =
+    document.getElementById("soundDurationGroup");
+
+const soundDuration =
+    document.getElementById("soundDuration");
+
+
+const speedSlider =
+    document.getElementById("speedSlider");
+
+const speedValue =
+    document.getElementById("speedValue");
+
+
+const playButton =
+    document.getElementById("playButton");
+
+const resetButton =
+    document.getElementById("resetButton");
+
+const soundButton =
+    document.getElementById("soundButton");
+
+const stopSoundButton =
+    document.getElementById("stopSoundButton");
+
+
+const signalDescription =
+    document.getElementById("signalDescription");
+
+const sampleInfo =
+    document.getElementById("sampleInfo");
+
+
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+let running =
+    true;
+
+
+let signalTime =
+    0;
+
+
+let previousAnimationTime =
+    performance.now();
+
+
+/*
+    Actual discrete delay pairs.
+
+    Each object contains:
+
+        x
+        y
+        n
+        time
+
+    time is used to assign blue / gold / green.
+*/
+
+let embeddingSamples =
+    [];
+
+
+let nextSampleIndex =
+    0;
+
+
+
+/* ============================================================
+   UPLOADED AUDIO
+   ============================================================ */
+
+let uploadedAudioBuffer =
+    null;
+
+
+let uploadedMonoData =
+    null;
+
+
+let customSelectionPeak =
+    1;
+
+
+
+/* ============================================================
+   AUDIO
+   ============================================================ */
+
+let audioContext =
+    null;
+
+
+let activeAudioSources =
+    [];
+
+
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+
+function clamp(
+    value,
+    minimum,
+    maximum
+) {
+
+    return Math.min(
+        maximum,
+        Math.max(
+            minimum,
+            value
+        )
+    );
+}
+
+
+
+function getNumber(
+    element,
+    fallback
+) {
+
+    const value =
+        Number(
+            element.value
+        );
+
+
+    return Number.isFinite(value)
+        ? value
+        : fallback;
+}
+
+
+
+/* ============================================================
+   TEMPORAL COLOR
+
+   normalizedTime:
+
+       0 -------- 1/3 -------- 2/3 -------- 1
+
+       blue         gold          green
+   ============================================================ */
+
+function colorFromFraction(
+    fraction
+) {
+
+    if (
+        fraction <
+        1 / 3
+    ) {
+
+        return COLORS.blue;
+    }
+
+
+    if (
+        fraction <
+        2 / 3
+    ) {
+
+        return COLORS.gold;
+    }
+
+
+    return COLORS.green;
+}
+
+
+
+/* ============================================================
+   LOG SPEED
+
+   0      -> 10^-6
+   500    -> 10^-3
+   1000   -> 1
+   ============================================================ */
+
+function getAnimationSpeed() {
+
+    const position =
+
+        getNumber(
+            speedSlider,
+            500
+        ) / 1000;
+
+
+    return Math.pow(
+
+        10,
+
+        -6 +
+        6 *
+        position
+
+    );
+}
+
+
+
+function updateSpeedLabel() {
+
+    const speed =
+        getAnimationSpeed();
+
+
+    if (
+        speed <
+        0.00001
+    ) {
+
+        speedValue.textContent =
+            speed.toExponential(2) +
+            "×";
+
+    } else if (
+        speed <
+        0.001
+    ) {
+
+        speedValue.textContent =
+            speed.toFixed(6) +
+            "×";
+
+    } else if (
+        speed <
+        0.01
+    ) {
+
+        speedValue.textContent =
+            speed.toFixed(4) +
+            "×";
+
+    } else if (
+        speed <
+        0.1
+    ) {
+
+        speedValue.textContent =
+            speed.toFixed(3) +
+            "×";
+
+    } else {
+
+        speedValue.textContent =
+            speed.toFixed(2) +
+            "×";
+    }
+}
+
+
+
+/* ============================================================
+   AUDIO SEGMENT
+   ============================================================ */
+
+function getSegmentStart() {
+
+    if (
+        !uploadedAudioBuffer
+    ) {
+
+        return 0;
+    }
+
+
+    return clamp(
+
+        getNumber(
+            segmentStartInput,
+            0
+        ),
+
+        0,
+
+        uploadedAudioBuffer.duration
+
+    );
+}
+
+
+
+function getSegmentDuration() {
+
+    if (
+        !uploadedAudioBuffer
+    ) {
+
+        return 0;
+    }
+
+
+    const start =
+        getSegmentStart();
+
+
+    return clamp(
+
+        getNumber(
+            segmentDurationInput,
+            1
+        ),
+
+        0,
+
+        uploadedAudioBuffer.duration -
+        start
+
+    );
+}
+
+
+
+/* ============================================================
+   PARAMETERS
+   ============================================================ */
+
+function getParameters() {
+
+    const mode =
+        signalType.value;
+
+
+    const fs =
+
+        (
+            mode === "custom" &&
+            uploadedAudioBuffer
+        )
+
+        ?
+
+        uploadedAudioBuffer.sampleRate
+
+        :
+
+        Math.max(
+
+            100,
+
+            getNumber(
+                sampleRateInput,
+                8000
+            )
+
+        );
+
+
+
+    const requestedDelay =
+
+        Math.max(
+
+            0,
+
+            getNumber(
+                delayInput,
+                0
+            )
+
+        ) / 1000;
+
+
+
+    const lagSamples =
+
+        Math.max(
+
+            0,
+
+            Math.round(
+                requestedDelay *
+                fs
+            )
+
+        );
+
+
+    const effectiveDelay =
+        lagSamples /
+        fs;
+
+
+
+    if (
+        mode === "pure"
+    ) {
+
+        const f =
+            Math.max(
+
+                0.001,
+
+                getNumber(
+                    pureFrequency,
+                    220
+                )
+
+            );
+
+
+        const A =
+            getNumber(
+                pureAmplitude,
+                1
+            );
+
+
+        return {
+
+            mode,
+            fs,
+
+            f,
+            A,
+
+            lagSamples,
+            effectiveDelay,
+
+            maxAmplitude:
+                Math.max(
+                    A,
+                    0.001
+                )
+
+        };
+    }
+
+
+
+    if (
+        mode === "two"
+    ) {
+
+        const f1 =
+            Math.max(
+
+                0.001,
+
+                getNumber(
+                    frequency1,
+                    220
+                )
+
+            );
+
+
+        const f2 =
+            Math.max(
+
+                0.001,
+
+                getNumber(
+                    frequency2,
+                    330
+                )
+
+            );
+
+
+        const A1 =
+            getNumber(
+                amplitude1,
+                1
+            );
+
+
+        const A2 =
+            getNumber(
+                amplitude2,
+                0.65
+            );
+
+
+        return {
+
+            mode,
+            fs,
+
+            f1,
+            f2,
+
+            A1,
+            A2,
+
+            lagSamples,
+            effectiveDelay,
+
+            maxAmplitude:
+                Math.max(
+                    A1 +
+                    A2,
+                    0.001
+                )
+
+        };
+    }
+
+
+
+    if (
+        mode === "damped"
+    ) {
+
+        const f =
+            Math.max(
+
+                0.001,
+
+                getNumber(
+                    dampedFrequency,
+                    220
+                )
+
+            );
+
+
+        const A =
+            getNumber(
+                dampedAmplitude,
+                1
+            );
+
+
+        const beta =
+            Math.max(
+
+                0,
+
+                getNumber(
+                    damping,
+                    1
+                )
+
+            );
+
+
+        return {
+
+            mode,
+            fs,
+
+            f,
+            A,
+            beta,
+
+            lagSamples,
+            effectiveDelay,
+
+            maxAmplitude:
+                Math.max(
+                    A,
+                    0.001
+                )
+
+        };
+    }
+
+
+
+    /* uploaded audio */
+
+    const segmentStart =
+        getSegmentStart();
+
+
+    const segmentDuration =
+        getSegmentDuration();
+
+
+    let startFrame =
+        0;
+
+
+    let segmentFrames =
+        0;
+
+
+
+    if (
+        uploadedAudioBuffer
+    ) {
+
+        startFrame =
+
+            Math.round(
+                segmentStart *
+                fs
+            );
+
+
+        segmentFrames =
+
+            Math.max(
+
+                0,
+
+                Math.min(
+
+                    uploadedMonoData.length -
+                    startFrame,
+
+                    Math.round(
+                        segmentDuration *
+                        fs
+                    )
+
+                )
+
+            );
+    }
+
+
+
+    return {
+
+        mode,
+        fs,
+
+        lagSamples,
+        effectiveDelay,
+
+        ready:
+            !!uploadedAudioBuffer,
+
+        segmentStart,
+        segmentDuration,
+
+        startFrame,
+        segmentFrames,
+
+        maxAmplitude:
+            Math.max(
+                customSelectionPeak,
+                0.001
+            )
+
+    };
+}
+
+
+
+/* ============================================================
+   SYNTHETIC SIGNAL
+   ============================================================ */
+
+function syntheticSignal(
+    time,
+    p
+) {
+
+    if (
+        p.mode === "pure"
+    ) {
+
+        return (
+
+            p.A *
+
+            Math.sin(
+                TWO_PI *
+                p.f *
+                time
+            )
+
+        );
+    }
+
+
+
+    if (
+        p.mode === "two"
+    ) {
+
+        return (
+
+            p.A1 *
+
+            Math.sin(
+                TWO_PI *
+                p.f1 *
+                time
+            )
+
+            +
+
+            p.A2 *
+
+            Math.sin(
+                TWO_PI *
+                p.f2 *
+                time
+            )
+
+        );
+    }
+
+
+
+    if (
+        p.mode === "damped"
+    ) {
+
+        if (
+            time < 0
+        ) {
+
+            return null;
+        }
+
+
+        return (
+
+            p.A *
+
+            Math.exp(
+                -p.beta *
+                time
+            )
+
+            *
+
+            Math.sin(
+                TWO_PI *
+                p.f *
+                time
+            )
+
+        );
+    }
+
+
+    return null;
+}
+
+
+
+/* ============================================================
+   ACTUAL DISCRETE SAMPLE
+   ============================================================ */
+
+function sampleAtIndex(
+    index,
+    p
+) {
+
+    if (
+        p.mode === "custom"
+    ) {
+
+        if (
+            !p.ready
+        ) {
+
+            return null;
+        }
+
+
+        if (
+            index < 0 ||
+            index >=
+            p.segmentFrames
+        ) {
+
+            return null;
+        }
+
+
+        return uploadedMonoData[
+
+            p.startFrame +
+            index
+
+        ];
+    }
+
+
+
+    if (
+        p.mode === "damped" &&
+        index < 0
+    ) {
+
+        return null;
+    }
+
+
+
+    return syntheticSignal(
+
+        index /
+        p.fs,
+
+        p
+
+    );
+}
+
+
+
+/* ============================================================
+   DISPLAY VALUE
+   ============================================================ */
+
+function displayValueAtTime(
+    time,
+    p
+) {
+
+    if (
+        p.mode === "custom"
+    ) {
+
+        if (
+            !p.ready
+        ) {
+
+            return null;
+        }
+
+
+        return sampleAtIndex(
+
+            Math.round(
+                time *
+                p.fs
+            ),
+
+            p
+
+        );
+    }
+
+
+    return syntheticSignal(
+        time,
+        p
+    );
+}
+
+
+
+/* ============================================================
+   RESET
+   ============================================================ */
+
+function resetEmbedding() {
+
+    embeddingSamples =
+        [];
+
+
+    nextSampleIndex =
+        0;
+}
+
+
+
+function resetAnimation() {
+
+    signalTime =
+        0;
+
+
+    resetEmbedding();
+}
+
+
+
+/* ============================================================
+   CREATE ACTUAL DELAY PAIRS
+
+       (x[n], x[n-k])
+   ============================================================ */
+
+function updateEmbeddingSamples(
+    p
+) {
+
+    if (
+        p.mode === "custom" &&
+        !p.ready
+    ) {
+
+        return;
+    }
+
+
+
+    let maximumIndex =
+
+        Math.floor(
+            signalTime *
+            p.fs
+        );
+
+
+
+    if (
+        p.mode === "custom"
+    ) {
+
+        maximumIndex =
+
+            Math.min(
+
+                maximumIndex,
+
+                p.segmentFrames -
+                1
+
+            );
+    }
+
+
+
+    let added =
+        0;
+
+
+    const maximumPerFrame =
+        20000;
+
+
+
+    while (
+        nextSampleIndex <=
+        maximumIndex
+
+        &&
+
+        added <
+        maximumPerFrame
+    ) {
+
+        const n =
+            nextSampleIndex;
+
+
+        const x =
+
+            sampleAtIndex(
+                n,
+                p
+            );
+
+
+        const delayedIndex =
+
+            n -
+            p.lagSamples;
+
+
+        const y =
+
+            sampleAtIndex(
+                delayedIndex,
+                p
+            );
+
+
+
+        /*
+            Boundary condition:
+
+            No wrap.
+            No zero padding.
+            No interpolation.
+        */
+
+        if (
+            x !== null &&
+            y !== null
+        ) {
+
+            embeddingSamples.push({
+
+                x,
+                y,
+
+                n,
+
+                time:
+                    n /
+                    p.fs
+
+            });
+        }
+
+
+        nextSampleIndex++;
+
+        added++;
+    }
+
+
+
+    const maximumPoints =
+
+        Math.max(
+
+            50,
+
+            Math.round(
+                getNumber(
+                    maxPointsInput,
+                    5000
+                )
+            )
+
+        );
+
+
+
+    if (
+        embeddingSamples.length >
+        maximumPoints
+    ) {
+
+        embeddingSamples.splice(
+
+            0,
+
+            embeddingSamples.length -
+            maximumPoints
+
+        );
+    }
+}
+
+
+
+/* ============================================================
+   GRID
+   ============================================================ */
+
+function drawGrid(
+    context,
+    width,
+    height,
+    spacing
+) {
+
+    context.save();
+
+
+    context.strokeStyle =
+        COLORS.grid;
+
+
+    context.lineWidth =
+        1;
+
+
+
+    for (
+        let x = 0;
+        x <= width;
+        x += spacing
+    ) {
+
+        context.beginPath();
+
+        context.moveTo(
+            x,
+            0
+        );
+
+        context.lineTo(
+            x,
+            height
+        );
+
+        context.stroke();
+    }
+
+
+
+    for (
+        let y = 0;
+        y <= height;
+        y += spacing
+    ) {
+
+        context.beginPath();
+
+        context.moveTo(
+            0,
+            y
+        );
+
+        context.lineTo(
+            width,
+            y
+        );
+
+        context.stroke();
+    }
+
+
+    context.restore();
+}
+
+
+
+/* ============================================================
+   GET ACTIVE TEMPORAL WINDOW
+
+   For early animation frames we use the currently available
+   history so the available trajectory still divides into
+   blue / gold / green thirds.
+   ============================================================ */
+
+function getActiveTimeRange(
+    p
+) {
+
+    const requestedWindow =
+        getNumber(
+            windowSelect,
+            0.03
+        );
+
+
+    let end =
+        Math.max(
+            0,
+            signalTime
+        );
+
+
+    if (
+        p.mode === "custom"
+    ) {
+
+        end =
+            Math.min(
+                end,
+                p.segmentDuration
+            );
+    }
+
+
+
+    const start =
+
+        Math.max(
+
+            0,
+
+            end -
+            requestedWindow
+
+        );
+
+
+    let duration =
+        end -
+        start;
+
+
+    /*
+        Avoid division by zero at t = 0.
+    */
+
+    duration =
+        Math.max(
+            duration,
+            1 /
+            p.fs
+        );
+
+
+    return {
+
+        start,
+        end,
+        duration,
+
+        requestedWindow
+
+    };
+}
+
+
+
+/* ============================================================
+   COLOR FOR A TIME SAMPLE
+   ============================================================ */
+
+function colorForTime(
+    time,
+    range
+) {
+
+    const fraction =
+
+        clamp(
+
+            (
+                time -
+                range.start
+            )
+
+            /
+
+            range.duration,
+
+            0,
+            0.999999
+
+        );
+
+
+    return colorFromFraction(
+        fraction
+    );
+}
+
+
+
+/* ============================================================
+   DRAW ONE WAVEFORM SEGMENT
+   ============================================================ */
+
+function drawWaveSection(
+    p,
+    width,
+    centerY,
+    amplitudeScale,
+    windowStart,
+    windowDuration,
+    startFraction,
+    endFraction,
+    color
+) {
+
+    const xStart =
+
+        Math.floor(
+            width *
+            startFraction
+        );
+
+
+    const xEnd =
+
+        Math.ceil(
+            width *
+            endFraction
+        );
+
+
+    waveCtx.save();
+
+
+    waveCtx.strokeStyle =
+        color;
+
+
+    waveCtx.lineWidth =
+        3.5;
+
+
+    waveCtx.lineJoin =
+        "round";
+
+
+    waveCtx.lineCap =
+        "round";
+
+
+    waveCtx.shadowBlur =
+
+        getNumber(
+            waveGlow,
+            16
+        );
+
+
+    waveCtx.shadowColor =
+        color;
+
+
+    waveCtx.beginPath();
+
+
+    let started =
+        false;
+
+
+
+    for (
+        let x = xStart;
+        x <= xEnd;
+        x++
+    ) {
+
+        const fraction =
+            x /
+            width;
+
+
+        const time =
+
+            windowStart
+
+            +
+
+            fraction *
+            windowDuration;
+
+
+        const value =
+
+            displayValueAtTime(
+                time,
+                p
+            );
+
+
+        if (
+            value === null
+        ) {
+
+            started =
+                false;
+
+            continue;
+        }
+
+
+        const y =
+
+            centerY
+
+            -
+
+            value *
+            amplitudeScale;
+
+
+
+        if (
+            !started
+        ) {
+
+            waveCtx.moveTo(
+                x,
+                y
+            );
+
+
+            started =
+                true;
+
+        } else {
+
+            waveCtx.lineTo(
+                x,
+                y
+            );
+        }
+    }
+
+
+    waveCtx.stroke();
+
+
+    waveCtx.restore();
+}
+
+
+
+/* ============================================================
+   DRAW TIME SERIES
+   ============================================================ */
+
+function drawWave(
+    p
+) {
+
+    const width =
+        waveCanvas.width;
+
+
+    const height =
+        waveCanvas.height;
+
+
+    const centerY =
+        height / 2;
+
+
+
+    waveCtx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    drawGrid(
+        waveCtx,
+        width,
+        height,
+        65
+    );
+
+
+
+    if (
+        p.mode === "custom" &&
+        !p.ready
+    ) {
+
+        waveCtx.fillStyle =
+            "#aab5c8";
+
+
+        waveCtx.font =
+            "24px Arial";
+
+
+        waveCtx.textAlign =
+            "center";
+
+
+        waveCtx.fillText(
+
+            "Choose an audio file to begin",
+
+            width / 2,
+            height / 2
+
+        );
+
+
+        return;
+    }
+
+
+
+    const amplitudeScale =
+
+        (
+            height *
+            0.35
+        )
+
+        /
+
+        p.maxAmplitude;
+
+
+
+    /* zero axis */
+
+    waveCtx.strokeStyle =
+        COLORS.axis;
+
+
+    waveCtx.lineWidth =
+        2;
+
+
+    waveCtx.beginPath();
+
+    waveCtx.moveTo(
+        0,
+        centerY
+    );
+
+    waveCtx.lineTo(
+        width,
+        centerY
+    );
+
+    waveCtx.stroke();
+
+
+
+    const windowDuration =
+
+        getNumber(
+            windowSelect,
+            0.03
+        );
+
+
+    /*
+        The current sample stays at 82% width.
+        The waveform scrolls behind it.
+    */
+
+    const currentFraction =
+        0.82;
+
+
+    const currentX =
+
+        width *
+        currentFraction;
+
+
+    const windowStart =
+
+        signalTime
+
+        -
+
+        currentFraction *
+        windowDuration;
+
+
+
+    /*
+        THREE COLORED SECTIONS
+    */
+
+    drawWaveSection(
+
+        p,
+        width,
+        centerY,
+        amplitudeScale,
+        windowStart,
+        windowDuration,
+
+        0,
+        1 / 3,
+
+        COLORS.blue
+
+    );
+
+
+    drawWaveSection(
+
+        p,
+        width,
+        centerY,
+        amplitudeScale,
+        windowStart,
+        windowDuration,
+
+        1 / 3,
+        2 / 3,
+
+        COLORS.gold
+
+    );
+
+
+    drawWaveSection(
+
+        p,
+        width,
+        centerY,
+        amplitudeScale,
+        windowStart,
+        windowDuration,
+
+        2 / 3,
+        1,
+
+        COLORS.green
+
+    );
+
+
+
+    /* subtle separators */
+
+    waveCtx.save();
+
+
+    waveCtx.setLineDash(
+        [5, 7]
+    );
+
+
+    waveCtx.strokeStyle =
+        "rgba(255,255,255,0.12)";
+
+
+    for (
+        const fraction of
+        [
+            1 / 3,
+            2 / 3
+        ]
+    ) {
+
+        const x =
+            width *
+            fraction;
+
+
+        waveCtx.beginPath();
+
+        waveCtx.moveTo(
+            x,
+            0
+        );
+
+        waveCtx.lineTo(
+            x,
+            height
+        );
+
+        waveCtx.stroke();
+    }
+
+
+    waveCtx.restore();
+
+
+
+    /* temporal labels */
+
+    waveCtx.font =
+        "15px Arial";
+
+
+    waveCtx.textAlign =
+        "center";
+
+
+    waveCtx.fillStyle =
+        COLORS.blue;
+
+
+    waveCtx.fillText(
+        "EARLY",
+        width /
+        6,
+        28
+    );
+
+
+    waveCtx.fillStyle =
+        COLORS.gold;
+
+
+    waveCtx.fillText(
+        "MIDDLE",
+        width /
+        2,
+        28
+    );
+
+
+    waveCtx.fillStyle =
+        COLORS.green;
+
+
+    waveCtx.fillText(
+        "RECENT",
+        width *
+        5 /
+        6,
+        28
+    );
+
+
+
+    /* ========================================================
+       CURRENT AND DELAYED BALLS
+       ======================================================== */
+
+    const currentIndex =
+
+        Math.round(
+            signalTime *
+            p.fs
+        );
+
+
+    const delayedIndex =
+
+        currentIndex -
+        p.lagSamples;
+
+
+    const currentValue =
+
+        sampleAtIndex(
+            currentIndex,
+            p
+        );
+
+
+    const delayedValue =
+
+        sampleAtIndex(
+            delayedIndex,
+            p
+        );
+
+
+
+    if (
+        currentValue === null
+    ) {
+
+        return;
+    }
+
+
+
+    const currentY =
+
+        centerY
+
+        -
+
+        currentValue *
+        amplitudeScale;
+
+
+
+    const pastX =
+
+        currentX
+
+        -
+
+        (
+            p.effectiveDelay /
+            windowDuration
+        )
+
+        *
+
+        width;
+
+
+
+    let pastY =
+        null;
+
+
+
+    if (
+        delayedValue !== null
+    ) {
+
+        pastY =
+
+            centerY
+
+            -
+
+            delayedValue *
+            amplitudeScale;
+    }
+
+
+
+    /*
+        Current point sits in the recent part
+        of the visible moving window.
+    */
+
+    const currentColor =
+        COLORS.green;
+
+
+
+    /*
+        Delayed point color comes from its horizontal
+        location in the same three-part time window.
+    */
+
+    let delayedColor =
+        COLORS.blue;
+
+
+    if (
+        pastX >= 0
+    ) {
+
+        delayedColor =
+
+            colorFromFraction(
+
+                clamp(
+                    pastX /
+                    width,
+                    0,
+                    0.99999
+                )
+
+            );
+    }
+
+
+
+    /* guides */
+
+    waveCtx.setLineDash(
+        [7, 7]
+    );
+
+
+    waveCtx.strokeStyle =
+        currentColor;
+
+
+    waveCtx.globalAlpha =
+        0.30;
+
+
+    waveCtx.beginPath();
+
+    waveCtx.moveTo(
+        currentX,
+        centerY
+    );
+
+    waveCtx.lineTo(
+        currentX,
+        currentY
+    );
+
+    waveCtx.stroke();
+
+
+
+    if (
+        pastY !== null &&
+        pastX >= 0 &&
+        pastX <= width
+    ) {
+
+        waveCtx.strokeStyle =
+            delayedColor;
+
+
+        waveCtx.beginPath();
+
+        waveCtx.moveTo(
+            pastX,
+            centerY
+        );
+
+        waveCtx.lineTo(
+            pastX,
+            pastY
+        );
+
+        waveCtx.stroke();
+    }
+
+
+    waveCtx.globalAlpha =
+        1;
+
+
+    waveCtx.setLineDash([]);
+
+
+
+    const glow =
+        getNumber(
+            waveGlow,
+            16
+        );
+
+
+
+    /* delayed ball */
+
+    if (
+        pastY !== null &&
+        pastX >= 0 &&
+        pastX <= width
+    ) {
+
+        waveCtx.save();
+
+
+        waveCtx.shadowBlur =
+            glow +
+            8;
+
+
+        waveCtx.shadowColor =
+            delayedColor;
+
+
+        waveCtx.fillStyle =
+            delayedColor;
+
+
+        waveCtx.beginPath();
+
+
+        waveCtx.arc(
+
+            pastX,
+            pastY,
+            13,
+
+            0,
+            TWO_PI
+
+        );
+
+
+        waveCtx.fill();
+
+
+        waveCtx.restore();
+
+
+
+        waveCtx.fillStyle =
+            delayedColor;
+
+
+        waveCtx.font =
+            "bold 20px Arial";
+
+
+        waveCtx.textAlign =
+            "center";
+
+
+        waveCtx.fillText(
+
+            "x(t−τ)",
+
+            pastX,
+
+            Math.max(
+                50,
+                pastY - 25
+            )
+
+        );
+    }
+
+
+
+    /* current ball */
+
+    waveCtx.save();
+
+
+    waveCtx.shadowBlur =
+        glow +
+        8;
+
+
+    waveCtx.shadowColor =
+        currentColor;
+
+
+    waveCtx.fillStyle =
+        currentColor;
+
+
+    waveCtx.beginPath();
+
+
+    waveCtx.arc(
+
+        currentX,
+        currentY,
+        14,
+
+        0,
+        TWO_PI
+
+    );
+
+
+    waveCtx.fill();
+
+
+    waveCtx.restore();
+
+
+
+    waveCtx.fillStyle =
+        currentColor;
+
+
+    waveCtx.font =
+        "bold 20px Arial";
+
+
+    waveCtx.textAlign =
+        "center";
+
+
+    waveCtx.fillText(
+
+        "x(t)",
+
+        currentX,
+
+        Math.max(
+            50,
+            currentY - 25
+        )
+
+    );
+}
+
+
+
+/* ============================================================
+   2D SHAPE AXES
+   ============================================================ */
+
+function drawShapeAxes() {
+
+    const width =
+        shapeCanvas.width;
+
+
+    const height =
+        shapeCanvas.height;
+
+
+    const cx =
+        width / 2;
+
+
+    const cy =
+        height / 2;
+
+
+    drawGrid(
+        shapeCtx,
+        width,
+        height,
+        75
+    );
+
+
+    shapeCtx.strokeStyle =
+        COLORS.axis;
+
+
+    shapeCtx.lineWidth =
+        2;
+
+
+
+    shapeCtx.beginPath();
+
+    shapeCtx.moveTo(
+        30,
+        cy
+    );
+
+    shapeCtx.lineTo(
+        width - 30,
+        cy
+    );
+
+    shapeCtx.stroke();
+
+
+
+    shapeCtx.beginPath();
+
+    shapeCtx.moveTo(
+        cx,
+        30
+    );
+
+    shapeCtx.lineTo(
+        cx,
+        height - 30
+    );
+
+    shapeCtx.stroke();
+
+
+
+    shapeCtx.font =
+        "bold 19px Arial";
+
+
+    shapeCtx.fillStyle =
+        COLORS.green;
+
+
+    shapeCtx.fillText(
+        "x[n]",
+        width - 70,
+        cy - 15
+    );
+
+
+    shapeCtx.fillStyle =
+        COLORS.gold;
+
+
+    shapeCtx.fillText(
+        "x[n−k]",
+        cx + 15,
+        35
+    );
+}
+
+
+
+/* ============================================================
+   POINTS IN THE ACTIVE TIME WINDOW
+   ============================================================ */
+
+function getVisibleEmbeddingSamples(
+    p
+) {
+
+    if (
+        embeddingSamples.length ===
+        0
+    ) {
+
+        return [];
+    }
+
+
+    const range =
+        getActiveTimeRange(
+            p
+        );
+
+
+    const visible =
+
+        embeddingSamples.filter(
+
+            point =>
+
+                point.time >=
+                range.start
+
+                &&
+
+                point.time <=
+                range.end
+
+        );
+
+
+
+    /*
+        In extremely early frames there may be only
+        one valid delayed pair.
+
+        We keep whatever data genuinely exists.
+    */
+
+    return visible;
+}
+
+
+
+/* ============================================================
+   DRAW COLORED EMBEDDING LINE
+
+   The line simply connects real sampled points.
+   ============================================================ */
+
+function drawEmbeddingLine(
+    points,
+    range,
+    cx,
+    cy,
+    scale
+) {
+
+    if (
+        points.length <
+        2
+    ) {
+
+        return;
+    }
+
+
+    const alpha =
+        getNumber(
+            lineAlpha,
+            0.22
+        );
+
+
+    const glow =
+        getNumber(
+            embeddingGlow,
+            18
+        );
+
+
+
+    /*
+        Draw each actual sample-to-sample segment
+        with the temporal color of its newer point.
+    */
+
+    for (
+        let i = 1;
+        i < points.length;
+        i++
+    ) {
+
+        const previous =
+            points[i - 1];
+
+
+        const current =
+            points[i];
+
+
+        const color =
+
+            colorForTime(
+                current.time,
+                range
+            );
+
+
+        const x1 =
+            cx +
+            previous.x *
+            scale;
+
+
+        const y1 =
+            cy -
+            previous.y *
+            scale;
+
+
+        const x2 =
+            cx +
+            current.x *
+            scale;
+
+
+        const y2 =
+            cy -
+            current.y *
+            scale;
+
+
+
+        shapeCtx.save();
+
+
+        shapeCtx.globalAlpha =
+            alpha;
+
+
+        shapeCtx.strokeStyle =
+            color;
+
+
+        shapeCtx.lineWidth =
+            3;
+
+
+        shapeCtx.lineCap =
+            "round";
+
+
+        shapeCtx.shadowBlur =
+            glow;
+
+
+        shapeCtx.shadowColor =
+            color;
+
+
+        shapeCtx.beginPath();
+
+        shapeCtx.moveTo(
+            x1,
+            y1
+        );
+
+        shapeCtx.lineTo(
+            x2,
+            y2
+        );
+
+        shapeCtx.stroke();
+
+
+        shapeCtx.restore();
+    }
+}
+
+
+
+/* ============================================================
+   DRAW ACTUAL SCATTER
+   ============================================================ */
+
+function drawEmbeddingScatter(
+    points,
+    range,
+    cx,
+    cy,
+    scale
+) {
+
+    const alpha =
+        getNumber(
+            scatterAlpha,
+            0.90
+        );
+
+
+    const radius =
+        getNumber(
+            pointSize,
+            2.5
+        );
+
+
+    const glow =
+        getNumber(
+            embeddingGlow,
+            18
+        );
+
+
+
+    for (
+        const point of
+        points
+    ) {
+
+        const color =
+
+            colorForTime(
+                point.time,
+                range
+            );
+
+
+        const x =
+            cx +
+            point.x *
+            scale;
+
+
+        const y =
+            cy -
+            point.y *
+            scale;
+
+
+
+        shapeCtx.save();
+
+
+        shapeCtx.globalAlpha =
+            alpha;
+
+
+        shapeCtx.fillStyle =
+            color;
+
+
+        shapeCtx.shadowBlur =
+            glow;
+
+
+        shapeCtx.shadowColor =
+            color;
+
+
+        shapeCtx.beginPath();
+
+
+        shapeCtx.arc(
+
+            x,
+            y,
+            radius,
+
+            0,
+            TWO_PI
+
+        );
+
+
+        shapeCtx.fill();
+
+
+        shapeCtx.restore();
+    }
+}
+
+
+
+/* ============================================================
+   DRAW 2D EMBEDDING
+   ============================================================ */
+
+function drawShape(
+    p
+) {
+
+    const width =
+        shapeCanvas.width;
+
+
+    const height =
+        shapeCanvas.height;
+
+
+    const cx =
+        width / 2;
+
+
+    const cy =
+        height / 2;
+
+
+
+    const scale =
+
+        (
+            width *
+            0.38
+        )
+
+        /
+
+        p.maxAmplitude;
+
+
+
+    shapeCtx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    drawShapeAxes();
+
+
+
+    const range =
+        getActiveTimeRange(
+            p
+        );
+
+
+    const points =
+        getVisibleEmbeddingSamples(
+            p
+        );
+
+
+
+    if (
+        plotMode.value === "line" ||
+        plotMode.value === "both"
+    ) {
+
+        drawEmbeddingLine(
+
+            points,
+            range,
+
+            cx,
+            cy,
+            scale
+
+        );
+    }
+
+
+
+    if (
+        plotMode.value === "scatter" ||
+        plotMode.value === "both"
+    ) {
+
+        drawEmbeddingScatter(
+
+            points,
+            range,
+
+            cx,
+            cy,
+            scale
+
+        );
+    }
+
+
+
+    /* ========================================================
+       CURRENT EMBEDDING POINT
+       ======================================================== */
+
+    if (
+        points.length >
+        0
+    ) {
+
+        const latest =
+            points[
+                points.length -
+                1
+            ];
+
+
+        const x =
+            cx +
+            latest.x *
+            scale;
+
+
+        const y =
+            cy -
+            latest.y *
+            scale;
+
+
+
+        /* projection lines */
+
+        shapeCtx.save();
+
+
+        shapeCtx.setLineDash(
+            [7, 7]
+        );
+
+
+        shapeCtx.strokeStyle =
+            "rgba(84,227,145,0.35)";
+
+
+        shapeCtx.beginPath();
+
+        shapeCtx.moveTo(
+            x,
+            cy
+        );
+
+        shapeCtx.lineTo(
+            x,
+            y
+        );
+
+        shapeCtx.stroke();
+
+
+
+        shapeCtx.strokeStyle =
+            "rgba(255,216,77,0.35)";
+
+
+        shapeCtx.beginPath();
+
+        shapeCtx.moveTo(
+            cx,
+            y
+        );
+
+        shapeCtx.lineTo(
+            x,
+            y
+        );
+
+        shapeCtx.stroke();
+
+
+        shapeCtx.restore();
+
+
+
+        /* current glowing point */
+
+        shapeCtx.save();
+
+
+        shapeCtx.fillStyle =
+            COLORS.green;
+
+
+        shapeCtx.shadowBlur =
+
+            getNumber(
+                embeddingGlow,
+                18
+            )
+
+            +
+
+            10;
+
+
+        shapeCtx.shadowColor =
+            COLORS.green;
+
+
+        shapeCtx.beginPath();
+
+
+        shapeCtx.arc(
+
+            x,
+            y,
+            8,
+
+            0,
+            TWO_PI
+
+        );
+
+
+        shapeCtx.fill();
+
+
+        shapeCtx.restore();
+    }
+
+
+
+    /* ========================================================
+       COLOR LABELS
+       ======================================================== */
+
+    shapeCtx.font =
+        "14px Arial";
+
+
+    shapeCtx.textAlign =
+        "left";
+
+
+    shapeCtx.fillStyle =
+        COLORS.blue;
+
+
+    shapeCtx.fillText(
+        "● early",
+        22,
+        height - 58
+    );
+
+
+    shapeCtx.fillStyle =
+        COLORS.gold;
+
+
+    shapeCtx.fillText(
+        "● middle",
+        22,
+        height - 38
+    );
+
+
+    shapeCtx.fillStyle =
+        COLORS.green;
+
+
+    shapeCtx.fillText(
+        "● recent",
+        22,
+        height - 18
+    );
+}
+
+
+
+/* ============================================================
+   AUDIO OVERVIEW
+
+   Selected segment itself is also divided into
+   blue / gold / green thirds.
+   ============================================================ */
+
+function drawUploadOverview() {
+
+    const width =
+        uploadOverviewCanvas.width;
+
+
+    const height =
+        uploadOverviewCanvas.height;
+
+
+
+    uploadOverviewCtx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    uploadOverviewCtx.fillStyle =
+        "#05070b";
+
+
+    uploadOverviewCtx.fillRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+
+    if (
+        !uploadedAudioBuffer ||
+        !uploadedMonoData
+    ) {
+
+        uploadOverviewCtx.fillStyle =
+            "#9da9bd";
+
+
+        uploadOverviewCtx.font =
+            "18px Arial";
+
+
+        uploadOverviewCtx.textAlign =
+            "center";
+
+
+        uploadOverviewCtx.fillText(
+
+            "Upload an audio file",
+
+            width / 2,
+            height / 2
+
+        );
+
+
+        return;
+    }
+
+
+
+    const centerY =
+        height / 2;
+
+
+    const samplesPerPixel =
+
+        uploadedMonoData.length /
+        width;
+
+
+
+    uploadOverviewCtx.strokeStyle =
+        "rgba(220,230,245,0.55)";
+
+
+    uploadOverviewCtx.lineWidth =
+        1;
+
+
+    uploadOverviewCtx.beginPath();
+
+
+
+    for (
+        let x = 0;
+        x < width;
+        x++
+    ) {
+
+        const start =
+
+            Math.floor(
+                x *
+                samplesPerPixel
+            );
+
+
+        const end =
+
+            Math.min(
+
+                uploadedMonoData.length,
+
+                Math.floor(
+                    (
+                        x + 1
+                    ) *
+                    samplesPerPixel
+                )
+
+            );
+
+
+        let minimum =
+            1;
+
+
+        let maximum =
+            -1;
+
+
+
+        for (
+            let index = start;
+            index < end;
+            index++
+        ) {
+
+            const value =
+                uploadedMonoData[
+                    index
+                ];
+
+
+            minimum =
+                Math.min(
+                    minimum,
+                    value
+                );
+
+
+            maximum =
+                Math.max(
+                    maximum,
+                    value
+                );
+        }
+
+
+
+        uploadOverviewCtx.moveTo(
+
+            x,
+
+            centerY -
+            maximum *
+            centerY *
+            0.85
+
+        );
+
+
+        uploadOverviewCtx.lineTo(
+
+            x,
+
+            centerY -
+            minimum *
+            centerY *
+            0.85
+
+        );
+    }
+
+
+    uploadOverviewCtx.stroke();
+
+
+
+    const total =
+        uploadedAudioBuffer.duration;
+
+
+    const startTime =
+        getSegmentStart();
+
+
+    const duration =
+        getSegmentDuration();
+
+
+    const x1 =
+
+        startTime /
+        total *
+        width;
+
+
+    const x2 =
+
+        (
+            startTime +
+            duration
+        ) /
+        total *
+        width;
+
+
+    const selectedWidth =
+        x2 -
+        x1;
+
+
+
+    const regionWidth =
+        selectedWidth /
+        3;
+
+
+
+    const colors = [
+
+        COLORS.blue,
+        COLORS.gold,
+        COLORS.green
+
+    ];
+
+
+
+    for (
+        let region = 0;
+        region < 3;
+        region++
+    ) {
+
+        uploadOverviewCtx.save();
+
+
+        uploadOverviewCtx.globalAlpha =
+            0.18;
+
+
+        uploadOverviewCtx.fillStyle =
+            colors[
+                region
+            ];
+
+
+        uploadOverviewCtx.fillRect(
+
+            x1 +
+            region *
+            regionWidth,
+
+            0,
+
+            regionWidth,
+
+            height
+
+        );
+
+
+        uploadOverviewCtx.restore();
+    }
+
+
+
+    /* boundaries */
+
+    uploadOverviewCtx.strokeStyle =
+        "rgba(255,255,255,0.45)";
+
+
+    uploadOverviewCtx.lineWidth =
+        1.5;
+
+
+    for (
+        let i = 0;
+        i <= 3;
+        i++
+    ) {
+
+        const x =
+
+            x1 +
+            i *
+            regionWidth;
+
+
+        uploadOverviewCtx.beginPath();
+
+        uploadOverviewCtx.moveTo(
+            x,
+            0
+        );
+
+        uploadOverviewCtx.lineTo(
+            x,
+            height
+        );
+
+        uploadOverviewCtx.stroke();
+    }
+}
+
+
+
+/* ============================================================
+   CUSTOM PEAK
+   ============================================================ */
+
+function updateCustomSelectionPeak() {
+
+    if (
+        !uploadedAudioBuffer ||
+        !uploadedMonoData
+    ) {
+
+        customSelectionPeak =
+            1;
+
+        return;
+    }
+
+
+    const fs =
+        uploadedAudioBuffer.sampleRate;
+
+
+    const start =
+
+        Math.round(
+            getSegmentStart() *
+            fs
+        );
+
+
+    const count =
+
+        Math.round(
+            getSegmentDuration() *
+            fs
+        );
+
+
+    const end =
+
+        Math.min(
+            uploadedMonoData.length,
+            start +
+            count
+        );
+
+
+    let peak =
+        0;
+
+
+
+    for (
+        let index = start;
+        index < end;
+        index++
+    ) {
+
+        peak =
+
+            Math.max(
+
+                peak,
+
+                Math.abs(
+                    uploadedMonoData[
+                        index
+                    ]
+                )
+
+            );
+    }
+
+
+    customSelectionPeak =
+
+        Math.max(
+            peak,
+            0.001
+        );
+}
+
+
+
+/* ============================================================
+   SEGMENT LIMITS
+   ============================================================ */
+
+function updateSegmentLimits() {
+
+    if (
+        !uploadedAudioBuffer
+    ) {
+
+        return;
+    }
+
+
+    const total =
+        uploadedAudioBuffer.duration;
+
+
+    const start =
+
+        clamp(
+
+            getNumber(
+                segmentStartInput,
+                0
+            ),
+
+            0,
+
+            total
+
+        );
+
+
+    const maximumDuration =
+
+        Math.max(
+
+            0.001,
+
+            total -
+            start
+
+        );
+
+
+    const duration =
+
+        clamp(
+
+            getNumber(
+                segmentDurationInput,
+                maximumDuration
+            ),
+
+            0.001,
+
+            maximumDuration
+
+        );
+
+
+
+    segmentStartInput.value =
+        start.toFixed(3);
+
+
+    segmentStartSlider.value =
+        start;
+
+
+    segmentDurationInput.max =
+        maximumDuration;
+
+
+    segmentDurationSlider.max =
+        maximumDuration;
+
+
+    segmentDurationInput.value =
+        duration.toFixed(3);
+
+
+    segmentDurationSlider.value =
+        duration;
+
+
+
+    updateCustomSelectionPeak();
+
+    drawUploadOverview();
+
+    resetAnimation();
+
+    updateDelayHint();
+}
+
+
+
+/* ============================================================
+   AUDIO CONTEXT
+   ============================================================ */
+
+function getAudioContext() {
+
+    if (
+        !audioContext
+    ) {
+
+        audioContext =
+
+            new (
+
+                window.AudioContext ||
+                window.webkitAudioContext
+
+            )();
+    }
+
+
+    return audioContext;
+}
+
+
+
+/* ============================================================
+   LOAD AUDIO
+   ============================================================ */
+
+async function loadAudioFile(
+    file
+) {
+
+    if (
+        !file
+    ) {
+
+        return;
+    }
+
+
+    uploadStatus.textContent =
+        "Decoding audio...";
+
+
+    try {
+
+        const context =
+            getAudioContext();
+
+
+        const buffer =
+            await file.arrayBuffer();
+
+
+        const decoded =
+
+            await context.decodeAudioData(
+                buffer.slice(0)
+            );
+
+
+        uploadedAudioBuffer =
+            decoded;
+
+
+        uploadedMonoData =
+
+            new Float32Array(
+                decoded.length
+            );
+
+
+
+        /*
+            Convert to mono by averaging channels.
+        */
+
+        for (
+            let channel = 0;
+            channel <
+            decoded.numberOfChannels;
+            channel++
+        ) {
+
+            const data =
+
+                decoded.getChannelData(
+                    channel
+                );
+
+
+            for (
+                let index = 0;
+                index <
+                decoded.length;
+                index++
+            ) {
+
+                uploadedMonoData[index] +=
+
+                    data[index]
+
+                    /
+
+                    decoded.numberOfChannels;
+            }
+        }
+
+
+
+        const duration =
+            decoded.duration;
+
+
+
+        segmentStartSlider.disabled =
+            false;
+
+
+        segmentStartInput.disabled =
+            false;
+
+
+        segmentDurationSlider.disabled =
+            false;
+
+
+        segmentDurationInput.disabled =
+            false;
+
+
+        fullFileButton.disabled =
+            false;
+
+
+
+        segmentStartSlider.max =
+            duration;
+
+
+        segmentStartInput.max =
+            duration;
+
+
+        segmentStartSlider.value =
+            0;
+
+
+        segmentStartInput.value =
+            "0.000";
+
+
+
+        const initialDuration =
+
+            Math.min(
+                5,
+                duration
+            );
+
+
+        segmentDurationSlider.max =
+            duration;
+
+
+        segmentDurationInput.max =
+            duration;
+
+
+        segmentDurationSlider.value =
+            initialDuration;
+
+
+        segmentDurationInput.value =
+            initialDuration.toFixed(3);
+
+
+
+        uploadStatus.textContent =
+
+            file.name +
+
+            " | " +
+
+            duration.toFixed(2) +
+
+            " s | " +
+
+            decoded.sampleRate +
+
+            " Hz | " +
+
+            decoded.numberOfChannels +
+
+            (
+                decoded.numberOfChannels ===
+                1
+
+                ? " channel"
+
+                : " channels"
+            );
+
+
+
+        updateCustomSelectionPeak();
+
+        drawUploadOverview();
+
+        resetAnimation();
+
+        updateDelayHint();
+
+
+    } catch (
+        error
+    ) {
+
+        console.error(
+            error
+        );
+
+
+        uploadStatus.textContent =
+            "Could not decode this audio file.";
+    }
+}
+
+
+
+/* ============================================================
+   SAMPLE INFORMATION
+   ============================================================ */
+
+function updateSampleInformation(
+    p
+) {
+
+    if (
+        p.mode === "custom" &&
+        !p.ready
+    ) {
+
+        sampleInfo.textContent =
+            "No uploaded audio loaded.";
+
+        return;
+    }
+
+
+    const range =
+        getActiveTimeRange(
+            p
+        );
+
+
+    const visiblePoints =
+        getVisibleEmbeddingSamples(
+            p
+        );
+
+
+    let text =
+
+        (
+            p.mode === "custom"
+
+            ? "Native sampling rate: "
+
+            : "Sampling rate: "
+        )
+
+        +
+
+        "<strong>" +
+
+        p.fs.toFixed(0) +
+
+        " Hz</strong>"
+
+        +
+
+        " &nbsp; | &nbsp; "
+
+        +
+
+        "lag <strong>k = "
+
+        +
+
+        p.lagSamples
+
+        +
+
+        "</strong>"
+
+        +
+
+        " &nbsp; | &nbsp; "
+
+        +
+
+        "τeff = <strong>"
+
+        +
+
+        (
+            p.effectiveDelay *
+            1000
+        ).toFixed(3)
+
+        +
+
+        " ms</strong>"
+
+        +
+
+        " &nbsp; | &nbsp; "
+
+        +
+
+        "visible points: <strong>"
+
+        +
+
+        visiblePoints.length
+
+        +
+
+        "</strong>"
+
+        +
+
+        "<br>Color window: <strong>"
+
+        +
+
+        (
+            range.duration *
+            1000
+        ).toFixed(2)
+
+        +
+
+        " ms</strong>";
+
+
+
+    if (
+        p.mode === "custom" &&
+        p.lagSamples >=
+        p.segmentFrames
+    ) {
+
+        text +=
+
+            '<br><span class="warning">' +
+
+            "Delay is longer than the selected segment." +
+
+            "</span>";
+    }
+
+
+    sampleInfo.innerHTML =
+        text;
+}
+
+
+
+/* ============================================================
+   DAMPED LOOP
+   ============================================================ */
+
+function getDampedLoopTime(
+    p
+) {
+
+    if (
+        p.beta >
+        0.000001
+    ) {
+
+        return Math.min(
+
+            60,
+
+            Math.max(
+
+                6 /
+                p.beta,
+
+                8 /
+                p.f
+
+            )
+
+        );
+    }
+
+
+    return 8 /
+        p.f;
+}
+
+
+
+/* ============================================================
+   SOUND
+   ============================================================ */
+
+function stopSound() {
+
+    for (
+        const source of
+        activeAudioSources
+    ) {
+
+        try {
+            source.stop();
+        } catch (
+            error
+        ) {
+        }
+
+
+        try {
+            source.disconnect();
+        } catch (
+            error
+        ) {
+        }
+    }
+
+
+    activeAudioSources =
+        [];
+}
+
+
+
+function createOscillator(
+    context,
+    frequency,
+    gainValue,
+    start,
+    stop
+) {
+
+    const oscillator =
+        context.createOscillator();
+
+
+    const gain =
+        context.createGain();
+
+
+    oscillator.type =
+        "sine";
+
+
+    oscillator.frequency.setValueAtTime(
+        frequency,
+        start
+    );
+
+
+    gain.gain.setValueAtTime(
+        gainValue,
+        start
+    );
+
+
+    oscillator.connect(
+        gain
+    );
+
+
+    gain.connect(
+        context.destination
+    );
+
+
+    oscillator.start(
+        start
+    );
+
+
+    oscillator.stop(
+        stop
+    );
+
+
+    activeAudioSources.push(
+        oscillator
+    );
+
+
+    return {
+        oscillator,
+        gain
+    };
+}
+
+
+
+async function playCurrentSound() {
+
+    stopSound();
+
+
+    const context =
+        getAudioContext();
+
+
+    if (
+        context.state ===
+        "suspended"
+    ) {
+
+        await context.resume();
+    }
+
+
+    const p =
+        getParameters();
+
+
+    const start =
+        context.currentTime +
+        0.03;
+
+
+
+    /* uploaded audio */
+
+    if (
+        p.mode === "custom"
+    ) {
+
+        if (
+            !uploadedAudioBuffer
+        ) {
+
+            uploadStatus.textContent =
+                "Choose an audio file first.";
+
+            return;
+        }
+
+
+        const source =
+            context.createBufferSource();
+
+
+        const gain =
+            context.createGain();
+
+
+        source.buffer =
+            uploadedAudioBuffer;
+
+
+        gain.gain.value =
+            0.8;
+
+
+        source.connect(
+            gain
+        );
+
+
+        gain.connect(
+            context.destination
+        );
+
+
+        source.start(
+
+            start,
+
+            p.segmentStart,
+
+            p.segmentDuration
+
+        );
+
+
+        activeAudioSources.push(
+            source
+        );
+
+
+        return;
+    }
+
+
+
+    const duration =
+
+        Math.max(
+
+            0.2,
+
+            getNumber(
+                soundDuration,
+                3
+            )
+
+        );
+
+
+    const stop =
+        start +
+        duration;
+
+
+    const master =
+        0.16;
+
+
+
+    if (
+        p.mode === "pure"
+    ) {
+
+        createOscillator(
+
+            context,
+
+            p.f,
+
+            master *
+            p.A,
+
+            start,
+            stop
+
+        );
+
+
+        return;
+    }
+
+
+
+    if (
+        p.mode === "two"
+    ) {
+
+        const total =
+
+            Math.max(
+                p.A1 +
+                p.A2,
+                0.001
+            );
+
+
+        createOscillator(
+
+            context,
+
+            p.f1,
+
+            master *
+            p.A1 /
+            total,
+
+            start,
+            stop
+
+        );
+
+
+        createOscillator(
+
+            context,
+
+            p.f2,
+
+            master *
+            p.A2 /
+            total,
+
+            start,
+            stop
+
+        );
+
+
+        return;
+    }
+
+
+
+    /* damped */
+
+    const result =
+
+        createOscillator(
+
+            context,
+
+            p.f,
+
+            master *
+            p.A,
+
+            start,
+            stop
+
+        );
+
+
+    const initial =
+
+        Math.max(
+            master *
+            p.A,
+            0.0001
+        );
+
+
+    const final =
+
+        Math.max(
+
+            initial *
+
+            Math.exp(
+                -p.beta *
+                duration
+            ),
+
+            0.00001
+
+        );
+
+
+    result.gain.gain.cancelScheduledValues(
+        start
+    );
+
+
+    result.gain.gain.setValueAtTime(
+        initial,
+        start
+    );
+
+
+    result.gain.gain.exponentialRampToValueAtTime(
+        final,
+        stop
+    );
+}
+
+
+
+/* ============================================================
+   SIGNAL UI
+   ============================================================ */
+
+function updateSignalControls() {
+
+    const mode =
+        signalType.value;
+
+
+    pureControls.classList.toggle(
+        "hidden",
+        mode !== "pure"
+    );
+
+
+    twoControls.classList.toggle(
+        "hidden",
+        mode !== "two"
+    );
+
+
+    dampedControls.classList.toggle(
+        "hidden",
+        mode !== "damped"
+    );
+
+
+    customControls.classList.toggle(
+        "hidden",
+        mode !== "custom"
+    );
+
+
+    sampleRateGroup.classList.toggle(
+        "hidden",
+        mode === "custom"
+    );
+
+
+    soundDurationGroup.classList.toggle(
+        "hidden",
+        mode === "custom"
+    );
+
+
+
+    if (
+        mode === "pure"
+    ) {
+
+        signalDescription.textContent =
+            "A pure tone. Time is encoded blue → gold → green.";
+
+        soundButton.textContent =
+            "▶ Play Sound";
+
+    } else if (
+        mode === "two"
+    ) {
+
+        signalDescription.textContent =
+            "Two frequencies combined into one signal. Time is encoded blue → gold → green.";
+
+        soundButton.textContent =
+            "▶ Play Sound";
+
+    } else if (
+        mode === "damped"
+    ) {
+
+        signalDescription.textContent =
+            "A damped oscillation. The same temporal colors are preserved in delay space.";
+
+        soundButton.textContent =
+            "▶ Play Sound";
+
+    } else {
+
+        signalDescription.textContent =
+            "Your selected audio segment is split temporally into blue, gold and green.";
+
+        soundButton.textContent =
+            "▶ Play Selected Audio";
+    }
+
+
+    updateDelayHint();
+
+    drawUploadOverview();
+}
+
+
+
+/* ============================================================
+   DELAY INFO
+   ============================================================ */
+
+function updateDelayHint() {
+
+    const p =
+        getParameters();
+
+
+    let text =
+
+        "k = "
+
+        +
+
+        p.lagSamples
+
+        +
+
+        " samples | τeff = "
+
+        +
+
+        (
+            p.effectiveDelay *
+            1000
+        ).toFixed(3)
+
+        +
+
+        " ms";
+
+
+
+    if (
+        p.mode === "pure" ||
+        p.mode === "damped"
+    ) {
+
+        text +=
+
+            " | τ/T = "
+
+            +
+
+            (
+                p.effectiveDelay *
+                p.f
+            ).toFixed(3);
+    }
+
+
+
+    if (
+        p.mode === "two"
+    ) {
+
+        text +=
+
+            " | τ/T₁ = "
+
+            +
+
+            (
+                p.effectiveDelay *
+                p.f1
+            ).toFixed(3)
+
+            +
+
+            " | τ/T₂ = "
+
+            +
+
+            (
+                p.effectiveDelay *
+                p.f2
+            ).toFixed(3);
+    }
+
+
+    delayHint.textContent =
+        text;
+}
+
+
+
+/* ============================================================
+   DAMPING MAX
+   ============================================================ */
+
+function updateDampingMaximum() {
+
+    const maximum =
+
+        Math.max(
+
+            0.01,
+
+            getNumber(
+                dampingMax,
+                5
+            )
+
+        );
+
+
+    damping.max =
+        maximum;
+
+
+
+    if (
+        getNumber(
+            damping,
+            0
+        ) >
+        maximum
+    ) {
+
+        damping.value =
+            maximum;
+    }
+
+
+
+    dampingValue.textContent =
+
+        getNumber(
+            damping,
+            0
+        ).toFixed(3);
+
+
+    resetAnimation();
+}
+
+
+
+/* ============================================================
+   ANIMATION
+   ============================================================ */
+
+function animate(
+    animationTime
+) {
+
+    const dt =
+
+        Math.min(
+
+            (
+                animationTime -
+                previousAnimationTime
+            ) /
+            1000,
+
+            0.05
+
+        );
+
+
+    previousAnimationTime =
+        animationTime;
+
+
+    const p =
+        getParameters();
+
+
+
+    if (
+        running
+    ) {
+
+        signalTime +=
+
+            dt *
+            getAnimationSpeed();
+    }
+
+
+
+    /* damped loop */
+
+    if (
+        p.mode === "damped" &&
+        loopDamped.checked &&
+        signalTime >
+        getDampedLoopTime(
+            p
+        )
+    ) {
+
+        signalTime =
+            0;
+
+
+        resetEmbedding();
+    }
+
+
+
+    /* uploaded segment */
+
+    if (
+        p.mode === "custom" &&
+        p.ready &&
+        signalTime >=
+        p.segmentDuration
+    ) {
+
+        if (
+            loopCustom.checked
+        ) {
+
+            signalTime =
+                0;
+
+
+            resetEmbedding();
+
+        } else {
+
+            signalTime =
+                p.segmentDuration;
+
+
+            running =
+                false;
+
+
+            playButton.textContent =
+                "▶ Play Animation";
+        }
+    }
+
+
+
+    updateEmbeddingSamples(
+        p
+    );
+
+
+    drawWave(
+        p
+    );
+
+
+    drawShape(
+        p
+    );
+
+
+    updateSampleInformation(
+        p
+    );
+
+
+    requestAnimationFrame(
+        animate
+    );
+}
+
+
+
+/* ============================================================
+   PARAMETER CHANGE
+   ============================================================ */
+
+function parameterChanged() {
+
+    stopSound();
+
+    resetAnimation();
+
+    updateDelayHint();
+}
+
+
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+playButton.addEventListener(
+    "click",
+    function() {
+
+        running =
+            !running;
+
+
+        playButton.textContent =
+
+            running
+
+            ? "❚❚ Pause Animation"
+
+            : "▶ Play Animation";
+    }
+);
+
+
+resetButton.addEventListener(
+    "click",
+    resetAnimation
+);
+
+
+soundButton.addEventListener(
+    "click",
+    playCurrentSound
+);
+
+
+stopSoundButton.addEventListener(
+    "click",
+    stopSound
+);
+
+
+
+/* ============================================================
+   SIGNAL TYPE
+   ============================================================ */
+
+signalType.addEventListener(
+    "change",
+    function() {
+
+        stopSound();
+
+        updateSignalControls();
+
+        resetAnimation();
+    }
+);
+
+
+
+/* ============================================================
+   PURE
+   ============================================================ */
+
+pureFrequency.addEventListener(
+    "input",
+    parameterChanged
+);
+
+
+pureAmplitude.addEventListener(
+    "input",
+    function() {
+
+        pureAmplitudeValue.textContent =
+
+            getNumber(
+                pureAmplitude,
+                1
+            ).toFixed(2);
+
+
+        parameterChanged();
+    }
+);
+
+
+
+/* ============================================================
+   TWO FREQUENCIES
+   ============================================================ */
+
+frequency1.addEventListener(
+    "input",
+    parameterChanged
+);
+
+
+frequency2.addEventListener(
+    "input",
+    parameterChanged
+);
+
+
+amplitude1.addEventListener(
+    "input",
+    function() {
+
+        amplitude1Value.textContent =
+
+            getNumber(
+                amplitude1,
+                1
+            ).toFixed(2);
+
+
+        parameterChanged();
+    }
+);
+
+
+amplitude2.addEventListener(
+    "input",
+    function() {
+
+        amplitude2Value.textContent =
+
+            getNumber(
+                amplitude2,
+                0.65
+            ).toFixed(2);
+
+
+        parameterChanged();
+    }
+);
+
+
+
+/* ============================================================
+   DAMPING
+   ============================================================ */
+
+dampedFrequency.addEventListener(
+    "input",
+    parameterChanged
+);
+
+
+dampedAmplitude.addEventListener(
+    "input",
+    function() {
+
+        dampedAmplitudeValue.textContent =
+
+            getNumber(
+                dampedAmplitude,
+                1
+            ).toFixed(2);
+
+
+        parameterChanged();
+    }
+);
+
+
+damping.addEventListener(
+    "input",
+    function() {
+
+        dampingValue.textContent =
+
+            getNumber(
+                damping,
+                1
+            ).toFixed(3);
+
+
+        parameterChanged();
+    }
+);
+
+
+dampingMax.addEventListener(
+    "input",
+    updateDampingMaximum
+);
+
+
+
+/* ============================================================
+   DELAY
+   ============================================================ */
+
+delaySlider.addEventListener(
+    "input",
+    function() {
+
+        delayInput.value =
+            delaySlider.value;
+
+
+        parameterChanged();
+    }
+);
+
+
+delayInput.addEventListener(
+    "input",
+    function() {
+
+        const value =
+
+            Math.max(
+
+                0,
+
+                getNumber(
+                    delayInput,
+                    0
+                )
+
+            );
+
+
+        delaySlider.value =
+
+            Math.min(
+
+                value,
+
+                Number(
+                    delaySlider.max
+                )
+
+            );
+
+
+        parameterChanged();
+    }
+);
+
+
+
+sampleRateInput.addEventListener(
+    "input",
+    parameterChanged
+);
+
+
+
+/* ============================================================
+   DISPLAY
+   ============================================================ */
+
+lineAlpha.addEventListener(
+    "input",
+    function() {
+
+        lineAlphaValue.textContent =
+
+            getNumber(
+                lineAlpha,
+                0.22
+            ).toFixed(2);
+    }
+);
+
+
+scatterAlpha.addEventListener(
+    "input",
+    function() {
+
+        scatterAlphaValue.textContent =
+
+            getNumber(
+                scatterAlpha,
+                0.90
+            ).toFixed(2);
+    }
+);
+
+
+pointSize.addEventListener(
+    "input",
+    function() {
+
+        pointSizeValue.textContent =
+
+            getNumber(
+                pointSize,
+                2.5
+            ).toFixed(1);
+    }
+);
+
+
+waveGlow.addEventListener(
+    "input",
+    function() {
+
+        waveGlowValue.textContent =
+
+            Math.round(
+                getNumber(
+                    waveGlow,
+                    16
+                )
+            );
+    }
+);
+
+
+embeddingGlow.addEventListener(
+    "input",
+    function() {
+
+        embeddingGlowValue.textContent =
+
+            Math.round(
+                getNumber(
+                    embeddingGlow,
+                    18
+                )
+            );
+    }
+);
+
+
+speedSlider.addEventListener(
+    "input",
+    updateSpeedLabel
+);
+
+
+
+/* ============================================================
+   AUDIO UPLOAD
+   ============================================================ */
+
+audioFileInput.addEventListener(
+    "change",
+    async function() {
+
+        const file =
+            audioFileInput.files[0];
+
+
+        await loadAudioFile(
+            file
+        );
+    }
+);
+
+
+
+segmentStartSlider.addEventListener(
+    "input",
+    function() {
+
+        segmentStartInput.value =
+
+            getNumber(
+                segmentStartSlider,
+                0
+            ).toFixed(3);
+
+
+        updateSegmentLimits();
+    }
+);
+
+
+segmentStartInput.addEventListener(
+    "input",
+    function() {
+
+        segmentStartSlider.value =
+            segmentStartInput.value;
+
+
+        updateSegmentLimits();
+    }
+);
+
+
+segmentDurationSlider.addEventListener(
+    "input",
+    function() {
+
+        segmentDurationInput.value =
+
+            getNumber(
+                segmentDurationSlider,
+                1
+            ).toFixed(3);
+
+
+        updateSegmentLimits();
+    }
+);
+
+
+segmentDurationInput.addEventListener(
+    "input",
+    function() {
+
+        segmentDurationSlider.value =
+            segmentDurationInput.value;
+
+
+        updateSegmentLimits();
+    }
+);
+
+
+
+fullFileButton.addEventListener(
+    "click",
+    function() {
+
+        if (
+            !uploadedAudioBuffer
+        ) {
+
+            return;
+        }
+
+
+        segmentStartInput.value =
+            "0.000";
+
+
+        segmentStartSlider.value =
+            0;
+
+
+        segmentDurationInput.value =
+
+            uploadedAudioBuffer.duration
+            .toFixed(3);
+
+
+        segmentDurationSlider.value =
+            uploadedAudioBuffer.duration;
+
+
+        updateSegmentLimits();
+    }
+);
+
+
+
+/* ============================================================
+   INITIAL VALUES
+   ============================================================ */
+
+pureAmplitudeValue.textContent =
+
+    getNumber(
+        pureAmplitude,
+        1
+    ).toFixed(2);
+
+
+amplitude1Value.textContent =
+
+    getNumber(
+        amplitude1,
+        1
+    ).toFixed(2);
+
+
+amplitude2Value.textContent =
+
+    getNumber(
+        amplitude2,
+        0.65
+    ).toFixed(2);
+
+
+dampedAmplitudeValue.textContent =
+
+    getNumber(
+        dampedAmplitude,
+        1
+    ).toFixed(2);
+
+
+dampingValue.textContent =
+
+    getNumber(
+        damping,
+        1
+    ).toFixed(3);
+
+
+lineAlphaValue.textContent =
+
+    getNumber(
+        lineAlpha,
+        0.22
+    ).toFixed(2);
+
+
+scatterAlphaValue.textContent =
+
+    getNumber(
+        scatterAlpha,
+        0.90
+    ).toFixed(2);
+
+
+pointSizeValue.textContent =
+
+    getNumber(
+        pointSize,
+        2.5
+    ).toFixed(1);
+
+
+waveGlowValue.textContent =
+
+    Math.round(
+        getNumber(
+            waveGlow,
+            16
+        )
+    );
+
+
+embeddingGlowValue.textContent =
+
+    Math.round(
+        getNumber(
+            embeddingGlow,
+            18
+        )
+    );
+
+
+updateSpeedLabel();
+
+updateSignalControls();
+
+drawUploadOverview();
+
+resetAnimation();
+
+
+requestAnimationFrame(
+    animate
+);
+
+</script>
+
+</body>
+</html>
